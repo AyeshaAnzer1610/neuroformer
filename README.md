@@ -1,35 +1,44 @@
-# Canada Alliance Case — Code & Datasets
+# mental-health
 
-Repository for analysis code and datasets related to the legal matter.
+Multimodal mental-health screening research — fusing **EEG, eye-tracking, and
+behavioural** signals with transformer models. This repo continues the NeuroFormer
+work, repositioned around a **foundation-model + missing-modality** contribution for
+resubmission to IEEE Access. See [docs/resubmission/](docs/resubmission/) for the
+strategy, roadmap, and reviewer-response planning.
 
-> **Confidential.** This repository may contain material relevant to active litigation.
-> Do not share publicly. If pushed to a remote, use a **private** repository.
+## Compute & data architecture
+
+- **Code + docs live here (GitHub).** Small, version-controlled, the durable backup.
+- **Raw datasets live on the Digital Research Alliance of Canada cluster** (`$SCRATCH`
+  or `/project`), downloaded directly from public S3 — *never committed to git*.
+- Raw data is **public and re-downloadable** (see `scripts/download_data.sh`), so it
+  needs no backup; only code and processed outputs do.
 
 ## Structure
 
 | Folder | What goes here |
 |---|---|
-| `data/raw/` | Original, untouched source data (never edit by hand). Large files are git-ignored. |
-| `data/processed/` | Cleaned / derived datasets produced by code in `src/`. Git-ignored. |
-| `src/` | Analysis and processing code. |
-| `notebooks/` | Exploratory Jupyter notebooks. |
-| `results/` | Generated outputs: figures, tables, reports. Git-ignored. |
-| `docs/` | Documentation, data dictionaries, methodology notes. |
+| `data/raw/` | Raw signals (git-ignored; on cluster, this points at `$SCRATCH`). |
+| `data/processed/` | Cleaned / derived features & cached embeddings (git-ignored). |
+| `src/` | Models, preprocessing, training, fusion code. |
+| `notebooks/` | Exploratory analysis. |
+| `results/` | Figures, tables, metrics (git-ignored). |
+| `docs/` | Documentation; `docs/resubmission/` holds the IEEE Access strategy. |
+| `scripts/` | Data download + cluster (SLURM) job scripts. |
 
-## Data handling notes
+## Datasets
 
-- **Raw data is treated as read-only.** All transformations are done in code so results are reproducible.
-- **Large data files are not committed** to git (see `.gitignore`). To version large files,
-  enable [Git LFS](https://git-lfs.com/): `git lfs install` then `git lfs track "*.csv"`.
-- Keep a record in `docs/` of where each raw dataset came from and when it was obtained
-  (important for evidentiary chain-of-custody).
+| Dataset | Use | Source |
+|---|---|---|
+| CMI **MIPDB** | Primary cohort (N≈126) | `s3://fcp-indi/data/Projects/EEG_Eyetracking_CMI_data` |
+| CMI **HBN** (Release 1, `ds005505`) | External validation | `s3://fcp-indi/data/Projects/HBN/BIDS_EEG/cmi_bids_R1` |
 
-## Getting started
+Both use the 128/129-channel EGI HydroCel net (same montage → clean cross-dataset transfer).
 
-```powershell
-# Clone (if remote exists)
-git clone <remote-url>
+## Getting started (on the Alliance cluster)
 
-# Or start working in the existing local repo
-cd canada-alliance-case
+```bash
+git clone https://github.com/AyeshaAnzer1610/mental-health.git
+cd mental-health
+bash scripts/download_data.sh        # run on a LOGIN node; reads $SCRATCH
 ```
