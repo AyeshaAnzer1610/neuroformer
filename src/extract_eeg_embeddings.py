@@ -160,7 +160,9 @@ def main():
     ap.add_argument("--input", required=True, help="EEG file or subject directory")
     ap.add_argument("--output", help="Output .npz (required unless --dry-run)")
     ap.add_argument("--notch", type=float, default=60.0, help="Line-noise Hz (US=60)")
-    ap.add_argument("--window-sec", type=float, default=1.0)
+    ap.add_argument("--window-sec", type=float, default=15.0,
+                    help="Window length in seconds. 15 s = 3000 samples @200Hz, "
+                         "which matches the pretrained LaBraM temporal embedding.")
     ap.add_argument("--dry-run", action="store_true",
                     help="Load + preprocess + window only; skip the model.")
     args = ap.parse_args()
