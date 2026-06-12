@@ -56,11 +56,20 @@ In the original `Multisource` repo, `data/` contains only **extracted feature CS
 - `/project` — backed up, quota'd. Put things you can't re-download.
 - `$HOME` — small quota; code/venv only.
 
+**Cluster: Nibi** (`anzer@*.nibi`) — has **miniconda3** and **CUDA 11.8** already.
+- Use **conda** (not virtualenv) for the env.
+- Install a **cu118** PyTorch build to match CUDA 11.8.
+
+```bash
+# one-time env (login node)
+conda create -n mh python=3.10 -y && conda activate mh
+pip install torch --index-url https://download.pytorch.org/whl/cu118   # match CUDA 11.8
+pip install mne braindecode awscli numpy pandas scikit-learn
+```
+
 **Download (LOGIN node — compute nodes have no internet):**
 ```bash
-module load python                      # or gcc/python per cluster
-virtualenv --no-download ~/envs/mh && source ~/envs/mh/bin/activate
-pip install --no-index awscli || pip install awscli   # awscli for S3
+conda activate mh                       # awscli installed above
 
 # Explore before syncing (public bucket → --no-sign-request):
 aws s3 ls --no-sign-request s3://fcp-indi/data/Projects/EEG_Eyetracking_CMI_data/
@@ -85,7 +94,7 @@ on login nodes.
   re-extraction is slow; large ones can also go to Alliance nearline.
 
 ## 0.6 Phase 0 checklist
-- [ ] Alliance account + which cluster (Narval has good A100s) confirmed.
+- [x] Alliance account confirmed — cluster is **Nibi** (miniconda3 + CUDA 11.8 present).
 - [ ] MIPDB synced to `$SCRATCH`; inspect one subject `.tar.gz` (EEG + `.sfp` present).
 - [ ] LaBraM checkpoint obtained; extract embeddings for one MIPDB subject end-to-end.
 - [ ] Repo cloned on cluster; GitHub auth working (token/SSH) for push-back.
