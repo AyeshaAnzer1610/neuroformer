@@ -18,6 +18,13 @@ run on a login node the first time so they cache):
         --input  $SCRATCH/mh/data/mipdb/<subject>/ \
         --output $SCRATCH/mh/data/processed/<subject>_labram.npz
 
+Whole cohort (one .npz per subject; failures are logged and skipped, and
+already-extracted subjects are skipped unless --overwrite):
+
+    python src/extract_eeg_embeddings.py --batch \
+        --input      $SCRATCH/mh/data/mipdb/ \
+        --output-dir $SCRATCH/mh/data/processed/
+
 Notes / assumptions (verify for your data):
 - MIPDB was recorded in the US (CMI, NY) on a 128-ch EGI net at 500 Hz, so mains
   line noise is **60 Hz** (not 50). We notch 60 Hz here; change with --notch.
@@ -161,12 +168,36 @@ def extract_labram_embeddings(windows, chs_info, batch_size=32, device="cuda"):
     return out
 
 
+# ------------------------------ pipeline ----------------------------------
+
+def extract_for_input(input_path, notch=60.0, window_sec=15.0, dry_run=False):
+    """Run the full load->preprocess->window->LaBraM pipeline for one input.
+
+    Returns the [n_windows, embed_dim] embeddings, or None on --dry-run.
+    """
+    raw = load_raw(input_path)
+    raw = preprocess(raw, notch=notch)
+    windows = make_windows(raw, window_sec=window_sec)
+    if dry_run:
+        print("[dry-run] OK — data path validated; no embeddings extracted.")
+        return None
+    return extract_labram_embeddings(windows, raw.info["chs"])
+
+
 # -------------------------------- main ------------------------------------
 
 def main():
     ap = argparse.ArgumentParser(description="Extract frozen LaBraM EEG embeddings.")
-    ap.add_argument("--input", required=True, help="EEG file or subject directory")
-    ap.add_argument("--output", help="Output .npz (required unless --dry-run)")
+    ap.add_argument("--input", required=True,
+                    help="EEG file or subject dir; with --batch, a PARENT dir "
+                         "whose immediate subdirectories are per-subject folders.")
+    ap.add_argument("--output", help="Output .npz (single-subject; or use --dry-run)")
+    ap.add_argument("--batch", action="store_true",
+                    help="Treat --input as a parent dir; extract every subject "
+                         "subdirectory to --output-dir/<subject>_labram.npz.")
+    ap.add_argument("--output-dir", help="Output directory for --batch mode.")
+    ap.add_argument("--overwrite", action="store_true",
+                    help="Re-extract subjects whose .npz already exists (--batch).")
     ap.add_argument("--notch", type=float, default=60.0, help="Line-noise Hz (US=60)")
     ap.add_argument("--window-sec", type=float, default=15.0,
                     help="Window length in seconds. 15 s = 3000 samples @200Hz, "
@@ -175,20 +206,66 @@ def main():
                     help="Load + preprocess + window only; skip the model.")
     args = ap.parse_args()
 
-    raw = load_raw(args.input)
-    raw = preprocess(raw, notch=args.notch)
-    windows = make_windows(raw, window_sec=args.window_sec)
+    if args.batch:
+        run_batch(args)
+        return
 
+    embs = extract_for_input(args.input, notch=args.notch,
+                             window_sec=args.window_sec, dry_run=args.dry_run)
     if args.dry_run:
-        print("[dry-run] OK — data path validated; no embeddings extracted.")
         return
     if not args.output:
         sys.exit("Provide --output (or use --dry-run).")
-
-    embs = extract_labram_embeddings(windows, raw.info["chs"])
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(args.output, embeddings=embs)
     print(f"[done] saved {embs.shape} -> {args.output}")
+
+
+def run_batch(args):
+    """Extract every subject subdirectory under --input; one .npz each.
+
+    Failures are logged and skipped so one bad subject can't abort the cohort.
+    Already-extracted subjects are skipped unless --overwrite.
+    """
+    parent = Path(args.input)
+    if not parent.is_dir():
+        sys.exit(f"--batch needs a directory; got {parent}")
+    if not args.output_dir:
+        sys.exit("--batch requires --output-dir.")
+    out_dir = Path(args.output_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    subjects = sorted(p for p in parent.iterdir() if p.is_dir())
+    if not subjects:
+        sys.exit(f"No subject subdirectories found under {parent}")
+    print(f"[batch] {len(subjects)} subjects under {parent}")
+
+    done, skipped, failed = [], [], []
+    for i, subj in enumerate(subjects, 1):
+        out_path = out_dir / f"{subj.name}_labram.npz"
+        if out_path.exists() and not args.overwrite:
+            print(f"[batch {i}/{len(subjects)}] {subj.name}: exists, skip")
+            skipped.append(subj.name)
+            continue
+        print(f"[batch {i}/{len(subjects)}] {subj.name}: extracting...")
+        try:
+            embs = extract_for_input(subj, notch=args.notch,
+                                     window_sec=args.window_sec)
+            np.savez_compressed(out_path, embeddings=embs)
+            print(f"[batch {i}/{len(subjects)}] {subj.name}: saved {embs.shape}")
+            done.append(subj.name)
+        except SystemExit as e:           # load/window guards call sys.exit
+            print(f"[batch {i}/{len(subjects)}] {subj.name}: SKIPPED ({e})")
+            failed.append(subj.name)
+        except Exception as e:            # noqa: BLE001 - keep the cohort going
+            print(f"[batch {i}/{len(subjects)}] {subj.name}: FAILED "
+                  f"({type(e).__name__}: {e})")
+            failed.append(subj.name)
+
+    print(f"\n[batch] done={len(done)} skipped(existing)={len(skipped)} "
+          f"failed={len(failed)}")
+    if failed:
+        print(f"[batch] failed subjects: {', '.join(failed)}")
 
 
 if __name__ == "__main__":
