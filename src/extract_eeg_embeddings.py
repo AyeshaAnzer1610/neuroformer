@@ -10,19 +10,19 @@ Run the data path first WITHOUT a model to validate loading/preprocessing:
 
     python src/extract_eeg_embeddings.py --input <eeg_file_or_subject_dir> --dry-run
 
-Then extract embeddings once you have a LaBraM checkpoint:
+Then extract embeddings (pretrained weights auto-download from Hugging Face;
+run on a login node the first time so they cache):
 
     python src/extract_eeg_embeddings.py \
-        --input  $SCRATCH/mh/data/mipdb/<subject>/<...>.raw \
-        --output $SCRATCH/mh/data/processed/<subject>_labram.npz \
-        --checkpoint /path/to/labram-base.pth
+        --input  $SCRATCH/mh/data/mipdb/<subject>/ \
+        --output $SCRATCH/mh/data/processed/<subject>_labram.npz
 
 Notes / assumptions (verify for your data):
 - MIPDB was recorded in the US (CMI, NY) on a 128-ch EGI net at 500 Hz, so mains
   line noise is **60 Hz** (not 50). We notch 60 Hz here; change with --notch.
-- LaBraM expects ~200 Hz input and patches of 1 s (200 samples). See
-  https://github.com/935963004/LaBraM. The embedding call is isolated in
-  extract_labram_embeddings() so you can wire it to your exact checkpoint API.
+- LaBraM expects 200 Hz input and a 200-sample (1 s) patch size. We map our 129
+  EGI channels onto LaBraM's canonical 128 via braindecode InterpolatedLaBraM,
+  which needs electrode positions (set from the GSN-HydroCel-129 montage).
 """
 import argparse
 import sys
@@ -64,7 +64,17 @@ def load_raw(input_path: str):
 
 def preprocess(raw, l_freq=0.1, h_freq=75.0, notch=60.0, target_sfreq=200.0):
     """Apply LaBraM-spec preprocessing in place and return the Raw object."""
+    import mne
+
     raw.pick("eeg")                                   # drop non-EEG channels
+    # Attach 3D electrode positions so InterpolatedLaBraM can map our montage
+    # onto LaBraM's canonical channels. MIPDB uses the EGI 128 HydroCel net.
+    try:
+        montage = mne.channels.make_standard_montage("GSN-HydroCel-129")
+        raw.set_montage(montage, on_missing="ignore", match_case=False,
+                        verbose="ERROR")
+    except Exception as e:  # noqa: BLE001
+        print(f"[prep] montage note: {type(e).__name__}: {e}")
     raw.filter(l_freq=l_freq, h_freq=h_freq, verbose="ERROR")
     if notch:
         raw.notch_filter(freqs=[notch], verbose="ERROR")
@@ -92,52 +102,46 @@ def make_windows(raw, window_sec=1.0):
 
 # ------------------------------ LaBraM ------------------------------------
 
-def extract_labram_embeddings(windows, checkpoint, device="cuda"):
-    """Run frozen LaBraM over windows -> [n_windows, embed_dim].
+def extract_labram_embeddings(windows, chs_info, batch_size=32, device="cuda"):
+    """Run frozen InterpolatedLaBraM over windows -> [n_windows, embed_dim].
 
-    Isolated so you can adapt it to your exact checkpoint. Default implementation
-    targets the official repo (https://github.com/935963004/LaBraM): build the
-    base model, load weights, run the encoder, and mean-pool the patch tokens.
-    Verify the model builder / forward signature against your checkpoint version.
+    Uses braindecode's InterpolatedLaBraM, which prepends a frozen spatial-
+    interpolation layer mapping our montage (chs_info, with 3D positions) onto
+    LaBraM's canonical 128 channels, and loads the pretrained weights from the
+    Hugging Face Hub. Requires internet (run on a login node the first time so
+    weights cache to ~/.cache/huggingface).
     """
     import torch
+    from braindecode.models import InterpolatedLaBraM
 
-    # --- build model (ADAPT to your LaBraM install) ---------------------
-    # Official repo route (expects LaBraM on PYTHONPATH):
-    #   from modeling_finetune import labram_base_patch200_200
-    #   model = labram_base_patch200_200(num_classes=0)        # 0 -> no head
-    # braindecode route:
-    #   from braindecode.models import Labram
-    #   model = Labram(n_times=windows.shape[-1], n_chans=windows.shape[1], ...)
-    try:
-        from modeling_finetune import labram_base_patch200_200  # type: ignore
-        model = labram_base_patch200_200(num_classes=0)
-    except Exception as e:  # noqa: BLE001
-        sys.exit(
-            "Could not import the LaBraM model builder.\n"
-            f"  ({type(e).__name__}: {e})\n"
-            "Clone https://github.com/935963004/LaBraM and add it to PYTHONPATH,\n"
-            "or switch to the braindecode route in extract_labram_embeddings()."
-        )
+    n_times = windows.shape[-1]
+    if n_times % 200 != 0:
+        print(f"[labram] warning: n_times={n_times} is not a multiple of the "
+              f"200-sample patch size; consider --window-sec in steps of 1.0.")
 
-    state = torch.load(checkpoint, map_location="cpu")
-    state = state.get("model", state)                  # unwrap common wrappers
-    missing, unexpected = model.load_state_dict(state, strict=False)
-    if missing or unexpected:
-        print(f"[labram] load_state_dict: {len(missing)} missing, "
-              f"{len(unexpected)} unexpected keys (ok if just the head).")
-
+    model = InterpolatedLaBraM.from_pretrained(
+        "braindecode/labram-pretrained",
+        chs_info=chs_info,
+        n_times=n_times,
+        n_outputs=2,            # arbitrary; we read features, not the head
+        patch_size=200,
+        strict=False,           # interpolation matrix isn't in the checkpoint
+    )
     device = device if torch.cuda.is_available() else "cpu"
     model.eval().to(device)
+    print(f"[labram] InterpolatedLaBraM loaded on {device}; "
+          f"input {windows.shape}")
 
     embs = []
     with torch.no_grad():
-        x = torch.from_numpy(windows).to(device)       # [N, C, T]
-        for i in range(0, len(x), 64):                 # batch to bound memory
-            batch = x[i : i + 64]
-            feats = model.forward_features(batch)       # [B, tokens, D] or [B, D]
-            if feats.ndim == 3:
-                feats = feats.mean(dim=1)               # mean-pool patch tokens
+        x = torch.from_numpy(windows).float().to(device)   # [N, C, T]
+        for i in range(0, len(x), batch_size):
+            out = model(x[i : i + batch_size], return_features=True)
+            feats = out.get("cls_token")
+            if feats is None:                               # fall back to pooled tokens
+                feats = out["features"]
+                if feats.ndim == 3:
+                    feats = feats.mean(dim=1)
             embs.append(feats.cpu().numpy())
     out = np.concatenate(embs, axis=0)
     print(f"[labram] embeddings: {out.shape}")
@@ -150,7 +154,6 @@ def main():
     ap = argparse.ArgumentParser(description="Extract frozen LaBraM EEG embeddings.")
     ap.add_argument("--input", required=True, help="EEG file or subject directory")
     ap.add_argument("--output", help="Output .npz (required unless --dry-run)")
-    ap.add_argument("--checkpoint", help="LaBraM weights (.pth)")
     ap.add_argument("--notch", type=float, default=60.0, help="Line-noise Hz (US=60)")
     ap.add_argument("--window-sec", type=float, default=1.0)
     ap.add_argument("--dry-run", action="store_true",
@@ -164,10 +167,10 @@ def main():
     if args.dry_run:
         print("[dry-run] OK — data path validated; no embeddings extracted.")
         return
-    if not args.output or not args.checkpoint:
-        sys.exit("Provide --output and --checkpoint (or use --dry-run).")
+    if not args.output:
+        sys.exit("Provide --output (or use --dry-run).")
 
-    embs = extract_labram_embeddings(windows, args.checkpoint)
+    embs = extract_labram_embeddings(windows, raw.info["chs"])
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(args.output, embeddings=embs)
     print(f"[done] saved {embs.shape} -> {args.output}")
