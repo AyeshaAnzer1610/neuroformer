@@ -5,9 +5,10 @@
 # re-downloadable). Public FCP-INDI bucket → no AWS credentials needed.
 #
 # Usage:
-#   bash scripts/download_data.sh mipdb        # primary cohort (download first)
-#   bash scripts/download_data.sh hbn-r1       # external validation (Phase 4)
-#   bash scripts/download_data.sh explore      # just list the buckets, download nothing
+#   bash scripts/download_data.sh explore             # list buckets, download nothing
+#   bash scripts/download_data.sh mipdb-subjects 3    # first N MIPDB subjects (test set)
+#   bash scripts/download_data.sh mipdb               # full MIPDB cohort
+#   bash scripts/download_data.sh hbn-r1              # external validation (Phase 4)
 set -euo pipefail
 
 : "${SCRATCH:?SCRATCH is not set — are you on an Alliance cluster login node?}"
@@ -29,7 +30,32 @@ case "${1:-explore}" in
     aws s3 ls --no-sign-request "$MIPDB_S3/"
     echo "== HBN R1 =="
     aws s3 ls --no-sign-request "$HBN_R1_S3/"
-    echo "Nothing downloaded. Re-run with 'mipdb' or 'hbn-r1' to sync."
+    echo "Nothing downloaded. Re-run with 'mipdb-subjects N', 'mipdb', or 'hbn-r1'."
+    ;;
+  mipdb-subjects)
+    N="${2:-3}"
+    DEST="$DATA_ROOT/mipdb"
+    mkdir -p "$DEST"
+    echo "Detecting the first $N MIPDB subjects under $MIPDB_S3/ ..."
+    LISTING="$(aws s3 ls --no-sign-request "$MIPDB_S3/")"
+    # Handle either layout: folders show as 'PRE name/'; tarballs end in .tar.gz
+    mapfile -t ITEMS < <(printf '%s\n' "$LISTING" \
+        | awk '/PRE/ {print $2} /\.tar\.gz$/ {print $NF}' | head -n "$N")
+    if [ "${#ITEMS[@]}" -eq 0 ]; then
+      echo "Could not detect subject entries. Raw listing (first lines):"
+      printf '%s\n' "$LISTING" | head
+      exit 1
+    fi
+    echo "Downloading ${#ITEMS[@]}: ${ITEMS[*]}"
+    for IT in "${ITEMS[@]}"; do
+      echo "  -> $IT"
+      if [[ "$IT" == */ ]]; then
+        aws s3 cp --no-sign-request --recursive "$MIPDB_S3/$IT" "$DEST/$IT"
+      else
+        aws s3 cp --no-sign-request "$MIPDB_S3/$IT" "$DEST/$IT"
+      fi
+    done
+    echo "Done: ${#ITEMS[@]} subject(s) in $DEST"
     ;;
   mipdb)
     DEST="$DATA_ROOT/mipdb"
@@ -47,7 +73,7 @@ case "${1:-explore}" in
     echo "Done."
     ;;
   *)
-    echo "Unknown target '$1'. Use: explore | mipdb | hbn-r1"
+    echo "Unknown target '$1'. Use: explore | mipdb-subjects N | mipdb | hbn-r1"
     exit 1
     ;;
 esac
