@@ -67,6 +67,11 @@ def preprocess(raw, l_freq=0.1, h_freq=75.0, notch=60.0, target_sfreq=200.0):
     import mne
 
     raw.pick("eeg")                                   # drop non-EEG channels
+    # MIPDB EGI files name the vertex reference 'E129'; the GSN-HydroCel-129
+    # montage calls it 'Cz'. Rename so every channel gets a 3D position
+    # (otherwise the missing position is NaN and the sphere fit fails).
+    if "E129" in raw.ch_names:
+        raw.rename_channels({"E129": "Cz"})
     # Attach 3D electrode positions so InterpolatedLaBraM can map our montage
     # onto LaBraM's canonical channels. MIPDB uses the EGI 128 HydroCel net.
     try:
