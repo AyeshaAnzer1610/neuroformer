@@ -1,0 +1,50 @@
+# ---- Datasets / large files ----
+# Keep large raw data OUT of git history (use Git LFS or external storage instead).
+# Folder structure is preserved via .gitkeep files.
+data/raw/*
+data/processed/*
+!data/**/.gitkeep
+results/*
+!results/.gitkeep
+
+# Large/binary data formats (track with Git LFS if you must version them)
+*.csv
+*.tsv
+*.xlsx
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.zip
+*.7z
+*.tar
+*.tar.gz
+*.db
+*.sqlite
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+*.egg-info/
+
+# ---- Node ----
+node_modules/
+dist/
+build/
+
+# ---- Environment / secrets ----
+.env
+.env.*
+*.key
+*.pem
+credentials.json
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
