@@ -3,8 +3,9 @@
 Phase 1 — extract frozen LaBraM embeddings from MIPDB EEG.
 
 Pipeline: load raw EEG (MNE) -> LaBraM-spec preprocessing (0.1-75 Hz band-pass,
-line-noise notch, resample to 200 Hz) -> non-overlapping 1 s windows -> frozen
-LaBraM forward -> per-window embeddings cached to .npz.
+line-noise notch, resample to 200 Hz) -> non-overlapping windows scaled to
+microvolts (LaBraM's trained unit) -> frozen LaBraM forward -> per-window
+embeddings cached to .npz.
 
 Run the data path first WITHOUT a model to validate loading/preprocessing:
 
@@ -94,7 +95,14 @@ def make_windows(raw, window_sec=1.0):
     """Split into non-overlapping windows -> array [n_windows, n_ch, n_samples]."""
     sfreq = raw.info["sfreq"]
     win = int(round(window_sec * sfreq))
-    data = raw.get_data()                              # [n_ch, n_times], volts
+    data = raw.get_data()                              # [n_ch, n_times], VOLTS
+    # LaBraM was trained on EEG in microvolts (braindecode applies no internal
+    # scaling — it feeds x straight to the patch embedding). MNE returns volts,
+    # so without this *1e6 the frozen model sees ~1e-5 amplitudes and produces
+    # meaningless embeddings with no crash/warning. Convert volts -> uV.
+    data = data * 1e6
+    print(f"[win ] amplitude after uV scaling: "
+          f"[{data.min():.1f}, {data.max():.1f}] uV (expect ~tens of uV)")
     n_ch, n_times = data.shape
     n_win = n_times // win
     if n_win == 0:
