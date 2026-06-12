@@ -1,0 +1,10 @@
+# Core (install torch separately to match the cluster's CUDA, e.g. cu118 on Nibi:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu118 )
+mne>=1.6
+numpy>=1.24
+pandas>=2.0
+scikit-learn>=1.3
+# EEG foundation model (LaBraM is also available via the official repo on PYTHONPATH)
+braindecode>=0.8
+# Data download
+awscli>=1.32
