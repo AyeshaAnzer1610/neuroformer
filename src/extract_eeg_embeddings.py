@@ -198,6 +198,9 @@ def main():
     ap.add_argument("--output-dir", help="Output directory for --batch mode.")
     ap.add_argument("--overwrite", action="store_true",
                     help="Re-extract subjects whose .npz already exists (--batch).")
+    ap.add_argument("--jobs", type=int, default=1,
+                    help="Parallel subject workers in --batch mode. Subjects are "
+                         "independent; set ~= the cores you requested (e.g. 8).")
     ap.add_argument("--notch", type=float, default=60.0, help="Line-noise Hz (US=60)")
     ap.add_argument("--window-sec", type=float, default=15.0,
                     help="Window length in seconds. 15 s = 3000 samples @200Hz, "
@@ -221,11 +224,32 @@ def main():
     print(f"[done] saved {embs.shape} -> {args.output}")
 
 
+def _extract_one(task):
+    """Worker: extract + save one subject. Module-level so it is picklable.
+
+    Pin torch to 1 thread so N parallel workers don't oversubscribe the cores
+    (each subject's forward is tiny; the win is across subjects, not within).
+    """
+    subj_path, out_path, notch, window_sec = task
+    name = Path(subj_path).name
+    try:
+        import torch
+        torch.set_num_threads(1)
+        embs = extract_for_input(subj_path, notch=notch, window_sec=window_sec)
+        np.savez_compressed(out_path, embeddings=embs)
+        return name, "done", str(embs.shape)
+    except SystemExit as e:               # load/window guards call sys.exit
+        return name, "failed", f"skipped: {e}"
+    except Exception as e:                # noqa: BLE001 - keep the cohort going
+        return name, "failed", f"{type(e).__name__}: {e}"
+
+
 def run_batch(args):
     """Extract every subject subdirectory under --input; one .npz each.
 
     Failures are logged and skipped so one bad subject can't abort the cohort.
-    Already-extracted subjects are skipped unless --overwrite.
+    Already-extracted subjects are skipped unless --overwrite. With --jobs>1,
+    subjects are processed in parallel (they are independent).
     """
     parent = Path(args.input)
     if not parent.is_dir():
@@ -238,29 +262,33 @@ def run_batch(args):
     subjects = sorted(p for p in parent.iterdir() if p.is_dir())
     if not subjects:
         sys.exit(f"No subject subdirectories found under {parent}")
-    print(f"[batch] {len(subjects)} subjects under {parent}")
 
-    done, skipped, failed = [], [], []
-    for i, subj in enumerate(subjects, 1):
+    tasks, skipped = [], []
+    for subj in subjects:
         out_path = out_dir / f"{subj.name}_labram.npz"
         if out_path.exists() and not args.overwrite:
-            print(f"[batch {i}/{len(subjects)}] {subj.name}: exists, skip")
             skipped.append(subj.name)
             continue
-        print(f"[batch {i}/{len(subjects)}] {subj.name}: extracting...")
-        try:
-            embs = extract_for_input(subj, notch=args.notch,
-                                     window_sec=args.window_sec)
-            np.savez_compressed(out_path, embeddings=embs)
-            print(f"[batch {i}/{len(subjects)}] {subj.name}: saved {embs.shape}")
-            done.append(subj.name)
-        except SystemExit as e:           # load/window guards call sys.exit
-            print(f"[batch {i}/{len(subjects)}] {subj.name}: SKIPPED ({e})")
-            failed.append(subj.name)
-        except Exception as e:            # noqa: BLE001 - keep the cohort going
-            print(f"[batch {i}/{len(subjects)}] {subj.name}: FAILED "
-                  f"({type(e).__name__}: {e})")
-            failed.append(subj.name)
+        tasks.append((str(subj), str(out_path), args.notch, args.window_sec))
+    print(f"[batch] {len(subjects)} subjects: {len(tasks)} to extract, "
+          f"{len(skipped)} already done | jobs={args.jobs}")
+
+    done, failed = [], []
+
+    def record(i, name, status, msg):
+        tag = "saved" if status == "done" else "FAILED"
+        print(f"[batch {i}/{len(tasks)}] {name}: {tag} {msg}")
+        (done if status == "done" else failed).append(name)
+
+    if args.jobs <= 1:
+        for i, task in enumerate(tasks, 1):
+            record(i, *_extract_one(task))
+    else:
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+        with ProcessPoolExecutor(max_workers=args.jobs) as ex:
+            futs = {ex.submit(_extract_one, t): t for t in tasks}
+            for i, fut in enumerate(as_completed(futs), 1):
+                record(i, *fut.result())
 
     print(f"\n[batch] done={len(done)} skipped(existing)={len(skipped)} "
           f"failed={len(failed)}")
