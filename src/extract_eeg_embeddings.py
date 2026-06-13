@@ -46,13 +46,15 @@ def load_raw(input_path: str):
 
     p = Path(input_path)
     if p.is_dir():
-        # pick the first readable EEG file in a subject dir
-        cands = sorted([*p.rglob("*.raw"), *p.rglob("*.mff"), *p.rglob("*.edf"),
-                        *p.rglob("*.set"), *p.rglob("*.fif")])
+        # Pick the LARGEST EEG file in a subject dir: the main recording, not a
+        # short calibration block (alphabetically-first was sometimes too short
+        # to make even one window).
+        cands = [*p.rglob("*.raw"), *p.rglob("*.mff"), *p.rglob("*.edf"),
+                 *p.rglob("*.set"), *p.rglob("*.fif")]
         if not cands:
             sys.exit(f"No EEG files (.raw/.mff/.edf/.set/.fif) found under {p}")
-        p = cands[0]
-        print(f"[load] directory given; using first EEG file: {p}")
+        p = max(cands, key=lambda f: f.stat().st_size)
+        print(f"[load] directory given; using largest EEG file: {p}")
 
     suffix = p.suffix.lower()
     readers = {
@@ -145,7 +147,7 @@ def make_windows(raw, window_sec=1.0, clip_uv=800.0):
 
 # ------------------------------ LaBraM ------------------------------------
 
-def extract_labram_embeddings(windows, chs_info, batch_size=32, device="cuda"):
+def extract_labram_embeddings(windows, chs_info, batch_size=8, device="cuda"):
     """Run frozen InterpolatedLaBraM over windows -> [n_windows, embed_dim].
 
     Uses braindecode's InterpolatedLaBraM, which prepends a frozen spatial-
@@ -307,11 +309,17 @@ def run_batch(args):
         for i, task in enumerate(tasks, 1):
             record(i, *_extract_one(task))
     else:
-        from concurrent.futures import ProcessPoolExecutor, as_completed
-        with ProcessPoolExecutor(max_workers=args.jobs) as ex:
-            futs = {ex.submit(_extract_one, t): t for t in tasks}
-            for i, fut in enumerate(as_completed(futs), 1):
-                record(i, *fut.result())
+        from concurrent.futures import (ProcessPoolExecutor, as_completed,
+                                         BrokenExecutor)
+        try:
+            with ProcessPoolExecutor(max_workers=args.jobs) as ex:
+                futs = {ex.submit(_extract_one, t): t for t in tasks}
+                for i, fut in enumerate(as_completed(futs), 1):
+                    record(i, *fut.result())
+        except BrokenExecutor:
+            sys.exit("\n[batch] FATAL: a worker was killed (likely OOM). "
+                     "Lower --jobs or raise the job's memory, then re-run "
+                     "(finished subjects are skipped).")
 
     print(f"\n[batch] done={len(done)} skipped(existing)={len(skipped)} "
           f"failed={len(failed)}")
