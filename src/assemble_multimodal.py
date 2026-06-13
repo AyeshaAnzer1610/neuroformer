@@ -63,6 +63,15 @@ def load_eeg(npz_dir, pool="meanstd"):
     return pool_subjects(load_windows(npz_dir, "_labram", "embeddings"), pool)
 
 
+def load_npz_modality(npz_dir, suffix, pool="mean", key="features"):
+    """{sid: pooled vector} from a dir of *<suffix>.npz (eye/behaviour/etc.).
+
+    These caches store [n_blocks, n_feat]; pooling aggregates blocks per subject
+    (default mean), matching how EEG windows are pooled.
+    """
+    return pool_subjects(load_windows(npz_dir, suffix, key), pool)
+
+
 def assemble(modality_dicts, labels_df, task="binary", how="union"):
     """Align modalities + labels on subject ID.
 
