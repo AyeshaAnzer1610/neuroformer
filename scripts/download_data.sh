@@ -87,6 +87,17 @@ case "${1:-explore}" in
     done
     echo "Done: ${#SUBS[@]} HBN subject(s) + participants.tsv in $DEST"
     ;;
+  hbn-rest)
+    # Only RestingState files (the paradigm we use) + participants.tsv. Much
+    # smaller/faster than the full release (we never touch the other tasks).
+    DEST="$DATA_ROOT/hbn_r1"
+    mkdir -p "$DEST"
+    aws s3 cp --no-sign-request "$HBN_R1_S3/participants.tsv" "$DEST/participants.tsv"
+    echo "Syncing only *RestingState* files into $DEST ..."
+    aws s3 sync --no-sign-request "$HBN_R1_S3/" "$DEST/" \
+        --exclude "*" --include "*task-RestingState*"
+    echo "Done (RestingState-only)."
+    ;;
   hbn-r1)
     DEST="$DATA_ROOT/hbn_r1"
     mkdir -p "$DEST"
@@ -96,7 +107,7 @@ case "${1:-explore}" in
     echo "Done."
     ;;
   *)
-    echo "Unknown target '$1'. Use: explore | mipdb-subjects N | mipdb | hbn-subjects N | hbn-r1"
+    echo "Unknown target '$1'. Use: explore | mipdb-subjects N | mipdb | hbn-subjects N | hbn-rest | hbn-r1"
     exit 1
     ;;
 esac
