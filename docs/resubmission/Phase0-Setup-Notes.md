@@ -7,18 +7,30 @@
 ## 0.1 Inventory of what we already have (and a problem)
 
 In the original `Multisource` repo, `data/` contains only **extracted feature CSVs**:
-- `processed_asd_features.csv` (~217 KB) — EEG/derived features
-- `processed_features_behavioral_features.csv` (~22 KB) — behavioural
+- `processed_asd_features.csv` (~217 KB) — **eye-tracking** features despite the name
+  (columns are pupil size, gaze x/y, gaze vector — *not* EEG); per-block, ~951 rows.
+- `processed_features_behavioral_features.csv` (~22 KB) — behavioural (RT, accuracy).
 - `processed_eyetracking_features.csv` — **2 bytes (EMPTY)** ⚠️
-- `labels.csv`, `MIPDB_PublicFile.csv`
+- `labels.csv`, `MIPDB_PublicFile.csv` — `ID, Age, Sex, DX_Status` for 126 subjects.
+  `DX_Status` is `{0: 101, 1: 22, 2: 3}` → we use **binary** "any DX vs none" (class 2 n=3).
+  Copied into this repo's `data/` (tiny public metadata, whitelisted in `.gitignore`).
+
+**Where the hand-crafted EEG features actually live (important):**
+- The old EEG baseline (`EEGFinal.ipynb`) computed, after band-pass + normalization,
+  **Hjorth (activity/mobility/complexity) + spectral entropy** per channel and saved
+  them to a **GCS bucket** (`gs://eegchild/processed_features/*_features.csv` →
+  `merged_features.csv`) — **not** in this repo, **not** on Nibi.
+- Decision: rather than depend on GCS auth, we **re-implement that exact feature set**
+  in [`src/extract_handcrafted_eeg.py`](../../src/extract_handcrafted_eeg.py) on the
+  *same* raw EEG / windows we feed LaBraM, so the Phase 1 head-to-head
+  ([`src/compare_fm_vs_handcrafted.py`](../../src/compare_fm_vs_handcrafted.py)) is
+  apples-to-apples. (Can still cross-check against the GCS `merged_features.csv` later.)
 
 **Implications:**
-- There are **no raw EEG signals** — only the hand-crafted 5-channel-derived features.
-  For Option A (foundation-model EEG over the full high-density montage) we **must
-  download raw MIPDB**.
-- The eye-tracking feature file is empty, so the eye-tracking pipeline output isn't
-  recoverable from this repo either — re-derive from raw MIPDB.
-- Keep these CSVs only as a reference/sanity check against the new pipeline.
+- There are **no raw EEG signals** in the old repo — for Option A (foundation-model
+  EEG over the full high-density montage) we **must download raw MIPDB**.
+- The eye-tracking feature file is empty, so re-derive eye-tracking from raw MIPDB.
+- Keep the old CSVs only as a reference/sanity check against the new pipeline.
 
 ## 0.2 Datasets to download (in order)
 

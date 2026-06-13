@@ -9,6 +9,9 @@ results/*
 
 # Large/binary data formats (track with Git LFS if you must version them)
 *.csv
+# Exception: tiny PUBLIC label/metadata files needed for reproducible CV.
+!data/labels.csv
+!data/MIPDB_PublicFile.csv
 *.tsv
 *.xlsx
 *.parquet
