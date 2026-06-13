@@ -64,6 +64,29 @@ case "${1:-explore}" in
     aws s3 sync --no-sign-request "$MIPDB_S3/" "$DEST/"
     echo "Done. Inspect one subject and confirm the .sfp channel-location file is present."
     ;;
+  hbn-subjects)
+    N="${2:-3}"
+    DEST="$DATA_ROOT/hbn_r1"
+    mkdir -p "$DEST"
+    echo "HBN root listing:"
+    aws s3 ls --no-sign-request "$HBN_R1_S3/"
+    # BIDS root metadata (labels live in participants.tsv).
+    for f in participants.tsv participants.json dataset_description.json; do
+      aws s3 cp --no-sign-request "$HBN_R1_S3/$f" "$DEST/$f" 2>/dev/null \
+        && echo "got $f" || true
+    done
+    echo "Detecting first $N HBN subjects (sub-*/) ..."
+    mapfile -t SUBS < <(aws s3 ls --no-sign-request "$HBN_R1_S3/" \
+        | awk '/PRE sub-/ {print $2}' | head -n "$N")
+    if [ "${#SUBS[@]}" -eq 0 ]; then
+      echo "No sub-*/ entries detected. Raw listing above."; exit 1
+    fi
+    for S in "${SUBS[@]}"; do
+      echo "  -> $S"
+      aws s3 cp --no-sign-request --recursive "$HBN_R1_S3/$S" "$DEST/$S"
+    done
+    echo "Done: ${#SUBS[@]} HBN subject(s) + participants.tsv in $DEST"
+    ;;
   hbn-r1)
     DEST="$DATA_ROOT/hbn_r1"
     mkdir -p "$DEST"
@@ -73,7 +96,7 @@ case "${1:-explore}" in
     echo "Done."
     ;;
   *)
-    echo "Unknown target '$1'. Use: explore | mipdb-subjects N | mipdb | hbn-r1"
+    echo "Unknown target '$1'. Use: explore | mipdb-subjects N | mipdb | hbn-subjects N | hbn-r1"
     exit 1
     ;;
 esac
