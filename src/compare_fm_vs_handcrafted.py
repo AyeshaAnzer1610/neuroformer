@@ -32,10 +32,11 @@ import pandas as pd
 
 # ------------------------------- loading ----------------------------------
 
-def load_pooled(npz_dir, suffix, key):
-    """Return {subject_id: pooled_vector} by mean-pooling windows in each .npz.
+def load_windows(npz_dir, suffix, key):
+    """Return {subject_id: [n_windows, n_feat]} from each .npz (no pooling yet).
 
-    Files are named <subject><suffix>.npz (e.g. A00051955_labram.npz).
+    Pooling is applied later so we can compare aggregation strategies on the
+    same cached per-window features. Files are named <subject><suffix>.npz.
     """
     d = Path(npz_dir)
     if not d.is_dir():
@@ -47,9 +48,27 @@ def load_pooled(npz_dir, suffix, key):
         if arr.ndim != 2 or arr.shape[0] == 0:
             print(f"[load] skip {f.name}: bad shape {arr.shape}")
             continue
-        out[subj] = arr.mean(axis=0).astype(np.float64)
+        out[subj] = arr.astype(np.float64)
     print(f"[load] {len(out)} subjects from {d} (*{suffix}.npz)")
     return out
+
+
+def pool_subjects(windows_dict, mode):
+    """Aggregate each subject's [n_windows, n_feat] into one vector.
+
+    mean    -> the window-average (loses cross-window variability)
+    std     -> per-feature spread across windows
+    meanstd -> concat(mean, std): average + variability (2x dims)
+    """
+    def pool(a):
+        if mode == "mean":
+            return a.mean(axis=0)
+        if mode == "std":
+            return a.std(axis=0)
+        if mode == "meanstd":
+            return np.concatenate([a.mean(axis=0), a.std(axis=0)])
+        raise ValueError(f"unknown pool mode: {mode}")
+    return {s: pool(a) for s, a in windows_dict.items()}
 
 
 def build_xy(feat_dicts, labels_df, task="binary"):
@@ -139,43 +158,49 @@ def main():
     ap.add_argument("--folds", type=int, default=5)
     ap.add_argument("--repeats", type=int, default=10)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--pools", default="mean,meanstd",
+                    help="Comma list of window-pooling modes to compare: "
+                         "mean, std, meanstd.")
     ap.add_argument("--out", default="results/phase1_comparison.csv")
     args = ap.parse_args()
 
     labels_df = pd.read_csv(args.labels)
-    fm = load_pooled(args.fm_dir, "_labram", "embeddings")
-    hc = load_pooled(args.hc_dir, "_handcrafted", "features")
+    fm_w = load_windows(args.fm_dir, "_labram", "embeddings")
+    hc_w = load_windows(args.hc_dir, "_handcrafted", "features")
 
-    subjects, y, X = build_xy({"handcrafted": hc, "labram": fm}, labels_df, args.task)
-    # Add the fusion (concatenated) feature set on the same subjects.
-    X["fused"] = np.hstack([X["handcrafted"], X["labram"]])
-
-    results, per_fold_auc = evaluate(X, y, args.folds, args.repeats, args.seed, args.task)
-
+    pools = [p.strip() for p in args.pools.split(",") if p.strip()]
+    rows = []
     print(f"\n=== Phase 1 head-to-head ({args.folds}x{args.repeats} stratified CV, "
           f"logreg, class-balanced) ===")
-    print(f"{'feature set':<14}{'ROC-AUC (95% CI)':<26}{'bal-acc (95% CI)':<26}{'dim':>6}")
-    for name in ["handcrafted", "labram", "fused"]:
-        auc_m, auc_ci = results[name]["auc"]
-        b_m, b_ci = results[name]["bacc"]
-        print(f"{name:<14}{auc_m:.3f} +/- {auc_ci:.3f}{'':<11}"
-              f"{b_m:.3f} +/- {b_ci:.3f}{'':<11}{X[name].shape[1]:>6}")
+    header = (f"{'pool':<9}{'feature set':<13}{'ROC-AUC (95% CI)':<24}"
+              f"{'bal-acc (95% CI)':<24}{'dim':>5}")
+    for pool in pools:
+        fm = pool_subjects(fm_w, pool)
+        hc = pool_subjects(hc_w, pool)
+        subjects, y, X = build_xy({"handcrafted": hc, "labram": fm}, labels_df, args.task)
+        X["fused"] = np.hstack([X["handcrafted"], X["labram"]])
+        results, per_fold_auc = evaluate(X, y, args.folds, args.repeats, args.seed, args.task)
 
-    d = paired_delta(per_fold_auc, "labram", "handcrafted")
-    if d:
-        delta, ci = d
-        verdict = ("LaBraM wins" if delta - ci > 0 else
-                   "hand-crafted wins" if delta + ci < 0 else
-                   "no significant difference")
-        print(f"\nPaired AUC delta (LaBraM - hand-crafted): {delta:+.3f} +/- {ci:.3f}"
-              f"  ->  {verdict}")
+        print(f"\n{header}")
+        for name in ["handcrafted", "labram", "fused"]:
+            auc_m, auc_ci = results[name]["auc"]
+            b_m, b_ci = results[name]["bacc"]
+            print(f"{pool:<9}{name:<13}{auc_m:.3f} +/- {auc_ci:.3f}{'':<9}"
+                  f"{b_m:.3f} +/- {b_ci:.3f}{'':<9}{X[name].shape[1]:>5}")
+            rows.append({"pool": pool, "feature_set": name,
+                         "n_subjects": len(subjects), "dim": X[name].shape[1],
+                         "auc": results[name]["auc"][0], "auc_ci95": results[name]["auc"][1],
+                         "bacc": results[name]["bacc"][0], "bacc_ci95": results[name]["bacc"][1]})
+        d = paired_delta(per_fold_auc, "labram", "handcrafted")
+        if d:
+            delta, ci = d
+            verdict = ("LaBraM wins" if delta - ci > 0 else
+                       "hand-crafted wins" if delta + ci < 0 else
+                       "no sig. difference")
+            print(f"  paired AUC delta (LaBraM - hand-crafted): "
+                  f"{delta:+.3f} +/- {ci:.3f}  ->  {verdict}")
 
-    # Persist a tidy results table.
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    rows = [{"feature_set": n, "n_subjects": len(subjects), "dim": X[n].shape[1],
-             "auc": results[n]["auc"][0], "auc_ci95": results[n]["auc"][1],
-             "bacc": results[n]["bacc"][0], "bacc_ci95": results[n]["bacc"][1]}
-            for n in ["handcrafted", "labram", "fused"]]
     pd.DataFrame(rows).to_csv(args.out, index=False)
     print(f"\n[done] wrote {args.out}")
 
