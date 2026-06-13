@@ -78,7 +78,7 @@ def extract_for_input(input_path, dry_run=False):
     p = Path(input_path)
     files = sorted(p.rglob("*Samples.txt")) if p.is_dir() else [p]
     if not files:
-        sys.exit(f"No *Samples.txt under {p}")
+        raise ValueError(f"no *Samples.txt under {p}")
     rows, used = [], []
     for f in files:
         try:

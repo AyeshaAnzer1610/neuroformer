@@ -50,7 +50,7 @@ def extract_for_input(input_path, dry_run=False):
     # Restrict to the Behavioral/csv area when given a subject dir.
     files = [f for f in files if "Behavioral" in str(f) or p.is_file()]
     if not files:
-        sys.exit(f"No Behavioral/csv/*.csv under {p}")
+        raise ValueError(f"no Behavioral/csv/*.csv under {p}")
     rows, n_other = [], 0
     for f in files:
         try:
