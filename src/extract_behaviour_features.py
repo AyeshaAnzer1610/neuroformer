@@ -51,17 +51,21 @@ def extract_for_input(input_path, dry_run=False):
     files = [f for f in files if "Behavioral" in str(f) or p.is_file()]
     if not files:
         sys.exit(f"No Behavioral/csv/*.csv under {p}")
-    rows = []
+    rows, n_other = [], 0
     for f in files:
         try:
             rows.append(behaviour_features(f))
-        except Exception as e:  # noqa: BLE001
+        except ValueError:
+            # Expected: only the SAIIT_2AFC task has RT/accuracy columns; other
+            # paradigms (SurroundSupp/Video/WISC/vis_learn) don't. Quietly count.
+            n_other += 1
+        except Exception as e:  # noqa: BLE001 - real parse errors only
             print(f"[beh ] skip {f.name}: {type(e).__name__}: {e}")
     if not rows:
-        raise ValueError("no valid behaviour blocks")
+        raise ValueError("no valid behaviour blocks (no SAIIT_2AFC task logs)")
     arr = np.vstack(rows).astype(np.float32)
     print(f"[beh ] {arr.shape[0]} blocks x {arr.shape[1]} features "
-          f"(from {len(files)} files)")
+          f"({len(files)} files, {n_other} non-2AFC skipped)")
     if dry_run:
         print("[dry-run] OK — no features saved."); return None
     return arr
