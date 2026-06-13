@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=mh-extract
-#SBATCH --account=def-REPLACE_ME        # <-- your Alliance allocation (e.g. def-supervisor)
+#SBATCH --account=def-abais             # Ayesha's Alliance allocation (PI: Bais)
 #SBATCH --cpus-per-task=8               # parallel subject workers (matches --jobs below)
 #SBATCH --mem=32G
 #SBATCH --time=02:00:00
