@@ -34,7 +34,8 @@ import numpy as np
 
 # Reuse the exact same load/preprocess/window pipeline as the LaBraM extractor
 # so the two feature sets are computed on identical inputs.
-from extract_eeg_embeddings import load_raw, preprocess, make_windows
+from extract_eeg_embeddings import (load_raw, preprocess, make_windows,
+                                     load_and_window)
 
 
 # --------------------------- feature functions ----------------------------
@@ -89,9 +90,9 @@ def handcrafted_features(windows, ch_names, sfreq):
 # ------------------------------- pipeline ---------------------------------
 
 def extract_for_input(input_path, notch=60.0, window_sec=15.0, dry_run=False):
-    raw = load_raw(input_path)
-    raw = preprocess(raw, notch=notch)
-    windows = make_windows(raw, window_sec=window_sec)
+    # Same QC recording-selection as the LaBraM extractor, so both feature sets
+    # use the identical recording per subject.
+    raw, windows = load_and_window(input_path, notch=notch, window_sec=window_sec)
     if dry_run:
         print("[dry-run] OK — data path validated; no features extracted.")
         return None, None

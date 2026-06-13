@@ -138,7 +138,7 @@ def make_windows(raw, window_sec=1.0, clip_uv=800.0):
     n_ch, n_times = data.shape
     n_win = n_times // win
     if n_win == 0:
-        sys.exit(f"Recording shorter than one {window_sec}s window.")
+        raise ValueError(f"Recording shorter than one {window_sec}s window.")
     windows = data[:, : n_win * win].reshape(n_ch, n_win, win).transpose(1, 0, 2)
     print(f"[win ] {n_win} windows of {win} samples ({window_sec}s), "
           f"shape {windows.shape}")
@@ -195,14 +195,65 @@ def extract_labram_embeddings(windows, chs_info, batch_size=8, device="cuda"):
 
 # ------------------------------ pipeline ----------------------------------
 
+# Quality gate for picking a recording: median |x| must look like real EEG
+# (not flat/dead, not an impedance/calibration file at hundreds-thousands uV),
+# and not be mostly artifact (clipped).
+QC_MEDIAN_UV = (3.0, 150.0)
+QC_MAX_CLIP_FRAC = 0.15
+
+
+def list_eeg_files(input_path):
+    """EEG file(s) for a path: the file itself, or a subject dir's candidates
+    sorted largest-first (the main recording tends to be the biggest)."""
+    p = Path(input_path)
+    if p.is_file():
+        return [p]
+    cands = [*p.rglob("*.raw"), *p.rglob("*.mff"), *p.rglob("*.edf"),
+             *p.rglob("*.set"), *p.rglob("*.fif")]
+    return sorted(cands, key=lambda f: f.stat().st_size, reverse=True)
+
+
+def load_and_window(input_path, notch=60.0, window_sec=15.0, clip_uv=800.0,
+                    max_candidates=6):
+    """Pick the best-quality recording among a subject's files.
+
+    Iterate candidates largest-first; preprocess + window each and accept the
+    first whose signal is physiological (median |x| in range, not over-clipped).
+    This drops junk files (flat/dead, or impedance/calibration files at
+    thousands of uV) and recovers subjects whose largest file is bad. Raises if
+    no candidate qualifies. Returns (raw, windows).
+    """
+    cands = list_eeg_files(input_path)
+    if not cands:
+        sys.exit(f"No EEG files (.raw/.mff/.edf/.set/.fif) found under {input_path}")
+    reason = "no candidates tried"
+    for f in cands[:max_candidates]:
+        raw = preprocess(load_raw(f), notch=notch)
+        try:
+            windows = make_windows(raw, window_sec=window_sec, clip_uv=clip_uv)
+        except ValueError as e:                       # too short -> try next file
+            reason = str(e)
+            continue
+        absd = np.abs(windows)
+        med = float(np.median(absd))
+        clip_frac = float((absd >= clip_uv - 1e-6).mean())
+        if QC_MEDIAN_UV[0] <= med <= QC_MEDIAN_UV[1] and clip_frac < QC_MAX_CLIP_FRAC:
+            print(f"[qc  ] accepted {f.name}: median|x|={med:.1f} uV, "
+                  f"clip={clip_frac*100:.2f}%, {len(windows)} windows")
+            return raw, windows
+        reason = (f"median|x|={med:.1f} uV, clip={clip_frac*100:.1f}% "
+                  f"(QC needs {QC_MEDIAN_UV} uV, <{QC_MAX_CLIP_FRAC*100:.0f}% clip)")
+        print(f"[qc  ] rejected {f.name}: {reason}")
+    raise ValueError(f"No physiological-quality recording among "
+                     f"{min(len(cands), max_candidates)} candidates: {reason}")
+
+
 def extract_for_input(input_path, notch=60.0, window_sec=15.0, dry_run=False):
-    """Run the full load->preprocess->window->LaBraM pipeline for one input.
+    """Run the full QC-select -> LaBraM pipeline for one subject.
 
     Returns the [n_windows, embed_dim] embeddings, or None on --dry-run.
     """
-    raw = load_raw(input_path)
-    raw = preprocess(raw, notch=notch)
-    windows = make_windows(raw, window_sec=window_sec)
+    raw, windows = load_and_window(input_path, notch=notch, window_sec=window_sec)
     if dry_run:
         print("[dry-run] OK — data path validated; no embeddings extracted.")
         return None
