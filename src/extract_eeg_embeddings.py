@@ -202,19 +202,23 @@ QC_MEDIAN_UV = (3.0, 150.0)
 QC_MAX_CLIP_FRAC = 0.15
 
 
-def list_eeg_files(input_path):
+def list_eeg_files(input_path, match=None):
     """EEG file(s) for a path: the file itself, or a subject dir's candidates
-    sorted largest-first (the main recording tends to be the biggest)."""
+    sorted largest-first (the main recording tends to be the biggest).
+    If `match` is given, keep only files whose name contains it (e.g. a BIDS task
+    like 'RestingState') — used to pick a consistent paradigm across subjects."""
     p = Path(input_path)
     if p.is_file():
         return [p]
     cands = [*p.rglob("*.raw"), *p.rglob("*.mff"), *p.rglob("*.edf"),
              *p.rglob("*.set"), *p.rglob("*.fif")]
+    if match:
+        cands = [f for f in cands if match in f.name]
     return sorted(cands, key=lambda f: f.stat().st_size, reverse=True)
 
 
 def load_and_window(input_path, notch=60.0, window_sec=15.0, clip_uv=800.0,
-                    max_candidates=6):
+                    max_candidates=6, match=None):
     """Pick the best-quality recording among a subject's files.
 
     Iterate candidates largest-first; preprocess + window each and accept the
@@ -223,9 +227,11 @@ def load_and_window(input_path, notch=60.0, window_sec=15.0, clip_uv=800.0,
     thousands of uV) and recovers subjects whose largest file is bad. Raises if
     no candidate qualifies. Returns (raw, windows).
     """
-    cands = list_eeg_files(input_path)
+    cands = list_eeg_files(input_path, match=match)
     if not cands:
-        sys.exit(f"No EEG files (.raw/.mff/.edf/.set/.fif) found under {input_path}")
+        raise ValueError(f"No EEG files"
+                         + (f" matching '{match}'" if match else "")
+                         + f" under {input_path}")
     reason = "no candidates tried"
     for f in cands[:max_candidates]:
         raw = preprocess(load_raw(f), notch=notch)
@@ -248,12 +254,14 @@ def load_and_window(input_path, notch=60.0, window_sec=15.0, clip_uv=800.0,
                      f"{min(len(cands), max_candidates)} candidates: {reason}")
 
 
-def extract_for_input(input_path, notch=60.0, window_sec=15.0, dry_run=False):
+def extract_for_input(input_path, notch=60.0, window_sec=15.0, dry_run=False,
+                      match=None):
     """Run the full QC-select -> LaBraM pipeline for one subject.
 
     Returns the [n_windows, embed_dim] embeddings, or None on --dry-run.
     """
-    raw, windows = load_and_window(input_path, notch=notch, window_sec=window_sec)
+    raw, windows = load_and_window(input_path, notch=notch,
+                                   window_sec=window_sec, match=match)
     if dry_run:
         print("[dry-run] OK — data path validated; no embeddings extracted.")
         return None
@@ -281,6 +289,9 @@ def main():
     ap.add_argument("--window-sec", type=float, default=15.0,
                     help="Window length in seconds. 15 s = 3000 samples @200Hz, "
                          "which matches the pretrained LaBraM temporal embedding.")
+    ap.add_argument("--match", default=None,
+                    help="Only consider files whose name contains this (e.g. a "
+                         "BIDS task like 'RestingState') — pick a consistent paradigm.")
     ap.add_argument("--dry-run", action="store_true",
                     help="Load + preprocess + window only; skip the model.")
     args = ap.parse_args()
@@ -290,7 +301,8 @@ def main():
         return
 
     embs = extract_for_input(args.input, notch=args.notch,
-                             window_sec=args.window_sec, dry_run=args.dry_run)
+                             window_sec=args.window_sec, dry_run=args.dry_run,
+                             match=args.match)
     if args.dry_run:
         return
     if not args.output:
@@ -306,12 +318,13 @@ def _extract_one(task):
     Pin torch to 1 thread so N parallel workers don't oversubscribe the cores
     (each subject's forward is tiny; the win is across subjects, not within).
     """
-    subj_path, out_path, notch, window_sec = task
+    subj_path, out_path, notch, window_sec, match = task
     name = Path(subj_path).name
     try:
         import torch
         torch.set_num_threads(1)
-        embs = extract_for_input(subj_path, notch=notch, window_sec=window_sec)
+        embs = extract_for_input(subj_path, notch=notch, window_sec=window_sec,
+                                 match=match)
         np.savez_compressed(out_path, embeddings=embs)
         return name, "done", str(embs.shape)
     except SystemExit as e:               # load/window guards call sys.exit
@@ -345,7 +358,7 @@ def run_batch(args):
         if out_path.exists() and not args.overwrite:
             skipped.append(subj.name)
             continue
-        tasks.append((str(subj), str(out_path), args.notch, args.window_sec))
+        tasks.append((str(subj), str(out_path), args.notch, args.window_sec, args.match))
     print(f"[batch] {len(subjects)} subjects: {len(tasks)} to extract, "
           f"{len(skipped)} already done | jobs={args.jobs}")
 
