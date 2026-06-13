@@ -17,20 +17,21 @@ mkdir -p results
 
 # Bundle whatever embedding dirs exist (don't fail if one is missing).
 DIRS=()
-[ -d "$PROC/processed" ]             && DIRS+=(processed)
-[ -d "$PROC/processed_handcrafted" ] && DIRS+=(processed_handcrafted)
+for d in processed processed_handcrafted processed_eye processed_behaviour; do
+    [ -d "$PROC/$d" ] && DIRS+=("$d")
+done
 if [ ${#DIRS[@]} -eq 0 ]; then
-    echo "No embedding dirs under $PROC yet — run after the extraction job."; exit 1
+    echo "No embedding dirs under $PROC yet — run after the extraction jobs."; exit 1
 fi
 echo "Bundling: ${DIRS[*]}"
 tar czf "$BUNDLE" -C "$PROC" "${DIRS[@]}"
 echo "Bundle size: $(du -h "$BUNDLE" | cut -f1)"
 
-# Force-add past .gitignore (these are data files but small + worth versioning).
+# Force-add past .gitignore (small data files worth versioning) + all results CSVs.
 git add -f "$BUNDLE"
-[ -f results/phase1_comparison.csv ] && git add -f results/phase1_comparison.csv
+for c in results/*.csv; do [ -f "$c" ] && git add -f "$c"; done
 
-git commit -m "Back up Phase 1 embeddings + comparison results" \
+git commit -m "Back up embeddings (EEG/eye/behaviour) + Phase 1-2 results" \
   || { echo "Nothing new to back up."; exit 0; }
 git push origin main
 echo "Backed up to GitHub. Restore later with: tar xzf $BUNDLE -C \$SCRATCH/mh/data"
