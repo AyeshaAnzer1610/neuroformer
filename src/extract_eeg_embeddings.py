@@ -98,8 +98,12 @@ def preprocess(raw, l_freq=0.1, h_freq=75.0, notch=60.0, target_sfreq=200.0):
     return raw
 
 
-def make_windows(raw, window_sec=1.0):
-    """Split into non-overlapping windows -> array [n_windows, n_ch, n_samples]."""
+def make_windows(raw, window_sec=1.0, clip_uv=800.0):
+    """Split into non-overlapping windows -> array [n_windows, n_ch, n_samples].
+
+    Data is scaled volts->uV; values are clipped to +/-clip_uv to bound gross
+    artifacts (set clip_uv=0/None to disable).
+    """
     sfreq = raw.info["sfreq"]
     win = int(round(window_sec * sfreq))
     data = raw.get_data()                              # [n_ch, n_times], VOLTS
@@ -120,6 +124,15 @@ def make_windows(raw, window_sec=1.0):
     print(f"[win ] uV amplitude: median|x|={med:.1f}  p95={p95:.1f}  "
           f"p99.5={p99:.1f}  max={absd.max():.1f}  "
           f"(expect median ~5-30 uV); hot channels (std>200uV)={n_hot}/{data.shape[0]}")
+    # Gentle artifact clip. The median (~14 uV) confirms correct scaling, but a
+    # handful of bad electrodes / blinks spike to thousands of uV. Hjorth
+    # activity (variance) and the frozen FM are both distorted by those, so clip
+    # to a physiological bound (>p99.5, so real EEG is untouched; only gross
+    # artifacts are capped). Applied to BOTH feature sets via make_windows.
+    if clip_uv:
+        clipped = float((absd > clip_uv).mean()) * 100.0
+        data = np.clip(data, -clip_uv, clip_uv)
+        print(f"[win ] clipped to +/-{clip_uv:.0f} uV ({clipped:.3f}% of samples)")
     n_ch, n_times = data.shape
     n_win = n_times // win
     if n_win == 0:
