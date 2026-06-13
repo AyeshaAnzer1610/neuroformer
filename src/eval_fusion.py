@@ -99,6 +99,43 @@ def cv_logreg(X2d, y, folds=5, repeats=10, seed=0):
     return cross_val_score(pipe, X2d, y, cv=cv, scoring="roc_auc", n_jobs=-1)
 
 
+def cv_late_fusion(X, y, mask, dims, folds=5, repeats=10, seed=0):
+    """Confidence-weighted late fusion (leak-free, small-N friendly).
+
+    Per fold: train a per-modality logreg on the subjects that actually HAVE that
+    modality; weight each modality by its inner-CV AUC on the train split
+    (max(AUC-0.5, 0), so a chance/worse modality contributes ~nothing); combine
+    available modalities' test probabilities by that weight. Handles missingness
+    naturally (absent modalities are skipped per subject).
+    """
+    from sklearn.model_selection import cross_val_score
+    cv = RepeatedStratifiedKFold(n_splits=folds, n_repeats=repeats, random_state=seed)
+    aucs = []
+    for tr, te in cv.split(np.zeros(len(y)), y):
+        comb = np.zeros(len(te)); wsum = np.zeros(len(te))
+        for j, m in enumerate(dims):
+            tr_m = tr[mask[tr, j]]                          # train rows with modality m
+            if len(np.unique(y[tr_m])) < 2:
+                continue
+            pipe = make_pipeline(StandardScaler(),
+                                 LogisticRegression(max_iter=5000, class_weight="balanced"))
+            try:
+                inner = cross_val_score(pipe, X[m][tr_m], y[tr_m], cv=3,
+                                        scoring="roc_auc").mean()
+            except ValueError:
+                inner = 0.5
+            w = max(inner - 0.5, 0.0)
+            pipe.fit(X[m][tr_m], y[tr_m])
+            p = pipe.predict_proba(X[m][te])[:, 1]
+            present = mask[te, j].astype(float)
+            comb += w * present * p
+            wsum += w * present
+        ok = wsum > 0
+        if ok.sum() and len(np.unique(y[te][ok])) > 1:
+            aucs.append(roc_auc_score(y[te][ok], comb[ok] / wsum[ok]))
+    return np.array(aucs)
+
+
 def row(name, aucs):
     print(f"  {name:<26}{np.mean(aucs):.3f} +/- {_ci95(aucs):.3f}")
     return {"setting": name, "auc": float(np.mean(aucs)), "auc_ci95": float(_ci95(aucs))}
@@ -135,16 +172,20 @@ def main():
         rows.append(row(f"{m}-alone", cv_logreg(Xc[m], yc, args.folds, args.repeats, args.seed)))
     concat = np.hstack([Xc[m] for m in MODS])
     rows.append(row("concat (naive)", cv_logreg(concat, yc, args.folds, args.repeats, args.seed)))
-    print("  fusion model:")
-    rows.append(row("fusion (all present)",
+    print("  fusion models:")
+    rows.append(row("fusion-attn (all present)",
                     cv_fusion(Xc, yc, maskc, dims, args.folds, args.repeats, args.seed)))
+    rows.append(row("late-fusion (all present)",
+                    cv_late_fusion(Xc, yc, maskc, dims, args.folds, args.repeats, args.seed)))
 
     # ---- missing-modality cohort (union; real availability) ----
     subj_u, yu, Xu, masku = assemble(mod, labels_df, how="union")
     cover = ", ".join(f"{m}={int(masku[:, j].sum())}" for j, m in enumerate(MODS))
     print(f"\n=== Missing-modality (N={len(subj_u)}, pos={int(yu.sum())}; {cover}) ===")
-    rows.append(row("fusion (missing-aware)",
+    rows.append(row("fusion-attn (missing-aware)",
                     cv_fusion(Xu, yu, masku, dims, args.folds, args.repeats, args.seed)))
+    rows.append(row("late-fusion (missing-aware)",
+                    cv_late_fusion(Xu, yu, masku, dims, args.folds, args.repeats, args.seed)))
 
     # ---- simulated-missingness degradation (complete-case, drop one at test) ----
     print("\n=== Degradation: trained on all, drop ONE modality at test ===")
