@@ -18,13 +18,17 @@ import torch.nn as nn
 
 
 class MaskedSetFusion(nn.Module):
-    def __init__(self, dims, d=32, hidden=32, p_moddrop=0.3, p_dropout=0.3):
+    def __init__(self, dims, d=48, hidden=48, p_moddrop=0.2, p_dropout=0.3):
         """dims: {modality_name: input_dim}."""
         super().__init__()
         self.mods = list(dims)
         self.proj = nn.ModuleDict({m: nn.Linear(dims[m], d) for m in self.mods})
         # learned per-modality identity/availability token (added to each modality)
         self.mod_emb = nn.Parameter(torch.randn(len(self.mods), d) * 0.02)
+        # learned attention query: lets the model WEIGHT modalities (attend to
+        # informative ones, down-weight noise) instead of averaging them — a mean
+        # pool forces equal weight and lets near-chance modalities dilute EEG.
+        self.query = nn.Parameter(torch.randn(d) * 0.02)
         self.p_moddrop = p_moddrop
         self.head = nn.Sequential(
             nn.LayerNorm(d), nn.Linear(d, hidden), nn.ReLU(),
@@ -45,8 +49,11 @@ class MaskedSetFusion(nn.Module):
             empty = dropped.sum(1) == 0
             dropped[empty] = m[empty]
             m = dropped
-        w = m.unsqueeze(-1)                                # [B, M, 1]
-        pooled = (toks * w).sum(1) / w.sum(1).clamp(min=1e-6)
+        # masked attention pooling over present modality tokens
+        scores = (toks * self.query).sum(-1) / (toks.shape[-1] ** 0.5)   # [B, M]
+        scores = scores.masked_fill(m == 0, float("-inf"))
+        attn = torch.softmax(scores, dim=1).unsqueeze(-1)                # [B, M, 1]
+        pooled = (toks * attn).sum(1)                                    # [B, d]
         return self.head(pooled).squeeze(-1)               # [B]
 
 
