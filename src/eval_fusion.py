@@ -100,39 +100,40 @@ def cv_logreg(X2d, y, folds=5, repeats=10, seed=0):
 
 
 def cv_late_fusion(X, y, mask, dims, folds=5, repeats=10, seed=0):
-    """Confidence-weighted late fusion (leak-free, small-N friendly).
+    """Stacking late fusion (leak-free, small-N friendly).
 
-    Per fold: train a per-modality logreg on the subjects that actually HAVE that
-    modality; weight each modality by its inner-CV AUC on the train split
-    (max(AUC-0.5, 0), so a chance/worse modality contributes ~nothing); combine
-    available modalities' test probabilities by that weight. Handles missingness
-    naturally (absent modalities are skipped per subject).
+    Per fold: get each modality's OUT-OF-FOLD logreg probability on the train
+    split (cross_val_predict), train a meta-logreg on [per-modality prob +
+    availability flag] -> y, apply to test (test probs from full-train fits).
+    Only 2*M meta-features, so the combiner is low-variance and learns to weight
+    the reliable modality. Absent modalities -> prob 0.5 + availability 0.
     """
-    from sklearn.model_selection import cross_val_score
+    from sklearn.model_selection import cross_val_predict
     cv = RepeatedStratifiedKFold(n_splits=folds, n_repeats=repeats, random_state=seed)
+    M = len(dims)
     aucs = []
     for tr, te in cv.split(np.zeros(len(y)), y):
-        comb = np.zeros(len(te)); wsum = np.zeros(len(te))
+        Ztr = np.full((len(tr), M), 0.5); Atr = np.zeros((len(tr), M))
+        Zte = np.full((len(te), M), 0.5); Ate = np.zeros((len(te), M))
         for j, m in enumerate(dims):
-            tr_m = tr[mask[tr, j]]                          # train rows with modality m
-            if len(np.unique(y[tr_m])) < 2:
+            has_tr = mask[tr, j]
+            if len(np.unique(y[tr][has_tr])) < 2 or has_tr.sum() < 10:
                 continue
-            pipe = make_pipeline(StandardScaler(),
+            base = make_pipeline(StandardScaler(),
                                  LogisticRegression(max_iter=5000, class_weight="balanced"))
-            try:
-                inner = cross_val_score(pipe, X[m][tr_m], y[tr_m], cv=3,
-                                        scoring="roc_auc").mean()
-            except ValueError:
-                inner = 0.5
-            w = max(inner - 0.5, 0.0)
-            pipe.fit(X[m][tr_m], y[tr_m])
-            p = pipe.predict_proba(X[m][te])[:, 1]
-            present = mask[te, j].astype(float)
-            comb += w * present * p
-            wsum += w * present
-        ok = wsum > 0
-        if ok.sum() and len(np.unique(y[te][ok])) > 1:
-            aucs.append(roc_auc_score(y[te][ok], comb[ok] / wsum[ok]))
+            oof = cross_val_predict(base, X[m][tr][has_tr], y[tr][has_tr], cv=3,
+                                    method="predict_proba")[:, 1]
+            idx = np.where(has_tr)[0]
+            Ztr[idx, j] = oof; Atr[idx, j] = 1.0
+            base.fit(X[m][tr][has_tr], y[tr][has_tr])
+            has_te = mask[te, j]
+            Zte[has_te, j] = base.predict_proba(X[m][te][has_te])[:, 1]
+            Ate[has_te, j] = 1.0
+        meta = LogisticRegression(max_iter=5000, class_weight="balanced")
+        meta.fit(np.hstack([Ztr, Atr]), y[tr])
+        p = meta.predict_proba(np.hstack([Zte, Ate]))[:, 1]
+        if len(np.unique(y[te])) > 1:
+            aucs.append(roc_auc_score(y[te], p))
     return np.array(aucs)
 
 
