@@ -108,8 +108,18 @@ def make_windows(raw, window_sec=1.0):
     # so without this *1e6 the frozen model sees ~1e-5 amplitudes and produces
     # meaningless embeddings with no crash/warning. Convert volts -> uV.
     data = data * 1e6
-    print(f"[win ] amplitude after uV scaling: "
-          f"[{data.min():.1f}, {data.max():.1f}] uV (expect ~tens of uV)")
+    # Robust amplitude diagnostic. Real EEG bulk is ~tens of uV; min/max alone
+    # is misleading because a few bad peripheral electrodes / blinks spike to
+    # thousands. The MEDIAN |x| and 95th percentile reveal the true scale; a
+    # large gap to max => outlier channels, not a global scaling error.
+    absd = np.abs(data)
+    med = np.median(absd)
+    p95, p99 = np.percentile(absd, [95, 99.5])
+    ch_std = data.std(axis=1)
+    n_hot = int((ch_std > 200).sum())                  # channels >200uV std
+    print(f"[win ] uV amplitude: median|x|={med:.1f}  p95={p95:.1f}  "
+          f"p99.5={p99:.1f}  max={absd.max():.1f}  "
+          f"(expect median ~5-30 uV); hot channels (std>200uV)={n_hot}/{data.shape[0]}")
     n_ch, n_times = data.shape
     n_win = n_times // win
     if n_win == 0:
