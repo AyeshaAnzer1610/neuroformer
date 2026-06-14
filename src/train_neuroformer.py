@@ -150,9 +150,12 @@ def main():
     cv = RepeatedStratifiedKFold(n_splits=args.folds, n_repeats=args.repeats, random_state=args.seed)
     aucs = []
     for k, (tr_i, te_i) in enumerate(cv.split(np.zeros(len(y)), y), 1):
+        print(f"[fold {k}/{args.folds*args.repeats}] training "
+              f"({len(tr_i)} train / {len(te_i)} test, {args.epochs} epochs)...",
+              flush=True)
         auc = run_fold([rows[i] for i in tr_i], [rows[i] for i in te_i], dims, args, device)
         aucs.append(auc)
-        print(f"[fold {k}/{args.folds*args.repeats}] AUC={auc:.3f}")
+        print(f"[fold {k}/{args.folds*args.repeats}] AUC={auc:.3f}", flush=True)
     aucs = np.array([a for a in aucs if not np.isnan(a)])
     ci = 1.96 * aucs.std(ddof=1) / np.sqrt(len(aucs))
     print(f"\n[NeuroFormer] {args.folds}x{args.repeats} CV ROC-AUC = "
