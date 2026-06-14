@@ -22,7 +22,8 @@ if ! command -v aws >/dev/null 2>&1; then
 fi
 
 MIPDB_S3="s3://fcp-indi/data/Projects/EEG_Eyetracking_CMI_data"
-HBN_R1_S3="s3://fcp-indi/data/Projects/HBN/BIDS_EEG/cmi_bids_R1"
+HBN_BASE="s3://fcp-indi/data/Projects/HBN/BIDS_EEG"
+HBN_R1_S3="$HBN_BASE/cmi_bids_R1"
 
 case "${1:-explore}" in
   explore)
@@ -98,6 +99,39 @@ case "${1:-explore}" in
         --exclude "*" --include "*task-RestingState*"
     echo "Done (RestingState-only)."
     ;;
+  hbn-releases-explore)
+    echo "Probing HBN releases cmi_bids_R1..R11 for participants.tsv ..."
+    for R in $(seq 1 11); do
+      if aws s3 ls --no-sign-request "$HBN_BASE/cmi_bids_R$R/participants.tsv" >/dev/null 2>&1; then
+        N=$(aws s3 cp --no-sign-request "$HBN_BASE/cmi_bids_R$R/participants.tsv" - 2>/dev/null | tail -n +2 | wc -l)
+        echo "  R$R: present (~$N subjects)"
+      else
+        echo "  R$R: not found"
+      fi
+    done
+    ;;
+  hbn-rest-releases)
+    # Download RestingState-only across a range of releases into ONE dir, and
+    # build a merged participants_all.tsv (label table for the whole cohort).
+    A="${2:-1}"; B="${3:-11}"
+    DEST="$DATA_ROOT/hbn_all"
+    mkdir -p "$DEST"
+    MERGED="$DEST/participants_all.tsv"; : > "$MERGED"; first=1
+    for R in $(seq "$A" "$B"); do
+      BUCKET="$HBN_BASE/cmi_bids_R$R"
+      aws s3 ls --no-sign-request "$BUCKET/participants.tsv" >/dev/null 2>&1 \
+        || { echo "R$R: not found, skipping"; continue; }
+      echo "== Release R$R =="
+      TMP="$DEST/.part_R$R.tsv"
+      aws s3 cp --no-sign-request "$BUCKET/participants.tsv" "$TMP"
+      if [ "$first" -eq 1 ]; then cat "$TMP" >> "$MERGED"; first=0
+      else tail -n +2 "$TMP" >> "$MERGED"; fi
+      rm -f "$TMP"
+      aws s3 sync --no-sign-request "$BUCKET/" "$DEST/" \
+          --exclude "*" --include "*task-RestingState*"
+    done
+    echo "Done. Merged labels: $MERGED ($(tail -n +2 "$MERGED" | wc -l) subjects)"
+    ;;
   hbn-r1)
     DEST="$DATA_ROOT/hbn_r1"
     mkdir -p "$DEST"
@@ -107,7 +141,7 @@ case "${1:-explore}" in
     echo "Done."
     ;;
   *)
-    echo "Unknown target '$1'. Use: explore | mipdb-subjects N | mipdb | hbn-subjects N | hbn-rest | hbn-r1"
+    echo "Unknown target '$1'. Use: explore | mipdb-subjects N | mipdb | hbn-subjects N | hbn-rest | hbn-r1 | hbn-releases-explore | hbn-rest-releases A B"
     exit 1
     ;;
 esac
