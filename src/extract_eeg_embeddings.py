@@ -218,22 +218,24 @@ def list_eeg_files(input_path, match=None):
 
 
 def load_and_window(input_path, notch=60.0, window_sec=15.0, clip_uv=800.0,
-                    max_candidates=6, match=None):
-    """Pick the best-quality recording among a subject's files.
+                    max_candidates=6, match=None, all_recordings=False):
+    """Window a subject's EEG.
 
-    Iterate candidates largest-first; preprocess + window each and accept the
-    first whose signal is physiological (median |x| in range, not over-clipped).
-    This drops junk files (flat/dead, or impedance/calibration files at
-    thousands of uV) and recovers subjects whose largest file is bad. Raises if
-    no candidate qualifies. Returns (raw, windows).
+    Default: pick the best-quality single recording (first QC-passing candidate).
+    all_recordings=True: aggregate windows from EVERY QC-passing recording (e.g.
+    all MIPDB paradigms) -> more windows / brain states per subject, a richer
+    representation. Junk files (flat/dead or impedance/calibration at thousands of
+    uV) are dropped by QC. Raises if no candidate qualifies. Returns (raw, windows).
     """
     cands = list_eeg_files(input_path, match=match)
     if not cands:
         raise ValueError(f"No EEG files"
                          + (f" matching '{match}'" if match else "")
                          + f" under {input_path}")
+    cap = 15 if all_recordings else max_candidates
     reason = "no candidates tried"
-    for f in cands[:max_candidates]:
+    kept_windows, kept_raw = [], None
+    for f in cands[:cap]:
         raw = preprocess(load_raw(f), notch=notch)
         try:
             windows = make_windows(raw, window_sec=window_sec, clip_uv=clip_uv)
@@ -246,22 +248,31 @@ def load_and_window(input_path, notch=60.0, window_sec=15.0, clip_uv=800.0,
         if QC_MEDIAN_UV[0] <= med <= QC_MEDIAN_UV[1] and clip_frac < QC_MAX_CLIP_FRAC:
             print(f"[qc  ] accepted {f.name}: median|x|={med:.1f} uV, "
                   f"clip={clip_frac*100:.2f}%, {len(windows)} windows")
-            return raw, windows
+            if not all_recordings:
+                return raw, windows
+            kept_windows.append(windows)
+            if kept_raw is None:
+                kept_raw = raw
+            continue
         reason = (f"median|x|={med:.1f} uV, clip={clip_frac*100:.1f}% "
                   f"(QC needs {QC_MEDIAN_UV} uV, <{QC_MAX_CLIP_FRAC*100:.0f}% clip)")
         print(f"[qc  ] rejected {f.name}: {reason}")
+    if all_recordings and kept_windows:
+        allw = np.concatenate(kept_windows, axis=0)
+        print(f"[qc  ] aggregated {len(kept_windows)} recordings -> {len(allw)} windows")
+        return kept_raw, allw
     raise ValueError(f"No physiological-quality recording among "
-                     f"{min(len(cands), max_candidates)} candidates: {reason}")
+                     f"{min(len(cands), cap)} candidates: {reason}")
 
 
 def extract_for_input(input_path, notch=60.0, window_sec=15.0, dry_run=False,
-                      match=None):
+                      match=None, all_recordings=False):
     """Run the full QC-select -> LaBraM pipeline for one subject.
 
     Returns the [n_windows, embed_dim] embeddings, or None on --dry-run.
     """
-    raw, windows = load_and_window(input_path, notch=notch,
-                                   window_sec=window_sec, match=match)
+    raw, windows = load_and_window(input_path, notch=notch, window_sec=window_sec,
+                                   match=match, all_recordings=all_recordings)
     if dry_run:
         print("[dry-run] OK — data path validated; no embeddings extracted.")
         return None
@@ -292,6 +303,9 @@ def main():
     ap.add_argument("--match", default=None,
                     help="Only consider files whose name contains this (e.g. a "
                          "BIDS task like 'RestingState') — pick a consistent paradigm.")
+    ap.add_argument("--all-recordings", action="store_true",
+                    help="Aggregate windows from ALL QC-passing recordings per "
+                         "subject (e.g. all paradigms) for a richer representation.")
     ap.add_argument("--dry-run", action="store_true",
                     help="Load + preprocess + window only; skip the model.")
     args = ap.parse_args()
@@ -302,7 +316,7 @@ def main():
 
     embs = extract_for_input(args.input, notch=args.notch,
                              window_sec=args.window_sec, dry_run=args.dry_run,
-                             match=args.match)
+                             match=args.match, all_recordings=args.all_recordings)
     if args.dry_run:
         return
     if not args.output:
@@ -318,13 +332,13 @@ def _extract_one(task):
     Pin torch to 1 thread so N parallel workers don't oversubscribe the cores
     (each subject's forward is tiny; the win is across subjects, not within).
     """
-    subj_path, out_path, notch, window_sec, match = task
+    subj_path, out_path, notch, window_sec, match, all_recordings = task
     name = Path(subj_path).name
     try:
         import torch
         torch.set_num_threads(1)
         embs = extract_for_input(subj_path, notch=notch, window_sec=window_sec,
-                                 match=match)
+                                 match=match, all_recordings=all_recordings)
         np.savez_compressed(out_path, embeddings=embs)
         return name, "done", str(embs.shape)
     except SystemExit as e:               # load/window guards call sys.exit
@@ -358,7 +372,8 @@ def run_batch(args):
         if out_path.exists() and not args.overwrite:
             skipped.append(subj.name)
             continue
-        tasks.append((str(subj), str(out_path), args.notch, args.window_sec, args.match))
+        tasks.append((str(subj), str(out_path), args.notch, args.window_sec,
+                      args.match, args.all_recordings))
     print(f"[batch] {len(subjects)} subjects: {len(tasks)} to extract, "
           f"{len(skipped)} already done | jobs={args.jobs}")
 
