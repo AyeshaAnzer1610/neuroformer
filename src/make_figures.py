@@ -267,6 +267,64 @@ def screening_report(eeg_dir, labels_csv, out, pool="meanstd"):
     print(f"[fig] wrote {out}")
 
 
+def architecture_diagram(out):
+    """Schematic of the (revised) NeuroFormer: same architecture, new blocks
+    (LaBraM EEG front-end, modality dropout, calibration) highlighted."""
+    fig, ax = plt.subplots(figsize=(12, 5.6)); ax.axis("off")
+    ax.set_xlim(0, 12); ax.set_ylim(0, 6.2); fig.patch.set_facecolor("white")
+
+    def box(x, y, w, h, text, fc, ec, new=False, fs=10):
+        ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.06",
+                     fc=fc, ec=ec, lw=2.2 if new else 1.4))
+        ax.text(x + w / 2, y + h / 2, text, ha="center", va="center",
+                fontsize=fs, color=C["ink"], fontweight="bold" if new else "normal")
+        if new:
+            ax.text(x + w - 0.05, y + h - 0.02, "NEW", ha="right", va="top",
+                    fontsize=7.5, color="white", fontweight="bold",
+                    bbox=dict(boxstyle="round,pad=0.15", fc=C["accent"], ec="none"))
+
+    def arrow(x1, y1, x2, y2):
+        ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
+                    arrowprops=dict(arrowstyle="-|>", color=C["ink"], lw=1.6))
+
+    # inputs
+    box(0.2, 4.6, 2.3, 0.95, "EEG  ·  raw\n(128-ch EGI)", "#eef4f5", C["eeg"])
+    box(0.2, 3.0, 2.3, 0.95, "Eye-tracking\n(gaze, pupil)", "#fdf3e8", C["eye"])
+    box(0.2, 1.4, 2.3, 0.95, "Behaviour\n(RT, accuracy)", C["panel"], C["beh"])
+    # LaBraM front-end (NEW) on EEG
+    box(2.9, 4.6, 2.2, 0.95, "LaBraM\nfoundation model\n(200-d / window)",
+        "#dcebed", C["eeg"], new=True, fs=9)
+    # shared encoders
+    for y, c in [(4.6, C["eeg"]), (3.0, C["eye"]), (1.4, C["beh"])]:
+        sx = 5.5 if y == 4.6 else 2.9
+        box(sx, y, 2.0, 0.95, "Modality\nEncoder", "#ffffff", c, fs=9)
+    # modality dropout annotation (NEW)
+    ax.text(5.0, 0.55, "modality dropout + availability token  (missing-modality)",
+            ha="center", fontsize=9, color=C["accent"], fontweight="bold")
+    ax.add_patch(FancyBboxPatch((2.7, 0.2), 6.6, 0.7, boxstyle="round,pad=0.04",
+                 fc="none", ec=C["accent"], lw=1.6, ls="--"))
+    # fusion
+    box(8.1, 2.9, 2.0, 1.4, "Cross-Modal\nFusion\nTransformer\n[CLS]", "#eef2f6", C["fused"], fs=9.5)
+    # classifier + calibration (NEW)
+    box(10.4, 3.5, 1.45, 0.95, "Classifier", "#ffffff", C["ink"], fs=9)
+    box(10.4, 2.0, 1.45, 0.95, "Calibration\n+ referral", "#fbeae7", C["accent"], new=True, fs=8.5)
+
+    arrow(2.5, 5.07, 2.9, 5.07)                       # EEG -> LaBraM
+    arrow(5.1, 5.07, 5.5, 5.07)                       # LaBraM -> encoder
+    arrow(2.5, 3.47, 2.9, 3.47); arrow(2.5, 1.87, 2.9, 1.87)
+    arrow(7.5, 5.07, 8.6, 4.3); arrow(4.9, 3.47, 8.1, 3.6); arrow(4.9, 1.87, 8.6, 2.95)
+    arrow(10.1, 3.97, 10.4, 3.97)                     # fusion -> classifier
+    arrow(11.1, 3.5, 11.1, 2.95)                      # classifier -> calibration
+    ax.text(11.12, 1.7, "diagnosed / control\n+ confidence", ha="center",
+            fontsize=8.5, color=C["ink"], style="italic")
+
+    ax.set_title("NeuroFormer (revised): foundation-model EEG + missing-modality "
+                 "fusion + calibrated referral", fontsize=12.5, fontweight="bold",
+                 color=C["ink"], pad=12)
+    fig.savefig(out, bbox_inches="tight", facecolor="white"); plt.close(fig)
+    print(f"[fig] wrote {out}")
+
+
 def _find(mipdb, subject, subpath, contains):
     base = Path(mipdb) / subject / subpath
     if base.is_dir():
@@ -283,6 +341,7 @@ def main():
     ap.add_argument("--results-csv", default="results/phase1_comparison.csv")
     args = ap.parse_args()
     Path(FIGDIR).mkdir(exist_ok=True); _style()
+    architecture_diagram(f"{FIGDIR}/architecture.png")
     if args.mipdb:
         modality_showcase(args.mipdb, args.subject, f"{FIGDIR}/modality_showcase.png")
     results_auc(args.results_csv, f"{FIGDIR}/results_auc.png")
