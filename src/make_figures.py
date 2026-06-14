@@ -69,19 +69,32 @@ def modality_showcase(mipdb, subject, eye_csv, beh_csv, out):
     except Exception as e:  # noqa: BLE001
         ax[1].text(0.5, 0.5, f"Eye panel skipped:\n{e}", ha="center", fontsize=8)
 
-    # ---- Behaviour: RT distribution + accuracy ----
+    # ---- Behaviour: RT pooled across ALL 2AFC blocks (one block is degenerate) ----
     try:
         import pandas as pd
-        b = pd.read_csv(beh_csv)
-        rt = (pd.to_numeric(b["CD_RESP"], errors="coerce")
-              - pd.to_numeric(b["CD_TG"], errors="coerce")).dropna()
-        acc = (b["trialLR"] == b["RespLR"]).mean() * 100
-        ax[2].hist(rt, bins=20, color="C2", alpha=0.8)
-        ax[2].set_title("(c) Behaviour — reaction-time distribution\n"
-                        f"(SAIIT 2AFC; accuracy {acc:.0f}%)")
+        bdir = Path(mipdb) / subject / "Behavioral" / "csv"
+        req = ["CD_TG", "CD_RESP", "trialLR", "RespLR"]
+        rts, accs = [], []
+        for bf in sorted(bdir.glob("*.csv")):
+            try:
+                b = pd.read_csv(bf)
+            except Exception:
+                continue
+            if not all(c in b.columns for c in req):
+                continue
+            r = (pd.to_numeric(b["CD_RESP"], errors="coerce")
+                 - pd.to_numeric(b["CD_TG"], errors="coerce")).dropna()
+            rts.append(r); accs.append((b["trialLR"] == b["RespLR"]).mean() * 100)
+        rt = pd.concat(rts) if rts else pd.Series([], dtype=float)
+        acc = float(np.mean(accs)) if accs else float("nan")
+        ax[2].hist(rt, bins=min(25, max(5, rt.nunique())), color="C2", alpha=0.8)
+        ax[2].set_title(f"(c) Behaviour — RT over {len(rts)} 2AFC blocks\n"
+                        f"({len(rt)} trials; mean accuracy {acc:.0f}%)")
         ax[2].set_xlabel("reaction time"); ax[2].set_ylabel("trials")
-        ax[2].axvline(rt.median(), color="k", ls="--", lw=1, label=f"median {rt.median():.0f}")
-        ax[2].legend(fontsize=8)
+        if len(rt):
+            ax[2].axvline(rt.median(), color="k", ls="--", lw=1,
+                          label=f"median {rt.median():.0f}")
+            ax[2].legend(fontsize=8)
     except Exception as e:  # noqa: BLE001
         ax[2].text(0.5, 0.5, f"Behaviour panel skipped:\n{e}", ha="center", fontsize=8)
 
@@ -96,13 +109,18 @@ def results_auc(csv, out):
     import pandas as pd
     if csv and os.path.exists(csv):
         df = pd.read_csv(csv)
-        names = df.iloc[:, 0].tolist()
-        auc = df["auc"].tolist(); ci = df.get("auc_ci95", [0]*len(names)).tolist()
+        fs = (df["feature_set"] if "feature_set" in df.columns else df.iloc[:, 0]).astype(str).tolist()
+        pools = df["pool"].astype(str).tolist() if "pool" in df.columns else [""] * len(fs)
+        names = [f"{f}\n({p})" if p else f for f, p in zip(fs, pools)]
+        auc = df["auc"].tolist()
+        ci = df["auc_ci95"].tolist() if "auc_ci95" in df.columns else [0] * len(fs)
+        colors = ["#3b7" if "labram" in f.lower() else ("#37b" if "fus" in f.lower() else "#999")
+                  for f in fs]
     else:                                            # fallback: the honest headline numbers
-        names = ["hand-crafted EEG", "eye", "behaviour", "LaBraM EEG", "fusion"]
+        names = ["hand-crafted\nEEG", "eye", "behaviour", "LaBraM\nEEG", "fusion"]
         auc = [0.46, 0.51, 0.40, 0.66, 0.59]; ci = [0.04]*5
-    fig, a = plt.subplots(figsize=(6, 3.6))
-    colors = ["#999" if "labram" not in n.lower() and "eeg" not in n.lower() else "#3b7" for n in names]
+        colors = ["#999", "#999", "#999", "#3b7", "#37b"]
+    fig, a = plt.subplots(figsize=(7, 3.8))
     a.bar(range(len(names)), auc, yerr=ci, capsize=5, color=colors)
     a.axhline(0.5, ls="--", c="r", lw=1, label="chance")
     a.set_xticks(range(len(names))); a.set_xticklabels(names, rotation=30, ha="right", fontsize=8)
