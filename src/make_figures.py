@@ -114,15 +114,19 @@ def modality_showcase(mipdb, subject, out):
                 rts.append(r); accs.append((b["trialLR"] == b["RespLR"]).mean() * 100)
         rt = pd.concat(rts) if rts else pd.Series([], dtype=float)
         acc = float(np.mean(accs)) if accs else float("nan")
-        ax[2].hist(rt, bins=min(25, max(6, rt.nunique())), color=C["beh"],
-                   edgecolor="white", alpha=0.95)
-        if len(rt):
+        if rt.nunique() >= 8:                        # dense -> distribution
+            ax[2].hist(rt, bins=20, color=C["beh"], edgecolor="white", alpha=0.95)
             ax[2].axvline(rt.median(), color=C["accent"], ls="--", lw=1.5,
                           label=f"median {rt.median():.0f}")
-            ax[2].legend(loc="upper right")
+            ax[2].set_ylabel("trials"); ax[2].legend(loc="upper right")
+        else:                                        # sparse -> per-trial points (clean)
+            ax[2].plot(range(1, len(rt) + 1), rt.values, "o-", color=C["beh"],
+                       ms=6, lw=1.2)
+            ax[2].set_ylabel("RT (task units)"); ax[2].set_xlabel("trial")
         ax[2].set_title("Behaviour  ·  reaction time")
-        ax[2].set_xlabel("RT (task units)"); ax[2].set_ylabel("trials")
-        ax[2].text(0.99, 0.78, f"{len(rt)} trials · acc {acc:.0f}%",
+        if rt.nunique() >= 8:
+            ax[2].set_xlabel("RT (task units)")
+        ax[2].text(0.99, 0.04, f"{len(rt)} trials · acc {acc:.0f}%",
                    transform=ax[2].transAxes, ha="right", fontsize=9, color=C["ink"])
         _tag(ax[2], "C")
     except Exception as e:  # noqa: BLE001
@@ -210,7 +214,19 @@ def screening_report(eeg_dir, labels_csv, out, pool="meanstd"):
         P += p / 5
     auc = roc_auc_score(y, P)
     fpr, tpr, thr = roc_curve(y, P)
-    j = np.argmax(tpr - fpr); sens = tpr[j]; spec = 1 - fpr[j]
+    # operating point = threshold maximizing BALANCED accuracy (sensible sens/spec,
+    # avoids Youden's degenerate 100%/low-spec corner at modest AUC)
+    best_t, best_ba = 0.5, -1.0
+    for t in np.unique(P):
+        pred = (P >= t).astype(int)
+        ba = balanced_accuracy_score(y, pred)
+        if ba > best_ba:
+            best_ba, best_t = ba, t
+    pred = (P >= best_t).astype(int)
+    tp = int(((pred == 1) & (y == 1)).sum()); fn = int(((pred == 0) & (y == 1)).sum())
+    tn = int(((pred == 0) & (y == 0)).sum()); fp = int(((pred == 1) & (y == 0)).sum())
+    sens = tp / max(tp + fn, 1); spec = tn / max(tn + fp, 1)
+    op_fpr, op_tpr = 1 - spec, sens
 
     _style()
     fig = plt.figure(figsize=(11, 5.2)); fig.patch.set_facecolor("white")
@@ -233,7 +249,7 @@ def screening_report(eeg_dir, labels_csv, out, pool="meanstd"):
     axr = fig.add_axes([0.07, 0.08, 0.38, 0.46])
     axr.plot(fpr, tpr, color=C["labram"], lw=2.4, label=f"LaBraM EEG (AUC {auc:.2f})")
     axr.plot([0, 1], [0, 1], ls="--", color=C["accent"], lw=1.2, label="chance")
-    axr.scatter([fpr[j]], [tpr[j]], color=C["pos"], zorder=5, s=40,
+    axr.scatter([op_fpr], [op_tpr], color=C["pos"], zorder=5, s=45,
                 label=f"operating point\n(sens {sens*100:.0f}%, spec {spec*100:.0f}%)")
     axr.set_xlabel("1 − specificity"); axr.set_ylabel("sensitivity")
     axr.set_title("ROC", color=C["ink"]); axr.legend(loc="lower right", fontsize=8.5)
