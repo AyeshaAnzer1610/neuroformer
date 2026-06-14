@@ -179,15 +179,17 @@ def extract_labram_embeddings(windows, chs_info, batch_size=8, device="cuda"):
 
     embs = []
     with torch.no_grad():
-        x = torch.from_numpy(windows).float().to(device)   # [N, C, T]
+        x = torch.from_numpy(windows).float()              # keep on CPU/host
         for i in range(0, len(x), batch_size):
-            out = model(x[i : i + batch_size], return_features=True)
+            xb = x[i : i + batch_size].to(device)          # move ONLY this batch
+            out = model(xb, return_features=True)
             feats = out.get("cls_token")
             if feats is None:                               # fall back to pooled tokens
                 feats = out["features"]
                 if feats.ndim == 3:
                     feats = feats.mean(dim=1)
             embs.append(feats.cpu().numpy())
+            del xb, out                                     # free promptly (many windows)
     out = np.concatenate(embs, axis=0)
     print(f"[labram] embeddings: {out.shape}")
     return out
