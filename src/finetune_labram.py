@@ -27,9 +27,25 @@ from sklearn.model_selection import RepeatedStratifiedKFold
 from extract_eeg_embeddings import load_and_window
 
 
+def _load_labels(path):
+    """Binary {subject_id: 0/1} from MIPDB (ID,DX_Status) OR HBN
+    (participant_id, continuous p_factor -> median split). Auto-detects sep/cols."""
+    df = pd.read_csv(path, sep=None, engine="python")
+    idc = "participant_id" if "participant_id" in df.columns else "ID"
+    if "DX_Status" in df.columns:
+        s = df.set_index(idc)["DX_Status"]
+        return {k: int(v > 0) for k, v in s.items()}
+    if "p_factor" in df.columns:
+        s = df.set_index(idc)["p_factor"].astype(float)
+        thr = s.median()
+        print(f"[labels] HBN p_factor median split at {thr:.3f}")
+        return {k: int(v > thr) for k, v in s.items() if np.isfinite(v)}
+    sys.exit("labels need a DX_Status or p_factor column")
+
+
 def load_all(input_dir, labels_csv, match, all_recordings, window_sec=15.0, max_subj=None):
     """Per-subject QC windows + labels. Returns list of (sid, windows, y), chs_info."""
-    lab = pd.read_csv(labels_csv).set_index("ID")["DX_Status"].to_dict()
+    lab = _load_labels(labels_csv)
     from pathlib import Path
     subs = sorted(p for p in Path(input_dir).iterdir() if p.is_dir())
     if max_subj:
@@ -46,8 +62,8 @@ def load_all(input_dir, labels_csv, match, all_recordings, window_sec=15.0, max_
             print(f"[skip] {sid}: {e}"); continue
         if chs is None:
             chs = raw.info["chs"]
-        data.append((sid, w.astype(np.float32), int(lab[sid] > 0)))
-        print(f"[load] {sid}: {len(w)} windows, y={int(lab[sid] > 0)}", flush=True)
+        data.append((sid, w.astype(np.float32), int(lab[sid])))
+        print(f"[load] {sid}: {len(w)} windows, y={int(lab[sid])}", flush=True)
     print(f"[load] {len(data)} subjects with EEG+label")
     return data, chs
 
