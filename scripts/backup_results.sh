@@ -17,7 +17,7 @@ mkdir -p results
 
 # Bundle whatever embedding dirs exist (don't fail if one is missing).
 DIRS=()
-for d in processed processed_handcrafted processed_eye processed_behaviour; do
+for d in processed processed_handcrafted processed_eye processed_behaviour processed_hbn; do
     [ -d "$PROC/$d" ] && DIRS+=("$d")
 done
 if [ ${#DIRS[@]} -eq 0 ]; then
