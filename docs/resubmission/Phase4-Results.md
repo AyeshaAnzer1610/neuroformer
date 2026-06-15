@@ -1,61 +1,65 @@
-# Phase 4 Results — External validation on HBN
+# Phase 4 Results — External validation on HBN (well-powered)
 
-**Question:** does the frozen-LaBraM EEG signal (Phase 1) generalize to an
-independent cohort? (R1.3, R3.2 clinical-screening realism; R3.5 does the benefit
-generalize.)
+**Question (R1.3, R3.2, R3.5):** does the within-MIPDB frozen-LaBraM EEG signal
+generalize to an independent cohort?
 
 ## Setup
-- **HBN-EEG Release 1** (ds005505), **N=128** subjects with RestingState + a
-  p-factor label. 128-ch EGI, Cz ref, 500 Hz, 60 Hz mains, EEGLAB `.set` — same
-  pipeline/QC as MIPDB (band-pass, notch, 200 Hz, µV, ±800 clip). **RestingState**
-  used as a consistent paradigm.
-- **Labels:** CBCL bifactor scores in `participants.tsv` — `p_factor` (general
-  psychopathology) + `attention`/`internalizing`/`externalizing`. Continuous, so
-  **not** MIPDB's categorical DX (label mismatch — see transfer caveat).
-- Frozen LaBraM, mean+std pooled per subject. Subject-level CV: Ridge regression
-  (Pearson r, no threshold) + median-split logistic AUC (5×10, comparable to the
-  Phase 1 0.66).
+- **HBN-EEG**, OpenNeuro ds005505–ds005515 (Releases 1–11), **RestingState**,
+  harmonized to the MIPDB preprocessing (0.1–75 Hz, 60 Hz notch, 200 Hz, µV, ±800
+  clip, QC). 128-ch EGI, Cz ref — same net family.
+- **N = 1,980** subjects with RestingState + labels (downloaded all releases).
+- Labels: CBCL bifactor scores in `participants_all.tsv` (`p_factor` general +
+  attention / internalizing / externalizing), **median-split** for AUC.
+- Frozen LaBraM, mean+std pooled per subject; subject-level CV.
 
-## Result
+## Result (well-powered, N=1,980)
 
-| HBN target (within-HBN)     | regression r | median-split AUC (95% CI) |
-|-----------------------------|--------------|---------------------------|
-| **p_factor (general)**      | **0.217**    | **0.594 ± 0.026**         |
-| attention                   | −0.030       | 0.516 ± 0.030             |
-| internalizing               | −0.183       | 0.457 ± 0.033             |
-| externalizing               | 0.043        | 0.527 ± 0.031             |
-| transfer MIPDB(any-DX)→HBN  | −0.019       | 0.557 (no CI)             |
+| HBN target (within-HBN) | regression r | median-split AUC (±CI) |
+|---|---|---|
+| **p_factor (general)** | 0.002 | **0.497 ± 0.006** |
+| attention | 0.044 | 0.527 ± 0.008 |
+| internalizing | 0.093 | 0.551 ± 0.006 |
+| externalizing | 0.026 | 0.517 ± 0.006 |
+| transfer MIPDB(any-DX)→HBN | 0.025 | 0.508 |
 
-## Conclusions (honest)
-1. **The general psychopathology factor replicates out-of-distribution.** Frozen
-   LaBraM RestingState EEG predicts HBN `p_factor` at **AUC 0.594** (CI 0.57–0.62,
-   excludes chance; r=0.22) — a fully independent cohort, a different label
-   (CBCL), and a different paradigm. Modestly **below** the within-MIPDB 0.66 — the
-   expected, honest OOD drop. It is the **broad transdiagnostic dimension** that
-   carries, consistent with the screening thesis.
-2. **Specific factors do not replicate** (attention/externalizing ≈ chance;
-   internalizing slightly negative — noise at this N). Resting-state FM-EEG
-   indexes general psychopathology, not fine-grained subtypes.
-3. **Naive MIPDB→HBN transfer is near chance (0.56).** Honestly attributable to
-   (a) label mismatch (clinical DX vs CBCL factor) and (b) cohort + paradigm shift
-   (MIPDB QC-largest mixed paradigms vs HBN RestingState). Reported straight; we
-   do **not** claim zero-shot clinical transfer.
+## Conclusion — honest negative
+At well-powered scale, **frozen LaBraM RestingState embeddings do not predict HBN
+psychopathology factors**: the general p_factor is at chance (AUC 0.497), and the
+others are at most marginally above (internalizing AUC 0.55 / r 0.09 — significant
+only because N is large, practically negligible). The within-MIPDB signal (0.66)
+**does not generalize** to this cohort.
 
-## Significance for the resubmission
-Completes the arc and answers R1.3/R3.2/R3.5: foundation-model EEG carries a
-transdiagnostic signal that **partially generalizes to a fully independent
-cohort** (general factor, AUC ~0.59 OOD), with candid limits (modest magnitude,
-specific factors and naive transfer don't hold). Combined with Phase 1 (FM-EEG ≫
-hand-crafted) and Phase 2 (honest multimodal null), the paper is a credible
-proof-of-concept with foundation-model EEG as the locus of signal.
+> **Important correction to the preliminary run.** An earlier N=128 (Release 1)
+> result suggested ~0.59 AUC. That was **small-sample noise** — it vanished at
+> N=1,980. This is exactly why we scaled, and it is reported transparently.
 
-## Caveats / future
-- Modest absolute AUC (~0.59) and N=128 — proof-of-concept, not a deployable
-  screener. Larger HBN releases (ds005506–515) would tighten this.
-- A *fair* transfer would need a harmonized label (e.g. derive a comparable
-  any-symptom target in both cohorts) — flagged, not done here.
-- Per-paradigm and age/sex-confound analyses are natural Phase 3/5 follow-ups.
+## Interpretation (candid)
+The null is real but the OOD test is stringent and differs from MIPDB on two axes:
+1. **Label construct** — clinical DSM diagnosis (MIPDB) vs CBCL questionnaire
+   factors (HBN). Different targets.
+2. **Paradigm** — MIPDB used the QC-selected (often task) recording; HBN used
+   **RestingState only**, which may carry less transdiagnostic signal.
+Frozen embeddings may also fail to *linearly* expose signal that end-to-end
+fine-tuning could surface (the NeurIPS-2025 HBN-EEG Challenge reports modest
+above-chance p-factor prediction with supervised/fine-tuned models). We attempted
+LaBraM fine-tuning but did not complete it due to cluster CUDA-environment issues
+(see Limitations); it remains the key follow-up.
+
+## What this means for the paper
+- **Within-cohort:** foundation-model EEG carries transdiagnostic signal
+  (MIPDB 0.66) and beats hand-crafted EEG — the positive contribution.
+- **External:** that signal does **not** generalize out-of-distribution under this
+  stringent, well-powered test — a rigorous, honest negative that tempers any
+  generalization claim and quantifies the within-cohort↔OOD gap.
+- Combined with the honest multimodal null (Phase 2), the paper is a **rigorously
+  evaluated, cautionary proof-of-concept**: it answers the reviewers' rigor and
+  generalization concerns directly, even though the headline is sober.
+
+## Limitations / future
+- Fine-tuning LaBraM end-to-end on HBN (the lever most likely to surface OOD
+  signal, per the challenge literature) is the priority follow-up; blocked here by
+  an Alliance torch↔CUDA module mismatch, not by method.
+- A matched-label / matched-paradigm OOD design would be a fairer transfer test.
 
 ## Artifacts
-`results/phase4_hbn.csv`; code: `extract_eeg_embeddings.py` (`--match RestingState`),
-`eval_hbn.py`, `scripts/extract_hbn_sbatch.sh`, `scripts/download_data.sh hbn-rest`.
+`results/phase4_hbn_all.csv` (N=1,980); `results/phase4_hbn.csv` (N=128, superseded).

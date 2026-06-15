@@ -40,10 +40,13 @@ response to the reviews.
    **asynchronous, cross-paradigm participant-level** fusion (no synchronized-event
    claim). One model now serves any subset of modalities with graceful degradation.
 
-4. **External / out-of-distribution validation** *(R1.3, R3.2, R3.5).* We add
-   evaluation on the independent **Healthy Brain Network (HBN)** cohort
-   ([[N≈…]]), reporting honest OOD performance ([[AUC]]); the aux-loss benefit is
-   now tested externally, not only on MIPDB.
+4. **External / out-of-distribution validation** *(R1.3, R3.2, R3.5).* We add a
+   **well-powered** evaluation on the independent **Healthy Brain Network (HBN)**
+   cohort (**N≈1,980**, RestingState, all releases). We report the honest result:
+   the within-MIPDB EEG signal **does not generalize** out-of-distribution under
+   this stringent test (general-psychopathology AUC ≈ 0.50). We present this as a
+   rigorous, candid quantification of the within-cohort↔OOD gap rather than
+   overclaiming generalization.
 
 5. **Calibrated, referral-aware prediction** *(R3.2).* A post-hoc calibration layer
    (temperature scaling + conformal prediction with risk–coverage) lets the model
@@ -59,13 +62,17 @@ response to the reviews.
    grounded; recent SOTA baselines + theory subsections added.
 
 ## On the revised performance numbers
-Our strengthened (leak-free) protocol yields lower headline numbers than the
-original submission. We view this as a **strengthening**, not a weakness: the
-revised results are reproducible, externally validated, and honestly reported,
-and the contribution is now a rigorously evaluated, gap-filling framework
-(foundation-model EEG + missing-modality fusion + external validation + calibrated
-referral) rather than a single-cohort accuracy figure. This directly reflects the
-reviewers' emphasis on rigor and generalizability.
+Our strengthened (leak-free, subject-level) protocol yields lower, honest numbers
+than the original submission, and our well-powered external test returns a
+negative. We view this as a **strengthening of the work's integrity**, not a
+weakness: within MIPDB, foundation-model EEG (ROC-AUC ≈ 0.66) substantially beats
+hand-crafted EEG; the multimodal and external-generalization claims are reported
+candidly (fusion does not exceed EEG-alone; the signal does not transfer to HBN at
+N≈1,980). The contribution is a **rigorously evaluated, cautionary
+proof-of-concept** — foundation-model EEG, missing-modality design, and an honest
+characterization of the within-cohort↔out-of-distribution gap — directly
+addressing the reviewers' emphasis on rigor and generalizability rather than a
+fragile single-cohort accuracy figure.
 
 A point-by-point response to every comment follows (see Response-to-Reviewers),
 and changes are marked in the revised manuscript.
