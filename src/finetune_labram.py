@@ -9,10 +9,16 @@ HBN). Window-level training with subject-level CV (no leakage):
   - train InterpolatedLaBraM on windows (optionally freeze backbone, train head)
   - evaluate per subject by mean-pooling its window probabilities -> ROC-AUC
 
-Run inside a GPU SLURM job with the CUDA env (scripts/setup_env_gpu.sh):
+Run inside a GPU SLURM job with the CUDA env (scripts/setup_env_gpu.sh).
+
+FIRST validate the env fast (~1 min, fails immediately on a torch/CUDA mismatch):
+    python src/finetune_labram.py --input $SCRATCH/mh/data/mipdb \
+        --labels data/labels.csv --max-subj 4 --smoke
+
+Then the full run (mixed precision on by default; --max-windows bounds memory):
     python src/finetune_labram.py \
         --input $SCRATCH/mh/data/mipdb --labels data/labels.csv \
-        --all-recordings --epochs 8 --freeze-backbone
+        --all-recordings --epochs 8 --freeze-backbone --max-windows 40
 """
 import argparse
 import sys
@@ -85,6 +91,19 @@ def build_model(chs, n_times, freeze_backbone, device):
     return m.to(device)
 
 
+def _cap_windows(windows, max_windows, rng):
+    """Optionally subsample a subject's windows (memory bound)."""
+    if max_windows and len(windows) > max_windows:
+        sel = rng.choice(len(windows), max_windows, replace=False)
+        return windows[sel]
+    return windows
+
+
+def _forward_logits(model, xb):
+    out = model(xb)
+    return out if torch.is_tensor(out) else out["logits"]
+
+
 def run_fold(train, test, chs, args, device):
     n_times = train[0][1].shape[-1]
     model = build_model(chs, n_times, args.freeze_backbone, device)
@@ -96,6 +115,8 @@ def run_fold(train, test, chs, args, device):
     lossf = nn.CrossEntropyLoss(weight=w_)
     opt = torch.optim.Adam([p for p in model.parameters() if p.requires_grad],
                            lr=args.lr, weight_decay=1e-4)
+    use_amp = (device == "cuda") and not args.no_amp
+    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
     idx = np.arange(len(Xtr))
     model.train()
     for ep in range(args.epochs):
@@ -105,20 +126,43 @@ def run_fold(train, test, chs, args, device):
             xb = torch.from_numpy(Xtr[b]).to(device)
             yb = torch.from_numpy(ytr[b]).long().to(device)
             opt.zero_grad()
-            out = model(xb)
-            logits = out if torch.is_tensor(out) else out["logits"]
-            loss = lossf(logits, yb)
-            loss.backward(); opt.step()
+            with torch.autocast(device_type="cuda", enabled=use_amp):
+                loss = lossf(_forward_logits(model, xb), yb)
+            scaler.scale(loss).backward()
+            scaler.step(opt); scaler.update()
     # subject-level eval: mean window prob
     model.eval(); ys, ps = [], []
     with torch.no_grad():
         for _, w, y in test:
             x = torch.from_numpy(w).to(device)
-            out = model(x)
-            logits = out if torch.is_tensor(out) else out["logits"]
-            p = torch.softmax(logits, -1)[:, 1].mean().item()
+            with torch.autocast(device_type="cuda", enabled=use_amp):
+                logits = _forward_logits(model, x)
+            p = torch.softmax(logits.float(), -1)[:, 1].mean().item()
             ys.append(y); ps.append(p)
     return roc_auc_score(ys, ps) if len(set(ys)) > 1 else np.nan
+
+
+def smoke_test(data, chs, args, device):
+    """Fast pass/fail: build the model and run one train step + one eval forward
+    on a tiny batch. Validates the CUDA env in ~1 min before the full run."""
+    print("[smoke] building model + one fwd/bwd step...", flush=True)
+    n_times = data[0][1].shape[-1]
+    model = build_model(chs, n_times, args.freeze_backbone, device)
+    use_amp = (device == "cuda") and not args.no_amp
+    opt = torch.optim.Adam([p for p in model.parameters() if p.requires_grad], lr=args.lr)
+    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+    xb = torch.from_numpy(data[0][1][: min(4, len(data[0][1]))]).to(device)
+    yb = torch.zeros(xb.size(0), dtype=torch.long, device=device)
+    model.train(); opt.zero_grad()
+    with torch.autocast(device_type="cuda", enabled=use_amp):
+        loss = nn.functional.cross_entropy(_forward_logits(model, xb), yb)
+    scaler.scale(loss).backward(); scaler.step(opt); scaler.update()
+    if device == "cuda":
+        mem = torch.cuda.max_memory_allocated() / 1e9
+        print(f"[smoke] OK  loss={loss.item():.3f}  peak GPU mem={mem:.2f} GB  amp={use_amp}")
+    else:
+        print(f"[smoke] OK on CPU  loss={loss.item():.3f}")
+    print("[smoke] CUDA env is good — safe to launch the full run.")
 
 
 def main():
@@ -129,15 +173,35 @@ def main():
     ap.add_argument("--lr", type=float, default=1e-4); ap.add_argument("--freeze-backbone", action="store_true")
     ap.add_argument("--folds", type=int, default=5); ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--seed", type=int, default=0); ap.add_argument("--max-subj", type=int, default=None)
+    ap.add_argument("--max-windows", type=int, default=None,
+                    help="cap windows per subject (memory bound)")
+    ap.add_argument("--no-amp", action="store_true", help="disable mixed precision")
+    ap.add_argument("--smoke", action="store_true",
+                    help="build + one fwd/bwd step only, to validate the CUDA env, then exit")
     ap.add_argument("--out", default="results/finetune_labram.csv")
     args = ap.parse_args()
     torch.manual_seed(args.seed); np.random.seed(args.seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    if device == "cpu":
+
+    # Startup diagnostics — surfaces torch/CUDA mismatches immediately.
+    print(f"[env] torch {torch.__version__}  cuda_build={torch.version.cuda}  "
+          f"cuda_available={torch.cuda.is_available()}", flush=True)
+    if device == "cuda":
+        print(f"[env] GPU: {torch.cuda.get_device_name(0)}  "
+              f"cap={torch.cuda.get_device_capability(0)}", flush=True)
+    else:
         print("[warn] no GPU — fine-tuning on CPU will be very slow.")
 
+    rng = np.random.default_rng(args.seed)
     data, chs = load_all(args.input, args.labels, args.match, args.all_recordings,
                          max_subj=args.max_subj)
+    if args.max_windows:
+        data = [(sid, _cap_windows(w, args.max_windows, rng), y) for sid, w, y in data]
+    if not data:
+        sys.exit("no subjects with EEG+label loaded")
+    if args.smoke:
+        smoke_test(data, chs, args, device)
+        return
     y = np.array([d[2] for d in data])
     cv = RepeatedStratifiedKFold(n_splits=args.folds, n_repeats=args.repeats, random_state=args.seed)
     aucs = []

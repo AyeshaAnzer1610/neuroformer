@@ -135,6 +135,17 @@ the cohort size and address overparameterization. The EEG stream's *input* is no
 LaBraM embeddings (200-d) instead of 128-d hand-crafted features; the architecture
 is otherwise identical.
 
+**Optional cross-modal alignment (off by default).** The framework also includes an
+optional `CrossModalAlignment` module that projects each modality's pooled encoding
+into a shared, L2-normalized space and adds a symmetric InfoNCE contrastive loss
+(pulling together the modalities of the same subject, pushing apart different
+subjects), respecting the availability mask. This addresses the natural question of
+representation-space (not merely subject-level) alignment. It is **disabled for all
+headline results**: on the small complete-case cohort (N≈104) it is not expected to
+add accuracy and would increase parameter count, so we keep it as a documented
+robustness/transfer mechanism and a basis for the future contrastive EEG↔gaze
+direction (section E), not an accuracy claim.
+
 ---
 
 ## G. Missing-modality training
