@@ -2,8 +2,8 @@
 
 Same NeuroFormer hierarchical/missing-modality transformer; four novel
 contributions that fill current literature gaps and answer every reviewer.
-Numbers are the **leak-free, subject-level** values we measured; HBN figures
-firm up with the multi-release scale-up (placeholders marked [[HBN]]).
+Numbers are the **finalized leak-free, subject-level** values we measured,
+including the well-powered HBN external validation (N≈1,980).
 
 ## Revised title (keeps the name)
 **NeuroFormer: A Unified Foundation-Model, Missing-Modality Transformer for
@@ -21,10 +21,13 @@ validated** on the independent Healthy Brain Network (HBN) cohort, and (iv) prov
 subject-level, leak-free cross-validation on MIPDB (N≈118), foundation-model EEG is
 the dominant signal (ROC-AUC ≈0.66), substantially exceeding hand-crafted EEG
 (≈0.45); a transparent ablation shows eye-tracking and behaviour add little in this
-cohort, so we report the multimodal result honestly rather than overclaim. On HBN,
-frozen NeuroFormer-EEG features predict the general psychopathology factor
-out-of-distribution ([[HBN AUC]], r=[[HBN r]]), the first such external check in this
-setting. We position NeuroFormer as a rigorously validated proof-of-concept whose
+cohort and no fusion variant exceeds EEG-alone, so we report the multimodal result
+honestly rather than overclaim. We then externally validate on the independent HBN
+cohort at well-powered scale (N≈1,980, RestingState): the within-MIPDB signal does
+**not** generalize out-of-distribution (general-psychopathology AUC ≈0.50, r≈0.00),
+a rigorous, well-powered characterization of the within-cohort↔OOD gap rather than a
+positive transfer claim. We position NeuroFormer as a rigorously validated,
+cautionary proof-of-concept whose
 novelty is the *first* unification of EEG foundation models, missing-modality fusion,
 external validation, and calibrated referral for transdiagnostic screening.
 
@@ -35,8 +38,9 @@ external validation, and calibrated referral for transdiagnostic screening.
 2. **Missing-modality NeuroFormer** (Gap 1). Modality dropout + availability token +
    set-based asynchronous fusion → one model for any subset, with graceful
    degradation. *Answers R3.6, R3.9, R3.10.*
-3. **External / OOD validation on HBN** (field-wide gap). Honest cross-cohort
-   generalization of the FM-EEG signal. *Answers R1.3, R3.2, R3.5.*
+3. **External / OOD validation on HBN** (field-wide gap). Honest, well-powered
+   cross-cohort test (N≈1,980): the FM-EEG signal does **not** transfer
+   (general-psychopathology AUC ≈0.50). *Answers R1.3, R3.2, R3.5.*
 4. **Calibrated, referral-aware screening** (Gap 3 — NEW). Temperature scaling /
    conformal prediction + risk–coverage and ECE; abstain → "refer to clinician."
    *Strengthens clinical framing; novel in this space.*
@@ -50,8 +54,9 @@ Plus a **leak-free subject-level protocol** with repeated CV + bootstrap CIs.
   NEW: explain FM-EEG transdiagnostic signal; eye/behaviour honestly ≈ chance here.
 - **R3.9 (soften 3-modality claim)** Now backed by a rigorous null: fusion doesn't
   beat EEG-alone; we state it plainly.
-- All other R-responses in `Response-to-Reviewers.md` stay, with `[[XX]]`
-  placeholders filled by Phase 1/2/4 numbers.
+- All other R-responses in `Response-to-Reviewers.md` stay, now filled with the
+  finalized Phase 1/2/4 numbers (the only remaining `[[...]]` items are author
+  decisions — expert-study size, exact count of extra baselines).
 
 ## What's SOTA here (honest)
 Not a leaderboard accuracy. The novelty is the **combination no prior psychiatric

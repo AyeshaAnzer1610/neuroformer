@@ -1,9 +1,19 @@
 # Response to Reviewers — NeuroFormer (Access-2026-19478)
 
-> **Status: WORKING DRAFT.** Bracketed `[[...]]` items are placeholders to be filled
-> after experiments are run. Numbers shown as `XX.X` are pending. This document maps
-> every reviewer concern to a response and a concrete action. Tone: respectful,
-> evidence-led, never defensive. We thank the reviewers and the AE throughout.
+> **Status: FINALIZED on the leak-free runs.** Headline numbers below are the
+> actual results: within-MIPDB foundation-model EEG ROC-AUC **0.66** (≫ hand-crafted
+> EEG **0.43–0.47**); multimodal fusion does **not** exceed EEG-alone; external HBN
+> validation is a **well-powered null** (general-psychopathology AUC ≈ **0.50** at
+> **N≈1,980**). A few `[[...]]` items remain — these are *decisions* for the authors
+> (expert-study size, exact count of extra baselines), not pending results. This
+> document maps every reviewer concern to a response and a concrete action. Tone:
+> respectful, evidence-led, never defensive.
+>
+> **Note on the modality story.** The original submission's leaky protocol made
+> eye-tracking look dominant and EEG weak. Under strict subject-level evaluation with
+> a modern EEG foundation-model front-end, that finding **reverses**: EEG is the
+> strongest modality and the eye/behaviour signal collapses to chance in this cohort.
+> Responses below reflect the corrected, EEG-centric result.
 
 ---
 
@@ -61,24 +71,35 @@ changes that, together, address every concern raised:
   expert face-validity review — decide in roadmap.)*
 
 **R1.3 — "Expand experiments to include out-of-distribution and real-world datasets."**
-- *Response:* This is the central addition of the revision.
-- *Action:* External validation on **HBN** (same-battery OOD) and an **independent ADHD
-  eye-tracking cohort**; report performance drop honestly and discuss the OOD gap.
+- *Response:* This is the central addition of the revision, and we report it candidly.
+- *Action:* We added a **well-powered external validation on HBN** (independent
+  participants, **N≈1,980**, RestingState, all releases). The result is an honest
+  **null**: the within-MIPDB frozen-EEG signal does **not** generalize
+  out-of-distribution (general-psychopathology AUC **0.497 ± 0.006**; best specific
+  factor — internalizing — AUC 0.55 / r 0.09, practically negligible; direct
+  MIPDB→HBN transfer AUC 0.51). A preliminary N=128 estimate of ≈0.59 did not survive
+  scaling and is reported as small-sample variability. We present this as a rigorous
+  quantification of the within-cohort↔OOD gap (differing in label construct — DSM
+  diagnosis vs CBCL factors — and paradigm), not as a positive generalization claim.
 
 ---
 
 ## Reviewer 2
 
-**R2.1 / R2.4 — Neurocognitive theory: why eye-tracking dominates and EEG is limited; theoretical basis.**
-- *Response:* Agreed; we under-explained the mechanism.
-- *Action:* New "Neurocognitive basis" subsection. Eye-tracking/oculomotor control
-  indexes attentional and inhibitory networks (frontal-parietal, superior colliculus,
-  FEF) sensitive across ADHD/ASD/anxiety/depression — i.e., transdiagnostic oculomotor
-  markers. EEG contribution is limited *here* specifically because of the **sparse
-  5-channel montage** (low spatial resolution), high inter-individual variability, and
-  motion/artifact load in a mixed-age clinical cohort — not because cortical signal is
-  uninformative in principle. Cite oculomotor-psychopathology and EEG-montage-density
-  literature.
+**R2.1 / R2.4 — Neurocognitive theory and theoretical basis for the modality contributions.**
+- *Response:* Agreed; we under-explained the mechanism — and on re-analysis the
+  mechanism is the opposite of what the leaky protocol suggested. We now explain why
+  **EEG carries the transdiagnostic signal** once represented properly.
+- *Action:* New "Neurocognitive basis" subsection. The original hand-crafted
+  5-channel features (Hjorth + spectral entropy) under-represent cortical dynamics, so
+  EEG looked weak. A **pretrained EEG foundation model (LaBraM)** — trained on
+  thousands of hours of EEG — recovers spatial-spectral-temporal structure tied to
+  the attentional/inhibitory and arousal networks disrupted transdiagnostically across
+  ADHD/ASD/anxiety/depression. Under leak-free evaluation, foundation-model EEG reaches
+  **ROC-AUC 0.66** vs **0.43–0.47** for hand-crafted EEG (paired Δ up to +0.23), while
+  eye-tracking (0.51) and behaviour (0.40) sit at chance in this cohort. We ground the
+  result in the EEG-foundation-model literature (LaBraM, EEGPT, CBraMod) and frame the
+  earlier eye-dominant finding as an artifact of leakage plus weak EEG features.
 
 **R2.2 — Add 3–5 recent SOTA baselines; unify inputs/training; report significance.**
 - *Response:* Agreed.
@@ -100,10 +121,13 @@ changes that, together, address every concern raised:
 - *Response:* Agreed.
 - *Action:* New paragraph grounding hierarchical fusion in representation-learning
   theory: modality-specific encoding preserves within-modality structure before mixing
-  (information fidelity), reduces premature noise coupling across heterogeneous
-  modalities (noise filtering), and our ablation (single-stage Vanilla Transformer vs.
-  hierarchical) provides the empirical counterpart (+6.7 pp). Frame the existing
-  Vanilla-Transformer baseline explicitly as the single-stage control.
+  (information fidelity) and reduces premature noise coupling across heterogeneous
+  modalities (noise filtering). We present the fusion comparison honestly: under
+  leak-free evaluation in this cohort, hierarchical fusion does not beat the strongest
+  single modality (EEG), so we frame hierarchical fusion as the theoretically
+  preferable *architecture for multimodal integration* and a robustness mechanism under
+  missing modalities, rather than as an accuracy gain over EEG-alone here. The
+  single-stage Vanilla-Transformer baseline is reported as the control.
 
 ---
 
@@ -139,9 +163,13 @@ changes that, together, address every concern raised:
   criticism into a result.
 
 **R3.5 — Auxiliary reconstruction loss may just regularize MIPDB's feature distribution; unproven on external data.**
-- *Response:* Agreed; testable now that we add external data.
-- *Action:* Report aux-loss ablation **on the external set(s)**, not only MIPDB. State
-  honestly whether the benefit transfers.
+- *Response:* Agreed; we tested this on the external data, and report it honestly.
+- *Action:* With the well-powered HBN evaluation in place, neither the fusion model
+  nor any auxiliary-loss configuration recovers above-chance external prediction
+  (general-psychopathology AUC ≈ 0.50 at N≈1,980). We state plainly that the MIPDB
+  benefit does **not** transfer out-of-distribution, consistent with the frozen-
+  representation limitation discussed under Limitations (end-to-end fine-tuning is the
+  identified follow-up).
 
 **R3.6 — Cross-paradigm sourcing weakens the cross-modal fusion claim (no synchronized event).**
 - *Response:* This is correct and we now make it central rather than implicit.
@@ -157,17 +185,24 @@ changes that, together, address every concern raised:
   report.
 
 **R3.8 — EEG contribution weak; should it be in the system at all?**
-- *Response:* Addressed structurally by the missing-modality design.
-- *Action:* Present eye+behaviour as the **recommended efficient configuration**; retain
-  EEG as an **optional modality the unified model gracefully uses when available**;
-  justify inclusion via graceful-degradation and the denser-montage outlook rather than
-  via accuracy gain. Honest framing: EEG adds little *at 5 channels here*.
+- *Response:* The reviewer was right about the *original* EEG features — and the fix
+  resolves the concern decisively in EEG's favour. With a foundation-model front-end,
+  EEG is the **strongest** modality, not the weakest.
+- *Action:* We answer "is EEG worth including?" with a direct, leak-free head-to-head:
+  foundation-model EEG **0.66** vs hand-crafted EEG **0.43–0.47** (paired Δ up to
+  +0.23), and it exceeds every other single modality and every fusion variant. EEG is
+  therefore the **core** of the system; the missing-modality design lets the unified
+  model still operate when EEG is unavailable, but EEG is the recommended primary input.
 
 **R3.9 — Soften the three-modality integration claim.**
-- *Response:* Agreed.
-- *Action:* Replace "three-modality integration" headline claims with "a unified model
-  supporting one-to-three modalities, where eye+behaviour suffices for most of the
-  performance." Title/abstract/contributions updated accordingly.
+- *Response:* Agreed, and the leak-free analysis makes the honest claim clear.
+- *Action:* We replace "three-modality integration" with "a unified model supporting
+  one-to-three modalities." We report transparently that in MIPDB **no fusion variant
+  exceeds EEG-alone** (naive concat 0.48–0.54, attention fusion 0.59, stacking late
+  fusion 0.47, all ≤ the 0.66 EEG ceiling) and that a simulated-missingness sweep shows
+  the model relies almost entirely on EEG. Title/abstract/contributions are updated to
+  lead with foundation-model EEG and present the multimodal mechanism as a robustness/
+  missing-data feature rather than an accuracy-boosting claim.
 
 **R3.10 — Selection bias (complete, high-quality recordings only); real screening has missing/noisy data.**
 - *Response:* This is precisely what the missing-modality model addresses.
