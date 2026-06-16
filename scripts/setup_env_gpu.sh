@@ -14,17 +14,22 @@ source ~/envs/mh311gpu/bin/activate
 pip install --no-index --upgrade pip
 
 # Step 1: CUDA-enabled torch from the Alliance wheelhouse ONLY (--no-index).
-# This is the torch that matches the cluster's cuda/cudnn modules -- do NOT let a
-# PyPI cu121 wheel replace it (that caused the libcudnn / cusparse / nvJitLink
-# "undefined symbol" failures before).
-pip install --no-index torch torchvision torchaudio
+# Pin the MATCHING trio (torch 2.11.0 + torchvision + torchaudio 2.11.0). Do NOT
+# install the latest torch (2.12): the wheelhouse has no torchaudio 2.12, so pip
+# backtracks torchaudio down to 2.1.2, and a torch-2.12/torchaudio-2.1.2 mismatch
+# crashes with the libtorchaudio "undefined symbol" error at import. The 2.11.0
+# trio is internally consistent and works with the DEFAULT cuda/cudnn modules
+# loaded in the SLURM job (do NOT load a specific cuda/12.x -- that mismatch is
+# what caused the cusparse / nvJitLink errors before).
+pip install --no-index torch==2.11.0 torchvision torchaudio==2.11.0
 
 # Step 2: braindecode is NOT in the Alliance wheelhouse, so install it (and the
-# remaining deps) from PyPI -- but PIN torch to the version just installed via a
-# constraints file, so pip cannot upgrade/replace the Alliance CUDA torch.
+# remaining deps) from PyPI -- PIN torch AND torchaudio to the versions just
+# installed so pip cannot upgrade/replace the Alliance CUDA build or re-backtrack
+# torchaudio.
 TORCH_VER=$(python -c "import torch; print(torch.__version__.split('+')[0])")
-echo "torch==${TORCH_VER}" > ~/mh_gpu_constraints.txt
-echo "Pinning torch==${TORCH_VER} while pulling braindecode from PyPI."
+{ echo "torch==${TORCH_VER}"; echo "torchaudio==${TORCH_VER}"; } > ~/mh_gpu_constraints.txt
+echo "Pinning torch==${TORCH_VER} (+torchaudio) while pulling braindecode from PyPI."
 pip install -c ~/mh_gpu_constraints.txt \
     "braindecode>=1.5" huggingface_hub safetensors mne scikit-learn pandas scipy
 
