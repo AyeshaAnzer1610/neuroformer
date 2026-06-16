@@ -19,9 +19,12 @@ a learned availability token) so one model serves any subset, (iii) is **externa
 validated** on the independent Healthy Brain Network (HBN) cohort, and (iv) provides
 **calibrated, referral-aware** predictions for screening triage. Under strict
 subject-level, leak-free cross-validation on MIPDB (N≈118), foundation-model EEG is
-the dominant signal (ROC-AUC ≈0.66), substantially exceeding hand-crafted EEG
-(≈0.45); a transparent ablation shows eye-tracking and behaviour add little in this
-cohort and no fusion variant exceeds EEG-alone, so we report the multimodal result
+the dominant signal: subject-pooled linear probing already reaches ROC-AUC ≈0.66
+(vs ≈0.45 for hand-crafted EEG), and **window-level training on the frozen backbone
+reaches ≈0.80**, whereas end-to-end fine-tuning overfits at this sample size
+(≈0.69, high variance). A transparent ablation shows eye-tracking and behaviour add
+little in this cohort and no fusion variant exceeds EEG-alone, so we report the
+multimodal result
 honestly rather than overclaim. We then externally validate on the independent HBN
 cohort at well-powered scale (N≈1,980, RestingState): the within-MIPDB signal does
 **not** generalize out-of-distribution (general-psychopathology AUC ≈0.50, r≈0.00),

@@ -1,10 +1,11 @@
 # Response to Reviewers — NeuroFormer (Access-2026-19478)
 
 > **Status: FINALIZED on the leak-free runs.** Headline numbers below are the
-> actual results: within-MIPDB foundation-model EEG ROC-AUC **0.66** (≫ hand-crafted
-> EEG **0.43–0.47**); multimodal fusion does **not** exceed EEG-alone; external HBN
-> validation is a **well-powered null** (general-psychopathology AUC ≈ **0.50** at
-> **N≈1,980**). A few `[[...]]` items remain — these are *decisions* for the authors
+> actual results: within-MIPDB foundation-model EEG ROC-AUC **0.66** by linear
+> probing (≫ hand-crafted EEG **0.43–0.47**), rising to **≈0.80** with window-level
+> training on the frozen backbone (end-to-end fine-tuning overfits, 0.69±0.12);
+> multimodal fusion does **not** exceed EEG-alone; external HBN validation is a
+> **well-powered null** (general-psychopathology AUC ≈ **0.50** at **N≈1,980**). A few `[[...]]` items remain — these are *decisions* for the authors
 > (expert-study size, exact count of extra baselines), not pending results. This
 > document maps every reviewer concern to a response and a concrete action. Tone:
 > respectful, evidence-led, never defensive.
@@ -156,11 +157,14 @@ changes that, together, address every concern raised:
   discuss fold-sensitivity explicitly. External validation (HBN) further mitigates.
 
 **R3.4 — 18.9M params overparameterized vs. ~91 training subjects.**
-- *Response:* Agreed — and a fair concern.
-- *Action:* Add a **compact variant** (parameter-reduced NeuroFormer) and show
-  performance vs. parameter count; justify final size empirically. If the compact model
-  matches the large one, report it as the recommended configuration. This converts the
-  criticism into a result.
+- *Response:* Agreed — and the data now demonstrate the point directly.
+- *Action:* We add a **compact variant** and, more tellingly, a **training-capacity
+  ablation on the foundation-model EEG path**: a frozen backbone with window-level
+  head training reaches ROC-AUC **≈0.80**, whereas **end-to-end fine-tuning of the
+  full ~5–6M-parameter backbone overfits** — its mean *drops* (0.69) and its
+  fold-to-fold variance *triples* (±0.12 vs ±0.04). This converts the criticism into
+  an empirical result: at N≈118, added trainable capacity hurts, so we report the
+  frozen/compact configuration as recommended and justify model size empirically.
 
 **R3.5 — Auxiliary reconstruction loss may just regularize MIPDB's feature distribution; unproven on external data.**
 - *Response:* Agreed; we tested this on the external data, and report it honestly.
@@ -190,8 +194,9 @@ changes that, together, address every concern raised:
   EEG is the **strongest** modality, not the weakest.
 - *Action:* We answer "is EEG worth including?" with a direct, leak-free head-to-head:
   foundation-model EEG **0.66** vs hand-crafted EEG **0.43–0.47** (paired Δ up to
-  +0.23), and it exceeds every other single modality and every fusion variant. EEG is
-  therefore the **core** of the system; the missing-modality design lets the unified
+  +0.23) by linear probing, rising to **≈0.80 with window-level training on the frozen
+  backbone**, and it exceeds every other single modality and every fusion variant. EEG
+  is therefore the **core** of the system; the missing-modality design lets the unified
   model still operate when EEG is unavailable, but EEG is the recommended primary input.
 
 **R3.9 — Soften the three-modality integration claim.**

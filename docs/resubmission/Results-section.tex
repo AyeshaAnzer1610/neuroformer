@@ -19,6 +19,25 @@ $\Delta=+0.167$). This reverses the original submission's finding: with a modern
 foundation-model representation, EEG moves from the weakest to the strongest
 modality, directly answering whether EEG is worth including.
 
+\subsection{Training regime: window-level training and end-to-end fine-tuning}
+We further compared how the frozen LaBraM representation is \emph{used}, under the
+same strict subject-level CV (every window of a held-out subject is excluded;
+recordings aggregated per subject; test predictions are the mean window
+probability). Three regimes:
+(i) \emph{subject-pooled linear probe} --- the result above, $0.66$;
+(ii) \emph{window-level training} of a classification head on the frozen backbone,
+where each 15\,s window is a training instance and predictions are pooled per
+subject (multiple-instance learning), reaching ROC-AUC $\mathbf{0.795 \pm 0.041}$
+[[5$\times$10: \emph{pending confirmation run}]]; and
+(iii) \emph{end-to-end fine-tuning} of the full backbone, which \emph{degrades and
+destabilises} performance ($0.686 \pm 0.120$; per-fold $0.54$--$0.88$).
+Window-level training on the frozen foundation model is therefore the best
+configuration --- a $+0.13$ ROC-AUC gain over linear probing --- while unfreezing
+the $\sim$5--6\,M-parameter backbone overfits at this sample size (mean drop and
+$3\times$ the fold-to-fold variance). This is consistent with the
+overparameterisation concern: added trainable capacity does not help here, it
+hurts (cf.\ R3.4, R3.3).
+
 \subsection{Single-modality and multimodal comparison}
 Table~\ref{tab:headtohead} reports all modalities and fusion variants under the
 identical protocol. Eye-tracking ($0.51$) and behaviour ($0.40$) are at or below
@@ -46,7 +65,11 @@ Behaviour & $0.40 \pm 0.05$ \\
 Naive concatenation & $0.48 \pm 0.04$ \\
 NeuroFormer attention fusion & $0.59 \pm 0.04$ \\
 Stacking late fusion & $0.47 \pm 0.06$ \\
-\textbf{Foundation-model EEG (LaBraM)} & $\mathbf{0.66 \pm 0.03}$ \\
+\midrule
+\multicolumn{2}{l}{\textit{Foundation-model EEG (frozen LaBraM), by training regime}} \\
+\quad subject-pooled linear probe & $0.66 \pm 0.03$ \\
+\quad \textbf{window-level training (MIL)} & $\mathbf{0.795 \pm 0.04}$ \\
+\quad end-to-end fine-tuning (full backbone) & $0.69 \pm 0.12$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -76,7 +99,11 @@ positive generalization claim.
 
 \subsection{Summary}
 Foundation-model EEG is the locus of the transdiagnostic signal within MIPDB and
-clearly surpasses hand-crafted EEG; additional modalities do not improve screening
-here; and the signal does not generalize out-of-distribution at scale. These
-leakage-free, externally tested results constitute a rigorous, cautionary
-proof-of-concept.
+clearly surpasses hand-crafted EEG; with window-level training on the frozen
+backbone it reaches ROC-AUC $\approx0.80$, while end-to-end fine-tuning overfits at
+this sample size; additional modalities do not improve screening here; and the
+signal does not generalize out-of-distribution at scale. These leakage-free,
+externally validated results constitute a rigorously evaluated proof-of-concept:
+modern foundation-model EEG, used appropriately, carries clinically relevant
+transdiagnostic signal within cohort, with an honest characterisation of its
+multimodal and out-of-distribution limits.

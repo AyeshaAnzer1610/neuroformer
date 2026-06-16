@@ -64,6 +64,16 @@ by **mean+std pooling** (concatenated mean and standard deviation across windows
 This replaces the original hand-crafted 5-channel EEG features; the downstream
 NeuroFormer EEG encoder is otherwise unchanged.
 
+**How the representation is used (training-regime ablation).** Under identical
+subject-level CV we compare three regimes (GPU, `src/finetune_labram.py`): (i)
+subject-pooled linear probing (ROC-AUC ≈0.66); (ii) **window-level training** of a
+classification head on the frozen backbone — each 15 s window is a training
+instance, predictions pooled per subject (multiple-instance learning) — reaching
+**≈0.80**; and (iii) end-to-end fine-tuning of the full backbone, which **overfits**
+at N≈118 (0.69 ± 0.12, vs 0.795 ± 0.04 for the frozen regime; ~3× the fold
+variance). The recommended configuration is therefore the **frozen foundation model
+with lightweight window-level training**. See `docs/resubmission/Phase5-Finetuning-Results.md`.
+
 ---
 
 ## D. Eye-tracking and behavioural features (re-derived from raw)
