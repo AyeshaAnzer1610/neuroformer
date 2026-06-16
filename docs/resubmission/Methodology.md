@@ -93,6 +93,35 @@ cross-paradigm** integration — explicitly *not* synchronized cross-modal atten
 Subjects missing a modality are tracked with an explicit **availability mask**
 (coverage: EEG 118, eye 109, behaviour 113; complete-case ≈ 104; union ≈ 120).
 
+**Why a foundation model for EEG only, and what "alignment" means here.** Two
+deliberate design choices, both dictated by data availability and cohort size:
+
+1. *Representation.* We apply a pretrained foundation model only to EEG because
+   mature, downloadable EEG foundation models exist (LaBraM/EEGPT/CBraMod, pretrained
+   on thousands of hours), whereas no foundation model of comparable maturity exists
+   for SMI eye-tracking sample streams, and the concept does not meaningfully apply to
+   the low-dimensional behavioural summaries (6 RT/accuracy statistics). EEG is also
+   the modality where representation learning buys the most — a raw high-dimensional
+   multichannel time series — which is precisely why foundation-model EEG (0.66)
+   surpasses hand-crafted EEG (0.43–0.47), while the already-compact eye (11-d) and
+   behaviour (6-d) features have little additional structure for a learned encoder to
+   exploit (and sit at chance in this cohort regardless).
+
+2. *Alignment.* "Alignment" here means **subject-level keying** (joining modalities by
+   participant ID under an availability mask), **not** a learned shared embedding space.
+   We do *not* perform representation-space (e.g. contrastive, CLIP-style) alignment:
+   it requires many paired cross-modal examples, and our complete-case N ≈ 104 is far
+   too small to fit one without overfitting. Trial-level temporal alignment is also
+   impossible because the modalities are acquired in **separate, asynchronous
+   paradigms** with no shared time origin. Subject-level alignment is therefore the
+   honest and appropriate choice for this data, and we adopt permutation-invariant
+   set-based fusion consistent with the absence of a shared time origin (cf. R3.6).
+
+*Future work.* A principled extension is to pretrain a gaze-sequence encoder on raw
+eye-tracking and learn a contrastive EEG↔gaze representation alignment on a larger
+paired cohort (e.g. HBN, which records both) — out of scope for this revision given
+N, but the natural next step beyond subject-level keying.
+
 ---
 
 ## F. NeuroFormer architecture (unchanged from the original)
