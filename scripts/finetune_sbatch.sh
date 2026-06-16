@@ -21,6 +21,12 @@ set -euo pipefail
 # do NOT pin a specific cuda module -- a mismatch causes the cusparse/nvJitLink
 # "undefined symbol" errors we hit before).
 module load StdEnv/2023 gcc python/3.11 cuda cudnn
+
+# Strip any stale user-local CUDA toolkit (~/cuda-toolkit) whose old libnvJitLink
+# shadows the cluster's and breaks torch import (cusparse undefined symbol).
+export LD_LIBRARY_PATH=$(printf '%s' "${LD_LIBRARY_PATH:-}" | tr ':' '\n' \
+    | grep -vF "$HOME/cuda-toolkit" | paste -sd:)
+
 source ~/envs/mh311gpu/bin/activate
 
 cd ~/mental-health

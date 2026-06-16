@@ -7,7 +7,14 @@
 #   module load StdEnv/2023 gcc python/3.11 cuda cudnn && source ~/envs/mh311gpu/bin/activate
 set -euo pipefail
 
-module load StdEnv/2023 python/3.11
+module load StdEnv/2023 gcc python/3.11 cuda cudnn
+
+# Drop any stale user-local CUDA toolkit (e.g. ~/cuda-toolkit from an old cu121
+# pip attempt). Its old libnvJitLink shadows the cluster's and breaks libcusparse
+# with "undefined symbol __nvJitLinkGetErrorLogSize_12_9". Strip it from the path.
+export LD_LIBRARY_PATH=$(printf '%s' "${LD_LIBRARY_PATH:-}" | tr ':' '\n' \
+    | grep -vF "$HOME/cuda-toolkit" | paste -sd:)
+
 rm -rf ~/envs/mh311gpu
 virtualenv --no-download ~/envs/mh311gpu
 source ~/envs/mh311gpu/bin/activate
