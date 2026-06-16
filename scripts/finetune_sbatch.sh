@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=mh-finetune
 #SBATCH --account=def-abais_gpu          # Ayesha's GPU allocation (PI: Bais)
-#SBATCH --gres=gpu:1                      # 1 GPU (H100 / MIG slice)
+#SBATCH --gres=gpu:h100:1                 # Nibi requires an explicit GPU type
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=48G
 #SBATCH --time=06:00:00
