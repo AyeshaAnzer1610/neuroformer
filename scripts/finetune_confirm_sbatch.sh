@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=mh-ft-confirm
 #SBATCH --account=def-abais_gpu
-#SBATCH --gres=gpu:nvidia_h100_80gb_hbm3_2g.20gb:1   # 20GB MIG slice (job needs ~13GB; schedules faster than a full H100)
+#SBATCH --gres=gpu:h100:1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=48G
 #SBATCH --time=08:00:00
