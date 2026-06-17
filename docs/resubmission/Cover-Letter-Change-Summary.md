@@ -44,6 +44,10 @@ response to the reviews.
    availability indicators, and we reframe the fusion explicitly as
    **asynchronous, cross-paradigm participant-level** fusion (no synchronized-event
    claim). One model now serves any subset of modalities with graceful degradation.
+   We also propose a **best-available-representation** framework (foundation model per
+   modality where one exists, self-supervised + cross-modal contrastive alignment where
+   none does); it is implemented and reported candidly as a framework/future direction,
+   without claiming an accuracy gain on this cohort.
 
 4. **External / out-of-distribution validation** *(R1.3, R3.2, R3.5).* We add a
    **well-powered** evaluation on the independent **Healthy Brain Network (HBN)**

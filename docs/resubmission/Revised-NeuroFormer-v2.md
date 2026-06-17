@@ -17,7 +17,11 @@ for transdiagnostic mental-health screening that (i) replaces hand-crafted EEG w
 eye-tracking, and behaviour under a **missing-modality regime** (modality dropout +
 a learned availability token) so one model serves any subset, (iii) is **externally
 validated** on the independent Healthy Brain Network (HBN) cohort, and (iv) provides
-**calibrated, referral-aware** predictions for screening triage. Under strict
+**calibrated, referral-aware** predictions for screening triage. We additionally
+propose a **best-available-representation** scheme — a pretrained foundation model
+per modality where one exists, a self-supervised encoder with cross-modal contrastive
+alignment where none does — as a framework for heterogeneous multimodal data
+(implemented; no accuracy gain on this cohort, reported candidly). Under strict
 subject-level, leak-free cross-validation on MIPDB (N≈118), foundation-model EEG is
 the dominant signal: subject-pooled linear probing already reaches ROC-AUC ≈0.66
 (vs ≈0.45 for hand-crafted EEG), and **window-level training on the frozen backbone
@@ -38,9 +42,15 @@ external validation, and calibrated referral for transdiagnostic screening.
 1. **Foundation-model EEG in a multimodal psychiatric transformer** (Gap 2). LaBraM
    embeddings replace the hand-crafted 5-channel features; EEG goes from the weakest
    to the strongest modality (0.45→0.66). *Answers R3.8, R2.1/2.4.*
-2. **Missing-modality NeuroFormer** (Gap 1). Modality dropout + availability token +
-   set-based asynchronous fusion → one model for any subset, with graceful
-   degradation. *Answers R3.6, R3.9, R3.10.*
+2. **Missing-modality NeuroFormer + best-available-representation framework** (Gap 1).
+   Modality dropout + availability token + set-based asynchronous fusion → one model
+   for any subset, with graceful degradation. We further propose a **unified
+   representation scheme**: each modality gets its strongest available representation —
+   a pretrained foundation model where one exists (EEG→LaBraM), and a self-supervised
+   encoder with **cross-modal contrastive alignment** where none does (eye, behaviour).
+   Proposed and implemented (off by default; no accuracy gain on this small cohort,
+   reported honestly); positioned as the recipe for future larger multimodal cohorts.
+   *Answers R3.6, R3.9, R3.10.* See `Proposed-Framework-Multimodal.md`.
 3. **External / OOD validation on HBN** (field-wide gap). Honest, well-powered
    cross-cohort test (N≈1,980): the FM-EEG signal does **not** transfer
    (general-psychopathology AUC ≈0.50). *Answers R1.3, R3.2, R3.5.*
