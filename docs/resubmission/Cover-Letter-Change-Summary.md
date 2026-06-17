@@ -33,8 +33,8 @@ response to the reviews.
    representations** instead of hand-crafted 5-channel features. EEG moves from the
    weakest to the **strongest** modality (leak-free ROC-AUC 0.66 vs hand-crafted
    0.45). We further show the representation is best used via **window-level training
-   on the frozen backbone (ROC-AUC ≈0.80)**; **end-to-end fine-tuning overfits**
-   at N≈118 (≈0.69, 3× the fold variance), which directly addresses the
+   on the frozen backbone (ROC-AUC 0.748 ± 0.029, 5×10 CV)**; **end-to-end fine-tuning
+   overfits** at N≈118 (0.69, ~4× the fold variance), which directly addresses the
    overparameterisation and fold-sensitivity concerns — added capacity hurts here.
    This resolves "is EEG worth including?" — emphatically yes, with modern
    representations used appropriately.
@@ -71,9 +71,9 @@ Our strengthened (leak-free, subject-level) protocol yields lower, honest number
 than the original submission, and our well-powered external test returns a
 negative. We view this as a **strengthening of the work's integrity**, not a
 weakness: within MIPDB, foundation-model EEG substantially beats hand-crafted EEG
-(ROC-AUC 0.66 vs 0.45 by linear probing) and reaches **≈0.80 with window-level
-training on the frozen backbone**, while end-to-end fine-tuning overfits at this
-sample size; the multimodal and external-generalization claims are reported
+(ROC-AUC 0.66 vs 0.45 by linear probing) and reaches **0.748 ± 0.029 (5×10 CV) with
+window-level training on the frozen backbone**, while end-to-end fine-tuning overfits
+at this sample size; the multimodal and external-generalization claims are reported
 candidly (fusion does not exceed EEG-alone; the signal does not transfer to HBN at
 N≈1,980). The contribution is a **rigorously evaluated proof-of-concept** —
 foundation-model EEG (used appropriately), missing-modality design, and an honest

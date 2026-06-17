@@ -19,14 +19,16 @@ the backbone end-to-end? (The accuracy lever, addressing R3.8 / R3.4 / R3.3.)
 | Regime (frozen LaBraM) | CV | ROC-AUC |
 |---|---|---|
 | Subject-pooled linear probe (Phase 1) | 5×10 | 0.66 |
-| **Window-level head training (MIL)** | 5×1 | **0.795 ± 0.041** |
+| **Window-level head training (MIL)** | **5×10** | **0.748 ± 0.029** |
+| Window-level head training (MIL) — preliminary | 5×1 | 0.795 ± 0.041 |
 | End-to-end fine-tuning (full backbone) | 5×1 | 0.686 ± 0.120 |
 
-- **Window-level training**: folds 0.779 / 0.853 / 0.726 / 0.803 / 0.816 → **0.795 ±
-  0.041**. A **+0.13** ROC-AUC gain over linear probing, leak-free. (5×10 confirmation
-  run pending — update the headline CI from `results/finetune_labram_frozen_r10.csv`.)
+- **Window-level training (headline):** the well-powered **5×10** run gives **0.748 ±
+  0.029** — a **+0.09** ROC-AUC gain over linear probing, leak-free, tight CI. (The
+  preliminary 5×1 estimate of 0.795 ± 0.04 was optimistically high, as single-repeat
+  CV is noisier; the 5×10 value is what we quote.) `results/finetune_labram_frozen_r10.csv`.
 - **End-to-end fine-tuning**: folds 0.884 / 0.611 / 0.632 / 0.539 / 0.763 → **0.686 ±
-  0.120**. Lower mean **and ~3× the fold-to-fold variance** — it overfits the
+  0.120** (5×1). Lower mean **and ~4× the fold-to-fold variance** — it overfits the
   ~5–6M-parameter backbone at N≈118.
 
 ## Interpretation (honest)
@@ -37,8 +39,9 @@ recommended configuration is **frozen foundation model + lightweight window-leve
 head training**.
 
 ## What this means for the paper
-- **Headline upgrade:** within-MIPDB foundation-model EEG reaches **ROC-AUC ≈0.80**
-  (leak-free, subject-level) — a substantive, defensible result, not a fragile one.
+- **Headline upgrade:** within-MIPDB foundation-model EEG reaches **ROC-AUC 0.748 ±
+  0.029** (leak-free, subject-level, 5×10 CV) — a substantive, defensible result with
+  a tight CI, not a fragile one (+0.09 over linear probing).
 - **Answers reviewers directly:** the frozen-vs-fine-tuned ablation is a clean
   empirical answer to **R3.4** (overparameterization — added capacity hurts) and
   **R3.3** (fold sensitivity — full-backbone CI ±0.12 vs frozen ±0.04).

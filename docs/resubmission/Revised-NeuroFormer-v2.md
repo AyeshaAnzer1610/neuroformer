@@ -21,8 +21,8 @@ validated** on the independent Healthy Brain Network (HBN) cohort, and (iv) prov
 subject-level, leak-free cross-validation on MIPDB (N≈118), foundation-model EEG is
 the dominant signal: subject-pooled linear probing already reaches ROC-AUC ≈0.66
 (vs ≈0.45 for hand-crafted EEG), and **window-level training on the frozen backbone
-reaches ≈0.80**, whereas end-to-end fine-tuning overfits at this sample size
-(≈0.69, high variance). A transparent ablation shows eye-tracking and behaviour add
+reaches 0.748 ± 0.029 (5×10 CV)**, whereas end-to-end fine-tuning overfits at this
+sample size (≈0.69, high variance). A transparent ablation shows eye-tracking and behaviour add
 little in this cohort and no fusion variant exceeds EEG-alone, so we report the
 multimodal result
 honestly rather than overclaim. We then externally validate on the independent HBN
