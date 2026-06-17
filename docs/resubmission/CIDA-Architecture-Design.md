@@ -5,6 +5,17 @@
 (not a new foundation model, and not a generic FM-agnostic wrapper). LaBraM is the
 fixed, frozen backbone; CIDA is the trainable contribution on top of it.
 
+> ⚠️ **Empirical status (2026-06, controlled mechanism test).** The
+> *identity-disentanglement* pillar (block 4) **does not work as built** — see §9 and
+> [`experiments/cida_mechanism_test.py`](../../experiments/cida_mechanism_test.py).
+> On synthetic data where identity is the dominant signal, the gradient-reversal
+> adversary never lowers subject/site-decodability of `z_clin`; weak settings are
+> neutral, strong settings collapse the clinical signal. **We therefore lead the
+> contribution with the empirically-sound pillars (PEFT adaptation, connectivity,
+> attention pooling) + the OcuFM gaze foundation model, and treat disentanglement as
+> an exploratory thread gated by that benchmark.** Nothing about disentanglement is
+> written as a result until it passes.
+
 ---
 
 ## 1. The gap (one root cause, three symptoms)
@@ -108,15 +119,22 @@ identity-dominated embedding into a transfer-robust clinical one.*
    *Reuses:* DANN / gradient-reversal subject-invariance; the novelty is applying it
    **in an adapter on a frozen FM**, not by re-pretraining (LEAD) or full fine-tuning.
 
-### The single novel claim (state it this crisply)
+### The contribution claim (reframed to match the evidence)
 
-> *The first connectivity-aware, identity-disentangled parameter-efficient adapter for
-> EEG foundation models — invariance and connectivity are enforced in a ~1%-parameter
-> adapter on a **frozen** backbone, rather than by re-pretraining or full fine-tuning.*
+**Lead claim (empirically sound):**
+> *A connectivity-aware, parameter-efficient adapter that adapts a **frozen** EEG
+> foundation model (LaBraM) for small-N clinical screening with ~1–3% trainable
+> params — beating both frozen-readout and full fine-tuning, and answering the
+> "model too big" criticism — paired with **OcuFM**, the first gaze foundation model
+> on the same recipe, so fusion is foundation-model ⊕ foundation-model.*
 
-Everything else (LoRA, graph adapter, attention pooling, conformal triage) is
-**deliberately reused** and cited as such. The contribution is the combination and
-*where the invariance is applied*, motivated directly by our leakage→identity story.
+**Exploratory thread (NOT a claim yet — gated by the mechanism test, §9):**
+> identity-disentangled adaptation. Motivated by our leakage→identity story, but the
+> current GRL implementation fails the controlled benchmark, so it is future work
+> until a redesign passes.
+
+Everything reused (LoRA, graph adapter, attention pooling, conformal triage) is cited
+as such; the contribution is the combination and the gaze foundation model.
 
 ## 4. Loss
 
@@ -159,7 +177,40 @@ L = L_clin                              (cross-entropy, class-weighted)
   axis CIDA targets (§5.3).
 - "what's genuinely new?" → the disentangled-invariant *adapter* on a frozen FM (§3).
 
-## 8. References (verified)
+## 8. Mechanism-test results — the gate (run 2026-06)
+
+We ran the §6 falsifiers as a controlled synthetic experiment
+([`experiments/cida_mechanism_test.py`](../../experiments/cida_mechanism_test.py)):
+identity/site is the dominant signal, a weaker genuine clinical signal is tied to the
+label, train uses sites {0,1} and a held-out site {2} tests cross-site transfer. We A/B
+the *same* CIDA model with disentanglement OFF vs ON (identical capacity/budget).
+
+| setting | in-dist AUC | cross-site AUC | site-decodability of `z_clin` |
+|---|---|---|---|
+| baseline (CIDA OFF) | 0.954 | 0.869 | 0.96 |
+| CIDA weak (λ_adv 1, grl→1) | 0.967 | 0.897 | 0.96 |
+| CIDA moderate (λ_adv 2, grl→1) | 0.739 | 0.668 | 0.98 |
+| CIDA strong (λ_adv 5, grl→2) | 0.617 | 0.538 | 0.98 |
+
+(Reproduce: `python experiments/cida_mechanism_test.py`.)
+
+**Verdict: disentanglement fails as-built.** Site-decodability of `z_clin` never drops
+(~0.96 throughout) — identity is *not* removed. Weak settings give a within-noise
+cross-site bump with zero identity removal; stronger settings collapse the clinical
+signal. A single linear disentangling head + plain GRL cannot null a dominant nuisance
+subspace while preserving a weak clinical signal.
+
+**Fix thread (gated by this benchmark — must drop site-decodability AND lift cross-site
+AUC before any claim):**
+1. Nonlinear disentangling heads (`to_clin`/`to_nuis` as MLPs, not Linear).
+2. A stabilized adversary — separate optimizer, spectral norm, or a stronger
+   multi-layer discriminator with a balanced update schedule.
+3. Replace/augment GRL with an explicit independence penalty (HSIC or MI minimization)
+   or an orthogonal projection that removes the estimated nuisance subspace.
+4. Re-run this experiment after each change; only promote to a claim when the table
+   shows site-decodability → ~0.5 with cross-site AUC ≥ baseline.
+
+## 9. References (verified)
 
 - LaBraM — *Large Brain Model…*, ICLR 2024 (spotlight). arXiv:2405.18765;
   code github.com/935963004/LaBraM. (Base 5.8M / Large 46M / Huge 369M params;
