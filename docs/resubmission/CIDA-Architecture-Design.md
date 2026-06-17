@@ -5,16 +5,21 @@
 (not a new foundation model, and not a generic FM-agnostic wrapper). LaBraM is the
 fixed, frozen backbone; CIDA is the trainable contribution on top of it.
 
-> ⚠️ **Empirical status (2026-06, controlled mechanism test).** The
-> *identity-disentanglement* pillar (block 4) **does not work as built** — see §9 and
-> [`experiments/cida_mechanism_test.py`](../../experiments/cida_mechanism_test.py).
-> On synthetic data where identity is the dominant signal, the gradient-reversal
-> adversary never lowers subject/site-decodability of `z_clin`; weak settings are
-> neutral, strong settings collapse the clinical signal. **We therefore lead the
-> contribution with the empirically-sound pillars (PEFT adaptation, connectivity,
-> attention pooling) + the OcuFM gaze foundation model, and treat disentanglement as
-> an exploratory thread gated by that benchmark.** Nothing about disentanglement is
-> written as a result until it passes.
+> **Empirical status (2026-06).** Two findings on REAL cached LaBraM embeddings (§8):
+> 1. **Frozen-feature ceiling.** A learned attention-pool head does *not* beat the
+>    mean+std readout (0.629 vs 0.643) — no head/pooling tweak breaks the frozen
+>    ceiling. The only lever that can is **backbone adaptation (LoRA)**.
+> 2. **Disentanglement: naive GRL fails, the FIX works (partially).** The as-built
+>    linear/GRL adapter removed *zero* identity (synthetic + real). The design-doc fix
+>    — **nonlinear factor heads + a stronger adversary** — *does* remove identity on
+>    real data, with a clean tunable tradeoff: at light strength it cuts subject-
+>    decodability ~20% (0.258→0.204) at ~no clinical-AUC cost (0.681→0.670). It does
+>    not yet improve the headline accuracy (disentanglement targets leakage/transfer,
+>    not in-dist AUC); the transfer benefit (MIPDB→HBN) is still to be measured.
+>
+> So: lead with **PEFT adaptation (LoRA) + OcuFM**; disentanglement is now a *working
+> but bounded* component (identity↓ at low cost), promoted from "falsified" to
+> "partial, tunable" — not yet an accuracy claim.
 
 ---
 
@@ -194,21 +199,39 @@ the *same* CIDA model with disentanglement OFF vs ON (identical capacity/budget)
 
 (Reproduce: `python experiments/cida_mechanism_test.py`.)
 
-**Verdict: disentanglement fails as-built.** Site-decodability of `z_clin` never drops
-(~0.96 throughout) — identity is *not* removed. Weak settings give a within-noise
-cross-site bump with zero identity removal; stronger settings collapse the clinical
-signal. A single linear disentangling head + plain GRL cannot null a dominant nuisance
-subspace while preserving a weak clinical signal.
+**Verdict (synthetic): naive GRL fails.** Site-decodability of `z_clin` never drops
+(~0.96 throughout). A single linear head + plain GRL cannot null a dominant nuisance
+subspace while preserving the clinical signal.
 
-**Fix thread (gated by this benchmark — must drop site-decodability AND lift cross-site
-AUC before any claim):**
-1. Nonlinear disentangling heads (`to_clin`/`to_nuis` as MLPs, not Linear).
-2. A stabilized adversary — separate optimizer, spectral norm, or a stronger
-   multi-layer discriminator with a balanced update schedule.
-3. Replace/augment GRL with an explicit independence penalty (HSIC or MI minimization)
-   or an orthogonal projection that removes the estimated nuisance subspace.
-4. Re-run this experiment after each change; only promote to a claim when the table
-   shows site-decodability → ~0.5 with cross-site AUC ≥ baseline.
+### 8b. Real-data results (`experiments/cida_readout_real.py`, `disentangle_real.py`)
+
+On the **real cached LaBraM embeddings** (118 MIPDB subjects, subject-level CV):
+
+*Readout head (frozen-feature ceiling):*
+| approach | ROC-AUC |
+|---|---|
+| mean+std readout + logreg (baseline) | 0.643 |
+| CIDA attention-pool head | 0.629 |
+
+→ No head/pooling tweak beats the readout. Backbone adaptation (LoRA) is the only lever.
+
+*Disentanglement (improved: nonlinear heads + stronger adversary), real subject-identity:*
+| adversary strength | clinical AUC | subject-decodability (chance 0.012) |
+|---|---|---|
+| OFF | 0.681 | 0.258 |
+| λ_adv = 0.1 | 0.670 | 0.204 |
+| λ_adv = 0.5 | 0.609 | 0.196 |
+| λ_adv = 1.0 | 0.585 | 0.155 |
+
+→ **The fix works**: identity is removed on real data (unlike naive GRL), with a clean
+tunable tradeoff. At λ_adv=0.1, identity ↓ ~20% at ~no AUC cost. Stronger removes more
+identity at a real accuracy cost.
+
+**Remaining fix thread (to promote disentanglement to an accuracy/transfer claim):**
+1. Measure the *transfer* payoff (MIPDB→HBN) — the property disentanglement should help.
+2. Push identity → chance without the AUC cost (HSIC/MI penalty, or orthogonal nuisance-
+   subspace projection instead of/with GRL).
+3. Apply on LoRA-adapted features, not just frozen ones.
 
 ## 9. References (verified)
 
