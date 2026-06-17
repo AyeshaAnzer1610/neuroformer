@@ -9,6 +9,9 @@ Reports, with identical subject-level repeated stratified CV:
    - missing-modality cohort (union; some modalities absent per subject) — the
      contribution: one model, any subset.
 3. Simulated-missingness degradation: train normally, drop each modality at test.
+4. Recent baselines (R2.2) under the identical protocol: a single-stage multimodal
+   Transformer (no-hierarchy control) and a gated attention fusion. (LaBraM itself
+   provides the self-supervised/foundation-model baseline.)
 
     python src/eval_fusion.py \
         --eeg-dir $SCRATCH/mh/data/processed \
@@ -137,6 +140,87 @@ def cv_late_fusion(X, y, mask, dims, folds=5, repeats=10, seed=0):
     return np.array(aucs)
 
 
+# ---------------------------------------------------------------------------
+# Recent-baseline models (R2.2): modality-as-token single-stage transformer and
+# a gated attention fusion, both under the IDENTICAL subject-level CV +
+# per-fold standardization as everything else. LaBraM itself covers the
+# self-supervised/foundation-model baseline.
+# ---------------------------------------------------------------------------
+class MultimodalTransformerBaseline(nn.Module):
+    """Single-stage multimodal Transformer (the 'no hierarchy' control): each
+    modality's pooled vector is one token; [CLS] + modality tokens go through a
+    shared Transformer encoder; classify the [CLS] token."""
+
+    def __init__(self, dims, d_model=32, n_layers=1, n_heads=4, dropout=0.3):
+        super().__init__()
+        self.mods = list(dims)
+        self.proj = nn.ModuleDict({m: nn.Linear(dims[m], d_model) for m in self.mods})
+        self.cls = nn.Parameter(torch.randn(1, 1, d_model))
+        self.type_emb = nn.Parameter(torch.randn(len(self.mods), d_model))
+        layer = nn.TransformerEncoderLayer(d_model, n_heads, dim_feedforward=2 * d_model,
+                                           dropout=dropout, batch_first=True, norm_first=True)
+        self.enc = nn.TransformerEncoder(layer, n_layers)
+        self.head = nn.Linear(d_model, 1)
+
+    def forward(self, X):
+        B = next(iter(X.values())).shape[0]
+        toks = [self.cls.expand(B, -1, -1)]
+        for j, m in enumerate(self.mods):
+            toks.append(self.proj[m](X[m]).unsqueeze(1) + self.type_emb[j].view(1, 1, -1))
+        h = self.enc(torch.cat(toks, dim=1))
+        return self.head(h[:, 0, :]).squeeze(-1)
+
+
+class GatedFusionBaseline(nn.Module):
+    """Gated attention fusion: project each modality, learn a softmax gate over
+    modalities, weighted-sum, then an MLP classifier."""
+
+    def __init__(self, dims, d_model=32, dropout=0.3):
+        super().__init__()
+        self.mods = list(dims)
+        self.proj = nn.ModuleDict(
+            {m: nn.Sequential(nn.Linear(dims[m], d_model), nn.ReLU()) for m in self.mods})
+        self.gate = nn.ModuleDict({m: nn.Linear(dims[m], 1) for m in self.mods})
+        self.head = nn.Sequential(nn.Dropout(dropout), nn.Linear(d_model, d_model), nn.ReLU(),
+                                  nn.Dropout(dropout), nn.Linear(d_model, 1))
+
+    def forward(self, X):
+        feats = torch.stack([self.proj[m](X[m]) for m in self.mods], dim=1)     # (B,M,d)
+        gates = torch.softmax(torch.cat([self.gate[m](X[m]) for m in self.mods], dim=1),
+                              dim=1).unsqueeze(-1)                               # (B,M,1)
+        fused = (feats * gates).sum(dim=1)                                       # (B,d)
+        return self.head(fused).squeeze(-1)
+
+
+def cv_torch_baseline(build, X, y, dims, folds=5, repeats=10, seed=0, epochs=200):
+    """Repeated stratified subject-level CV for a torch fusion baseline on the
+    complete-case (all-present) pooled features. Standardize per fold (train only)."""
+    cv = RepeatedStratifiedKFold(n_splits=folds, n_repeats=repeats, random_state=seed)
+    aucs = []
+    for tr, te in cv.split(np.zeros(len(y)), y):
+        Xtr = {m: X[m][tr] for m in dims}
+        Xte = {m: X[m][te] for m in dims}
+        Xtr, Xte = _standardize(Xtr, Xte)
+        torch.manual_seed(seed)
+        model = build(dims)
+        pos = max(int(y[tr].sum()), 1)
+        pw = torch.tensor([(len(tr) - pos) / pos], dtype=torch.float32)
+        lossf = nn.BCEWithLogitsLoss(pos_weight=pw)
+        opt = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-3)
+        xtr, ytr_t = _to_t(Xtr), torch.from_numpy(y[tr].astype(np.float32))
+        model.train()
+        for _ in range(epochs):
+            opt.zero_grad()
+            lossf(model(xtr), ytr_t).backward()
+            opt.step()
+        model.eval()
+        with torch.no_grad():
+            p = torch.sigmoid(model(_to_t(Xte))).numpy()
+        if len(np.unique(y[te])) > 1:
+            aucs.append(roc_auc_score(y[te], p))
+    return np.array(aucs)
+
+
 def row(name, aucs):
     print(f"  {name:<26}{np.mean(aucs):.3f} +/- {_ci95(aucs):.3f}")
     return {"setting": name, "auc": float(np.mean(aucs)), "auc_ci95": float(_ci95(aucs))}
@@ -178,6 +262,13 @@ def main():
                     cv_fusion(Xc, yc, maskc, dims, args.folds, args.repeats, args.seed)))
     rows.append(row("late-fusion (all present)",
                     cv_late_fusion(Xc, yc, maskc, dims, args.folds, args.repeats, args.seed)))
+    print("  recent baselines (R2.2, identical protocol):")
+    rows.append(row("multimodal transformer (1-stage)",
+                    cv_torch_baseline(lambda d: MultimodalTransformerBaseline(d),
+                                      Xc, yc, dims, args.folds, args.repeats, args.seed)))
+    rows.append(row("gated attention fusion",
+                    cv_torch_baseline(lambda d: GatedFusionBaseline(d),
+                                      Xc, yc, dims, args.folds, args.repeats, args.seed)))
 
     # ---- missing-modality cohort (union; real availability) ----
     subj_u, yu, Xu, masku = assemble(mod, labels_df, how="union")
