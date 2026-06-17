@@ -179,7 +179,7 @@ If the box says 'save the figure' - I still need to drop the PNG into figures/.
 s = slide(); title_bar(s, "Contributions: original vs. now")
 add_table(s, [
     ["Original submission", "This revision (same model, fixed everything around it)"],
-    ["Hierarchical cross-modal transformer", "SAME architecture - compact (2.9M vs 18.9M params)"],
+    ["Hierarchical cross-modal transformer", "SAME architecture - compact 2.9M (vs 18.9M originally submitted)"],
     ["Hand-crafted 5-channel EEG features", "Foundation-model EEG (frozen LaBraM, 200-D)"],
     ["Reported 0.91 (single split)", "Leak-free 0.75 (subject-level, 5x10 CV, CIs)"],
     ["Single cohort, no external test", "External validation on HBN (~2,000 subjects)"],
