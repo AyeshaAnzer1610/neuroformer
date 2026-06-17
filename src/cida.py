@@ -37,25 +37,40 @@ import torch.nn.functional as F
 # (2) LoRA building block
 # --------------------------------------------------------------------------- #
 class LoRALinear(nn.Module):
-    """Frozen base Linear + trainable rank-`r` low-rank update (B @ A).
+    """Frozen base Linear + trainable rank-`r` update, merged into `weight`.
 
-    At integration this wraps LaBraM's attention q/k/v/proj layers: the base
-    weight is the pretrained (frozen) weight, only A and B train. Here it doubles
-    as a standalone adapter layer for the self-test / parameter-budget accounting.
+    Critically, this works whether the caller INVOKES the module (``layer(x)``) OR
+    reads ``layer.weight`` / ``layer.bias`` directly — braindecode's LaBraM does the
+    latter (``F.linear(x, self.qkv.weight, bias)``), so a plain forward-override
+    wrapper silently fails to inject (and crashes if it lacks ``.weight``). We expose
+    ``weight`` as a property = frozen base + scaling·(B@A), so BOTH paths get LoRA.
+    The base weight/bias are frozen buffers; only A and B train.
     """
 
     def __init__(self, in_features, out_features, r=8, alpha=16, base: Optional[nn.Linear] = None):
         super().__init__()
-        self.base = base if base is not None else nn.Linear(in_features, out_features)
-        for p in self.base.parameters():
-            p.requires_grad = False                       # frozen backbone weight
-        self.A = nn.Parameter(torch.zeros(r, in_features))
-        self.B = nn.Parameter(torch.zeros(out_features, r))
+        base = base if base is not None else nn.Linear(in_features, out_features)
+        self.register_buffer("weight_base", base.weight.detach().clone())  # frozen
+        if base.bias is not None:
+            self.register_buffer("bias_base", base.bias.detach().clone())
+        else:
+            self.bias_base = None
+        out_f, in_f = base.weight.shape
+        self.A = nn.Parameter(torch.zeros(r, in_f))
+        self.B = nn.Parameter(torch.zeros(out_f, r))
         nn.init.kaiming_uniform_(self.A, a=5 ** 0.5)
         self.scaling = alpha / r
 
+    @property
+    def weight(self):                                     # LoRA-merged weight
+        return self.weight_base + self.scaling * (self.B @ self.A)
+
+    @property
+    def bias(self):
+        return self.bias_base
+
     def forward(self, x):
-        return self.base(x) + self.scaling * (x @ self.A.t() @ self.B.t())
+        return F.linear(x, self.weight, self.bias)
 
 
 # --------------------------------------------------------------------------- #
