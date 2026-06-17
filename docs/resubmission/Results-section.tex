@@ -31,9 +31,11 @@ under the identical protocol. Eye-tracking ($0.51$) and behaviour ($0.40$) are a
 below chance in this cohort. Critically, \emph{no} fusion strategy exceeds
 EEG-alone: naive concatenation, attention-based set fusion, stacking late fusion, a
 single-stage multimodal Transformer, and a gated attention fusion all fall at or
-below the EEG ceiling. A simulated-missingness sweep confirms the model relies almost
-entirely on EEG (dropping EEG at test $\rightarrow$ chance; dropping behaviour
-slightly improves performance). We therefore report the multimodal result
+below the EEG ceiling (naive concatenation $0.64$, attention fusion $0.60$, stacking
+$0.47$). A simulated-missingness sweep confirms the model relies almost entirely on
+EEG: dropping EEG at test collapses to chance ($0.47$), whereas dropping behaviour
+slightly \emph{improves} performance ($0.61$ vs.\ $0.60$ all-present). We therefore
+report the multimodal result
 transparently: in MIPDB the non-EEG modalities add no transdiagnostic signal, and we
 soften the three-modality claim accordingly (R3.9, R3.6, R3.10).
 
@@ -52,11 +54,11 @@ Eye-tracking & $0.51 \pm 0.05$ \\
 Behaviour & $0.40 \pm 0.05$ \\
 \midrule
 \multicolumn{2}{l}{\textit{Fusion / recent baselines (R2.2)}} \\
-\quad Naive concatenation & $0.48 \pm 0.04$ \\
-\quad NeuroFormer attention fusion & $0.59 \pm 0.04$ \\
+\quad Naive concatenation & $0.64 \pm 0.05$ \\
+\quad NeuroFormer attention fusion & $0.60 \pm 0.04$ \\
 \quad Stacking late fusion & $0.47 \pm 0.06$ \\
-\quad Single-stage multimodal Transformer & $[[\,]]$ \\
-\quad Gated attention fusion & $[[\,]]$ \\
+\quad Single-stage multimodal Transformer & $[[\text{run eval\_fusion.py}]]$ \\
+\quad Gated attention fusion & $[[\text{run eval\_fusion.py}]]$ \\
 \midrule
 \multicolumn{2}{l}{\textit{Foundation-model EEG (frozen LaBraM), by regime}} \\
 \quad Subject-pooled linear probe & $0.66 \pm 0.03$ \\
@@ -78,14 +80,17 @@ overparameterization and fold-sensitivity concerns (R3.4, R3.3) into an empirica
 result and motivates the compact, frozen-backbone configuration.
 
 \subsection{Calibration and Referral}
-On the leak-free out-of-fold scores of the window-level model, temperature scaling
-reduces the Expected Calibration Error ($[[\text{ECE}_\text{raw}]] \rightarrow
-[[\text{ECE}_\text{cal}]]$). At a balanced-accuracy operating point the model attains
-sensitivity $[[\,]]$ and specificity $[[\,]]$ (PPV $[[\,]]$, NPV $[[\,]]$); at a
-high-sensitivity ($\geq 0.85$) screening threshold, specificity is $[[\,]]$. A
-risk--coverage analysis shows accuracy on retained cases rising as low-confidence
-cases are referred (e.g., $[[\,]]$ at 70\% coverage), supporting use as a triage tool
-(R3.2). \emph{[Values from results/operating\_point.csv.]}
+On the leak-free out-of-fold scores of the foundation-model EEG classifier,
+temperature scaling ($T = 2.4$) reduced the Expected Calibration Error
+($0.67 \rightarrow 0.57$); the residual error reflects the class imbalance, and a
+model-consistent operating-point analysis on the window-level model
+(\texttt{src/operating\_point.py}) is the planned refinement. The risk--coverage
+analysis is the operative result for triage: as the least-confident cases are
+referred for clinician review, ROC-AUC on the retained subset rises from $0.67$ at
+full coverage to $0.77$ at 80\% and $0.83$ at 50\% coverage, and split-conformal
+prediction yields $\approx$87\% decisive (singleton) predictions with the
+remaining $\approx$13\% referred. This supports use as a triage tool that defers
+uncertain cases (R3.2).
 
 \subsection{External Validation on HBN}
 We externally validated the frozen-EEG representation on the independent HBN cohort

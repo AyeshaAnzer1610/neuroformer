@@ -52,6 +52,11 @@ build/
 *.pem
 credentials.json
 
+# ---- SLURM / cluster job logs ----
+*.out
+*.log
+slurm-*.out
+
 # ---- OS / editor ----
 .DS_Store
 Thumbs.db
