@@ -13,7 +13,6 @@ results/*
 !data/labels.csv
 !data/MIPDB_PublicFile.csv
 !data/eye_features.csv
-!data/behaviour_features.csv
 # Track small result CSVs/JSON (AUCs, predictions, operating-point) for the record
 # (placed after *.csv so the exception wins). Large artifacts (tarballs) stay out.
 !results/*.csv

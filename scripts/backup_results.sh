@@ -17,7 +17,7 @@ mkdir -p results
 
 # Bundle whatever embedding dirs exist (don't fail if one is missing).
 DIRS=()
-for d in processed processed_handcrafted processed_eye processed_behaviour processed_hbn; do
+for d in processed processed_handcrafted processed_eye processed_hbn; do
     [ -d "$PROC/$d" ] && DIRS+=("$d")
 done
 if [ ${#DIRS[@]} -eq 0 ]; then
@@ -31,7 +31,7 @@ echo "Bundle size: $(du -h "$BUNDLE" | cut -f1)"
 git add -f "$BUNDLE"
 for c in results/*.csv; do [ -f "$c" ] && git add -f "$c"; done
 
-git commit -m "Back up embeddings (EEG/eye/behaviour) + Phase 1-2 results" \
+git commit -m "Back up embeddings (EEG/eye) + Phase 1-2 results" \
   || { echo "Nothing new to back up."; exit 0; }
 git push origin main
 echo "Backed up to GitHub. Restore later with: tar xzf $BUNDLE -C \$SCRATCH/mh/data"

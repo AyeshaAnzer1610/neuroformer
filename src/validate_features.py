@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Phase 2 validation — re-derived eye/behaviour features vs the original CSVs.
+Phase 2 validation — re-derived eye features vs the original CSV.
 
 Re-deriving from raw used the *same definitions* as the original Multisource
 pipeline, so per-subject values should match closely. This computes, per feature,
@@ -9,8 +9,7 @@ the Pearson correlation and median |relative diff| between the freshly extracted
 overlapping subjects. High correlation (~1.0) = faithful re-derivation.
 
     python src/validate_features.py \
-        --eye-dir $SCRATCH/mh/data/processed_eye \
-        --beh-dir $SCRATCH/mh/data/processed_behaviour
+        --eye-dir $SCRATCH/mh/data/processed_eye
 """
 import argparse
 import re
@@ -20,7 +19,6 @@ import pandas as pd
 
 from compare_fm_vs_handcrafted import load_windows, pool_subjects
 from extract_eye_features import EYE_FEATURES
-from extract_behaviour_features import BEH_FEATURES
 
 _SID = re.compile(r"(A\d+)")
 
@@ -64,12 +62,9 @@ def compare(name, npz_dir, suffix, feat_names, old_csv, id_col):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--eye-dir", required=True)
-    ap.add_argument("--beh-dir", required=True)
     ap.add_argument("--eye-csv", default="data/eye_features.csv")
-    ap.add_argument("--beh-csv", default="data/behaviour_features.csv")
     args = ap.parse_args()
     compare("EYE", args.eye_dir, "_eye", EYE_FEATURES, args.eye_csv, "file_name")
-    compare("BEHAVIOUR", args.beh_dir, "_behaviour", BEH_FEATURES, args.beh_csv, "file")
 
 
 if __name__ == "__main__":

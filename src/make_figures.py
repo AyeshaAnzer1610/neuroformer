@@ -3,7 +3,7 @@
 Generate publication / clinical-report grade manuscript figures (run on Nibi).
 
 Writes to figures/:
-  modality_showcase.png  - EEG trace + eye scanpath + behaviour, clean & annotated
+  modality_showcase.png  - EEG trace + eye scanpath, clean & annotated
   results_auc.png        - leak-free AUC comparison (LaBraM highlighted)
   embedding_map.png       - PCA of LaBraM per-subject embeddings by diagnosis
   screening_report.png    - clinical dashboard: metric callouts + ROC + referral curve
@@ -53,7 +53,7 @@ def _tag(ax, letter):
 def modality_showcase(mipdb, subject, out):
     import sys; sys.path.insert(0, "src")
     import pandas as pd
-    fig, ax = plt.subplots(1, 3, figsize=(15.5, 4.4))
+    fig, ax = plt.subplots(1, 2, figsize=(11.0, 4.4))
     fig.patch.set_facecolor("white")
 
     # (A) EEG multi-channel trace
@@ -99,39 +99,6 @@ def modality_showcase(mipdb, subject, out):
     except Exception as e:  # noqa: BLE001
         ax[1].text(0.5, 0.5, f"Eye panel:\n{e}", ha="center", fontsize=8)
 
-    # (C) Behaviour RT pooled across all 2AFC blocks
-    try:
-        bdir = Path(mipdb) / subject / "Behavioral" / "csv"
-        req = ["CD_TG", "CD_RESP", "trialLR", "RespLR"]; rts, accs = [], []
-        for bf in sorted(bdir.glob("*.csv")):
-            try:
-                b = pd.read_csv(bf)
-            except Exception:
-                continue
-            if all(c in b.columns for c in req):
-                r = (pd.to_numeric(b["CD_RESP"], errors="coerce")
-                     - pd.to_numeric(b["CD_TG"], errors="coerce")).dropna()
-                rts.append(r); accs.append((b["trialLR"] == b["RespLR"]).mean() * 100)
-        rt = pd.concat(rts) if rts else pd.Series([], dtype=float)
-        acc = float(np.mean(accs)) if accs else float("nan")
-        if rt.nunique() >= 8:                        # dense -> distribution
-            ax[2].hist(rt, bins=20, color=C["beh"], edgecolor="white", alpha=0.95)
-            ax[2].axvline(rt.median(), color=C["accent"], ls="--", lw=1.5,
-                          label=f"median {rt.median():.0f}")
-            ax[2].set_ylabel("trials"); ax[2].legend(loc="upper right")
-        else:                                        # sparse -> per-trial points (clean)
-            ax[2].plot(range(1, len(rt) + 1), rt.values, "o-", color=C["beh"],
-                       ms=6, lw=1.2)
-            ax[2].set_ylabel("RT (task units)"); ax[2].set_xlabel("trial")
-        ax[2].set_title("Behaviour  ·  reaction time")
-        if rt.nunique() >= 8:
-            ax[2].set_xlabel("RT (task units)")
-        ax[2].text(0.99, 0.04, f"{len(rt)} trials · acc {acc:.0f}%",
-                   transform=ax[2].transAxes, ha="right", fontsize=9, color=C["ink"])
-        _tag(ax[2], "C")
-    except Exception as e:  # noqa: BLE001
-        ax[2].text(0.5, 0.5, f"Behaviour panel:\n{e}", ha="center", fontsize=8)
-
     fig.suptitle(f"Multimodal recording — participant {subject}", fontsize=14,
                  fontweight="bold", color=C["ink"], y=1.02)
     fig.tight_layout()
@@ -151,9 +118,9 @@ def results_auc(csv, out):
         ci = df["auc_ci95"].tolist() if "auc_ci95" in df.columns else [0] * len(fs)
         col = [C["labram"] if "labram" in f.lower() else (C["fused"] if "fus" in f.lower() else C["neg"]) for f in fs]
     else:
-        names = ["hand-crafted\nEEG", "eye", "behaviour", "LaBraM\nEEG", "fusion"]
-        auc = [0.46, 0.51, 0.40, 0.66, 0.59]; ci = [0.04]*5
-        col = [C["neg"], C["neg"], C["neg"], C["labram"], C["fused"]]
+        names = ["hand-crafted\nEEG", "eye", "LaBraM\nEEG", "fusion"]
+        auc = [0.46, 0.51, 0.66, 0.59]; ci = [0.04]*4
+        col = [C["neg"], C["neg"], C["labram"], C["fused"]]
     fig, a = plt.subplots(figsize=(7.5, 4.0)); a.set_facecolor("white")
     bars = a.bar(range(len(names)), auc, yerr=ci, capsize=4, color=col,
                  edgecolor="white", width=0.72, error_kw={"ecolor": "#55606a", "lw": 1.2})
@@ -287,40 +254,41 @@ def architecture_diagram(out):
         ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
                     arrowprops=dict(arrowstyle="-|>", color=C["ink"], lw=1.6))
 
-    # inputs
+    # inputs (two modalities: EEG + eye; behaviour dropped)
     box(0.2, 4.6, 2.3, 0.95, "EEG  ·  raw\n(128-ch EGI)", "#eef4f5", C["eeg"])
     box(0.2, 3.0, 2.3, 0.95, "Eye-tracking\n(gaze, pupil)", "#fdf3e8", C["eye"])
-    box(0.2, 1.4, 2.3, 0.95, "Behaviour\n(RT, accuracy)", C["panel"], C["beh"])
-    # LaBraM front-end (NEW) on EEG
+    # foundation-model front-ends (NEW): LaBraM on EEG, OcuFM (proposed) on gaze
     box(2.9, 4.6, 2.2, 0.95, "LaBraM\nfoundation model\n(200-d / window)",
         "#dcebed", C["eeg"], new=True, fs=9)
-    # shared encoders
-    for y, c in [(4.6, C["eeg"]), (3.0, C["eye"]), (1.4, C["beh"])]:
-        sx = 5.5 if y == 4.6 else 2.9
-        box(sx, y, 2.0, 0.95, "Modality\nEncoder", "#ffffff", c, fs=9)
-    # modality dropout annotation (NEW)
-    ax.text(5.0, 0.55, "modality dropout + availability token  (missing-modality)",
+    box(2.9, 3.0, 2.2, 0.95, "OcuFM\nfoundation model\n(proposed, gaze)",
+        "#fdeccf", C["eye"], new=True, fs=9)
+    # CIDA adapter (NEW): identity-disentangled, on BOTH identity-dominated streams
+    for y, c in [(4.6, C["eeg"]), (3.0, C["eye"])]:
+        box(5.5, y, 2.0, 0.95, "CIDA adapter\n(disentangle id)", "#ffffff", c, new=True, fs=8.5)
+    # modality dropout annotation
+    ax.text(5.0, 2.35, "modality dropout + availability token  (missing-modality)",
             ha="center", fontsize=9, color=C["accent"], fontweight="bold")
-    ax.add_patch(FancyBboxPatch((2.7, 0.2), 6.6, 0.7, boxstyle="round,pad=0.04",
+    ax.add_patch(FancyBboxPatch((2.7, 2.0), 6.6, 0.7, boxstyle="round,pad=0.04",
                  fc="none", ec=C["accent"], lw=1.6, ls="--"))
     # fusion
-    box(8.1, 2.9, 2.0, 1.4, "Cross-Modal\nFusion\nTransformer\n[CLS]", "#eef2f6", C["fused"], fs=9.5)
+    box(8.1, 3.0, 2.0, 1.4, "Cross-Modal\nFusion\nTransformer\n[CLS]", "#eef2f6", C["fused"], fs=9.5)
     # classifier + calibration (NEW)
-    box(10.4, 3.5, 1.45, 0.95, "Classifier", "#ffffff", C["ink"], fs=9)
-    box(10.4, 2.0, 1.45, 0.95, "Calibration\n+ referral", "#fbeae7", C["accent"], new=True, fs=8.5)
+    box(10.4, 3.9, 1.45, 0.95, "Classifier", "#ffffff", C["ink"], fs=9)
+    box(10.4, 2.4, 1.45, 0.95, "Calibration\n+ referral", "#fbeae7", C["accent"], new=True, fs=8.5)
 
     arrow(2.5, 5.07, 2.9, 5.07)                       # EEG -> LaBraM
-    arrow(5.1, 5.07, 5.5, 5.07)                       # LaBraM -> encoder
-    arrow(2.5, 3.47, 2.9, 3.47); arrow(2.5, 1.87, 2.9, 1.87)
-    arrow(7.5, 5.07, 8.6, 4.3); arrow(4.9, 3.47, 8.1, 3.6); arrow(4.9, 1.87, 8.6, 2.95)
-    arrow(10.1, 3.97, 10.4, 3.97)                     # fusion -> classifier
-    arrow(11.1, 3.5, 11.1, 2.95)                      # classifier -> calibration
-    ax.text(11.12, 1.7, "diagnosed / control\n+ confidence", ha="center",
+    arrow(5.1, 5.07, 5.5, 5.07)                       # LaBraM -> CIDA
+    arrow(2.5, 3.47, 2.9, 3.47)                       # eye -> OcuFM
+    arrow(5.1, 3.47, 5.5, 3.47)                       # OcuFM -> CIDA
+    arrow(7.5, 5.07, 8.6, 4.4); arrow(7.5, 3.47, 8.1, 3.7)   # CIDA -> fusion
+    arrow(10.1, 4.37, 10.4, 4.37)                     # fusion -> classifier
+    arrow(11.1, 3.9, 11.1, 3.35)                      # classifier -> calibration
+    ax.text(11.12, 2.1, "diagnosed / control\n+ confidence", ha="center",
             fontsize=8.5, color=C["ink"], style="italic")
 
-    ax.set_title("NeuroFormer (revised): foundation-model EEG + missing-modality "
-                 "fusion + calibrated referral", fontsize=12.5, fontweight="bold",
-                 color=C["ink"], pad=12)
+    ax.set_title("NeuroFormer (revised): two foundation-model representations "
+                 "(LaBraM EEG + OcuFM gaze) · CIDA disentanglement · calibrated referral",
+                 fontsize=11.5, fontweight="bold", color=C["ink"], pad=12)
     fig.savefig(out, bbox_inches="tight", facecolor="white"); plt.close(fig)
     print(f"[fig] wrote {out}")
 

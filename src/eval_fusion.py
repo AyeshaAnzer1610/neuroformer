@@ -5,7 +5,7 @@ Phase 2 evaluation — does missing-modality fusion beat EEG-alone (0.66)?
 Reports, with identical subject-level repeated stratified CV:
 1. Single-modality + naive-concat baselines (logreg) on the complete-case cohort.
 2. The masked set-fusion model (modality dropout) on:
-   - complete-case (all 3 present) vs the baselines;
+   - complete-case (both present) vs the baselines;
    - missing-modality cohort (union; some modalities absent per subject) — the
      contribution: one model, any subset.
 3. Simulated-missingness degradation: train normally, drop each modality at test.
@@ -13,10 +13,11 @@ Reports, with identical subject-level repeated stratified CV:
    Transformer (no-hierarchy control) and a gated attention fusion. (LaBraM itself
    provides the self-supervised/foundation-model baseline.)
 
+Modalities are EEG + eye only (behaviour was dropped: below chance ~0.40, noise).
+
     python src/eval_fusion.py \
         --eeg-dir $SCRATCH/mh/data/processed \
-        --eye-dir $SCRATCH/mh/data/processed_eye \
-        --beh-dir $SCRATCH/mh/data/processed_behaviour
+        --eye-dir $SCRATCH/mh/data/processed_eye
 """
 import argparse
 
@@ -33,7 +34,7 @@ from sklearn.preprocessing import StandardScaler
 from assemble_multimodal import load_eeg, load_npz_modality, assemble
 from fusion_model import MaskedSetFusion
 
-MODS = ["eeg", "eye", "behaviour"]
+MODS = ["eeg", "eye"]
 
 
 def _ci95(x):
@@ -230,7 +231,6 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--eeg-dir", required=True)
     ap.add_argument("--eye-dir", required=True)
-    ap.add_argument("--beh-dir", required=True)
     ap.add_argument("--labels", default="data/labels.csv")
     ap.add_argument("--pool", default="meanstd", help="EEG window pooling")
     ap.add_argument("--folds", type=int, default=5)
@@ -243,7 +243,6 @@ def main():
     mod = {
         "eeg": load_eeg(args.eeg_dir, pool=args.pool),
         "eye": load_npz_modality(args.eye_dir, "_eye", pool="mean"),
-        "behaviour": load_npz_modality(args.beh_dir, "_behaviour", pool="mean"),
     }
     dims = {m: len(next(iter(d.values()))) for m, d in mod.items()}
     rows = []

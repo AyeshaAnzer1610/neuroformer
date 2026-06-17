@@ -126,7 +126,7 @@ Keep this to ~30 seconds; it frames the whole meeting.
 s = slide(); title_bar(s, "What we did and why")
 tf = box(s, 0.6, 1.3, 12.1, 5.6)
 bullets(tf, [
-    ("The model (unchanged): NeuroFormer fuses EEG + eye-tracking + behaviour to screen 'any DSM diagnosis vs none'. It's a REVISION, so we kept the architecture.", 0),
+    ("The model: NeuroFormer fuses EEG + eye-tracking to screen 'any DSM diagnosis vs none'. Behaviour was dropped (below chance, ~0.40 - noise only).", 0),
     ("Problem we found: the original 0.91 was inflated by DATA LEAKAGE - the same person's recordings were in both train and test, so the model memorised people, not the condition.", 0),
     ("Fix 1 - honest evaluation: keep all of one person's data on one side; repeated cross-validation; confidence intervals.", 1),
     ("Fix 2 - the big upgrade: replace weak hand-crafted EEG features with a PRETRAINED EEG FOUNDATION MODEL (LaBraM).", 1),
@@ -157,7 +157,7 @@ figure_slide(
     """
 Walk left to right - one sentence per box:
 1. ACQUISITION: each participant does cognitive tasks while we record EEG (brain activity),
-   eye-tracking (gaze + pupil), and behaviour (reaction time, accuracy).
+   and eye-tracking (gaze + pupil).
 2. PREPROCESSING + QC: clean the EEG - band-pass 0.1-75 Hz, remove 60 Hz mains noise,
    downsample to 200 Hz, and a quality gate drops bad recordings. Cut into 15-second windows.
 3. FROZEN EEG FOUNDATION MODEL (LaBraM): each 15 s window becomes a 200-number summary
@@ -209,7 +209,7 @@ add_table(s, [
     ["Approach", "ROC-AUC", "Read"],
     ["Hand-crafted EEG", "0.43-0.47", "~ chance (old features)"],
     ["Foundation-model EEG (window-level)", "0.748 +/- 0.029", "THE WIN"],
-    ["Eye-tracking / behaviour alone", "0.51 / 0.40", "no signal here"],
+    ["Eye-tracking alone", "0.51", "no signal here (hand-crafted)"],
     ["Multimodal fusion (best variant)", "<= 0.66", "fusion doesn't help"],
     ["Full end-to-end fine-tuning", "0.69 (+/-0.12)", "overfits -> less is more"],
     ["External (HBN, N~2,000)", "~ 0.50", "does not transfer"],
@@ -224,7 +224,7 @@ Quick reminder: ROC-AUC of 0.5 = coin flip, 1.0 = perfect. ~0.75 is a meaningful
 
 Read it as a story, not a list:
 "Our old EEG features were basically chance. With the foundation model, EEG jumps to 0.75 -
-that's the result. Eye and behaviour on their own are at chance in this cohort, and combining
+that's the result. Eye-tracking on its own is at chance in this cohort, and combining
 all three never beats EEG alone - so we report that honestly rather than claiming fusion helps.
 We also tried pushing harder by fine-tuning the whole foundation model; on only ~118 people it
 OVERFITS - the average drops and the variance triples. That's actually a useful finding: it
@@ -242,8 +242,8 @@ figure_slide(
     "fusion -> classification head. EEG enters as frozen LaBraM embeddings.",
     """
 Walk BOTTOM to TOP:
-- STAGE 1 INPUTS: EEG enters as the 200-number LaBraM embedding; eye is 11 features; behaviour
-  is 6 features.
+- STAGE 1 INPUTS: EEG enters as the 200-number LaBraM embedding; eye is 11 features.
+  (Behaviour was dropped - below chance, noise only.)
 - STAGE 2 EMBEDDING: each is projected to a common size (128) and given a position code.
 - STAGE 3 ENCODERS: three SEPARATE encoders (one per modality) - each looks only within its own
   modality first. (We fixed an earlier version that wrongly merged them too early.)

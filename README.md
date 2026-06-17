@@ -1,22 +1,36 @@
 # NeuroFormer
 
-**A foundation-model, missing-modality transformer for transdiagnostic
-mental-health screening from EEG, eye-tracking, and behaviour — with external
-validation.**
+**A two-foundation-model, missing-modality transformer for transdiagnostic
+mental-health screening from EEG and eye-tracking — identity-disentangled, with
+external validation.**
 
-NeuroFormer fuses three non-invasive modalities through modality-specific
-transformer encoders and a cross-modal fusion transformer. This repository
-contains the model, the leak-free evaluation pipeline, and the analysis behind the
-IEEE Access submission.
+NeuroFormer fuses two non-invasive modalities, each through its own *foundation-model*
+representation, adapted by a shared identity-disentangling adapter (CIDA) and combined
+by a missing-modality fusion transformer:
+
+- **EEG** → frozen **LaBraM** + **CIDA** ([`src/cida.py`](src/cida.py))
+- **Eye-tracking** → frozen **OcuFM** (a proposed gaze foundation model on the LaBraM
+  recipe, [`src/ocufm.py`](src/ocufm.py)) + **CIDA**
+
+The unifying idea: both EEG and gaze are *identity-dominated* signals (which is what
+produced our original data-leakage result), so one disentanglement adapter — **CIDA** —
+serves both. Behaviour was dropped (below chance, ~0.40, in this cohort). This repo
+contains the models, the leak-free evaluation pipeline, and the analysis behind the
+IEEE Access submission. See [docs/resubmission/CIDA-Architecture-Design.md](docs/resubmission/CIDA-Architecture-Design.md)
+and [docs/resubmission/OcuFM-Architecture-Design.md](docs/resubmission/OcuFM-Architecture-Design.md).
 
 ## Summary of findings (leak-free, subject-level evaluation)
 
 - **Foundation-model EEG is the locus of signal.** Frozen LaBraM embeddings reach
   ROC-AUC ≈ 0.66 for transdiagnostic screening on MIPDB (N≈118), versus ≈ 0.45 for
   the prior hand-crafted EEG features.
-- **Honest multimodal analysis.** Eye-tracking and behaviour are near chance in
-  this cohort; multimodal fusion does not exceed EEG-alone — reported transparently
-  rather than overclaimed.
+- **Identity-disentangled adaptation (CIDA).** Both EEG and gaze foundation embeddings
+  encode subject/site identity; CIDA factors identity out of the clinical signal via a
+  parameter-efficient adapter (~2–3% trainable params) on the frozen backbones — directly
+  targeting the leakage/overfit/external-collapse failure modes.
+- **A foundation model for gaze (OcuFM).** Eye-tracking gains the same kind of pretrained
+  representation EEG has, closing the modality asymmetry. *Proposed + runnable; not yet
+  pretrained — no accuracy gain is claimed until it is.*
 - **External validation.** On the independent Healthy Brain Network (HBN) cohort,
   the frozen EEG representation predicts the general psychopathology factor
   out-of-distribution — scaled to ~2,000+ subjects across releases.
@@ -24,13 +38,14 @@ IEEE Access submission.
   screening triage.
 
 All performance is measured under strict subject-level, leakage-free
-cross-validation.
+cross-validation. Empirical headline signal remains EEG; OcuFM/CIDA gains are reported
+honestly once run.
 
 ## Repository structure
 
 | Path | Contents |
 |---|---|
-| `src/` | NeuroFormer model, EEG/eye/behaviour feature extraction, fusion, calibration, fine-tuning, evaluation |
+| `src/` | NeuroFormer model, LaBraM/OcuFM + CIDA adapters, EEG/eye feature extraction, fusion, calibration, fine-tuning, evaluation |
 | `scripts/` | Data download + Alliance-cluster (SLURM) job scripts |
 | `notebooks/` | Exploratory / live analysis |
 | `docs/resubmission/` | Method writeups, results, reviewer responses, literature grounding |
@@ -66,8 +81,11 @@ See `docs/resubmission/` for method details and the full result writeups
 | File | Role |
 |---|---|
 | `src/neuroformer.py` | The NeuroFormer architecture (encoders + cross-modal fusion + classifier) |
+| `src/cida.py` | CIDA: connectivity-aware, identity-disentangled adapter for a frozen FM |
+| `src/ocufm.py` | OcuFM: proposed gaze foundation model (LaBraM recipe) |
+| `src/multimodal_cida.py` | Two-FM screener: CIDA-on-LaBraM ⊕ CIDA-on-OcuFM → fusion |
 | `src/extract_eeg_embeddings.py` | Frozen LaBraM EEG embeddings (QC, leak-free, batched) |
-| `src/extract_eye_features.py`, `src/extract_behaviour_features.py` | Eye / behaviour features from raw |
+| `src/extract_eye_features.py` | Eye-tracking features from raw |
 | `src/compare_fm_vs_handcrafted.py` | Head-to-head + fusion evaluation |
 | `src/train_neuroformer.py` | Leak-free training with modality dropout |
 | `src/eval_hbn.py` | External HBN validation |

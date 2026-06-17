@@ -1,5 +1,14 @@
 # Proposed framework — best-available-representation, missing-modality fusion
 
+> **Update (2-modality direction).** This framework is now *realized concretely*:
+> the "self-supervised encoder where no foundation model exists" for eye-tracking is
+> built as **OcuFM** ([OcuFM-Architecture-Design.md](OcuFM-Architecture-Design.md)),
+> a gaze foundation model on the LaBraM recipe, and the cross-modal/robustness
+> mechanism is generalized into **CIDA** ([CIDA-Architecture-Design.md](CIDA-Architecture-Design.md)),
+> an identity-disentangling adapter applied to *both* foundation backbones.
+> **Behaviour has been dropped** (below chance, ~0.40). The text below is the original
+> framing; OcuFM + CIDA are its successors.
+
 A method/positioning contribution for the revision. It is proposed and shown to
 **run**; on this small cohort it does **not** improve accuracy (the non-EEG
 modalities are at chance), and we report that honestly. Its value is as a

@@ -133,10 +133,10 @@ class CrossModalFusionTransformer(nn.Module):
         n_heads: int = 8,
         d_ff: int = 1024,
         dropout: float = 0.3,
-        n_modalities: int = 3
+        n_modalities: int = 2
     ):
         super().__init__()
-        
+
         self.d_model = d_model
         self.n_modalities = n_modalities
         
@@ -193,7 +193,7 @@ class CrossModalFusionTransformer(nn.Module):
         sequences = [cls_tokens]
         full_mask = []
         
-        modality_names = ['eeg', 'eyetracking', 'behavioral']
+        modality_names = ['eeg', 'eyetracking']
         for idx, modality_name in enumerate(modality_names):
             if modality_name in encoded_modalities:
                 modality_seq = encoded_modalities[modality_name]
@@ -279,7 +279,7 @@ class CrossModalAlignment(nn.Module):
                 nn.GELU(),
                 nn.Linear(d_model, d_align),
             )
-            for name in ('eeg', 'eyetracking', 'behavioral')
+            for name in ('eeg', 'eyetracking')
         })
 
     def embed(self, pooled: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
@@ -301,7 +301,7 @@ class CrossModalAlignment(nn.Module):
         (per `availability`, a dict of (batch,) bool tensors; None => all present).
         Returns a scalar (0 if no valid pair has >=2 usable rows).
         """
-        names = [n for n in ('eeg', 'eyetracking', 'behavioral') if n in embeddings]
+        names = [n for n in ('eeg', 'eyetracking') if n in embeddings]
         device = next(iter(embeddings.values())).device
         total = torch.zeros((), device=device)
         n_pairs = 0
@@ -333,7 +333,7 @@ class NeuroFormer(nn.Module):
     """
     NeuroFormer: Transformer-based multimodal framework for mental health diagnosis.
 
-    Integrates EEG, eye-tracking, and behavioral data through:
+    Integrates EEG and eye-tracking data through:
     1. Modality-specific transformer encoders
     2. Cross-modal fusion transformer
     3. Classification head
@@ -344,7 +344,6 @@ class NeuroFormer(nn.Module):
         self,
         eeg_input_dim: int = 128,
         eyetracking_input_dim: int = 96,
-        behavioral_input_dim: int = 64,
         d_model: int = 256,
         n_encoder_layers: int = 4,
         n_fusion_layers: int = 6,
@@ -383,15 +382,6 @@ class NeuroFormer(nn.Module):
             dropout=dropout
         )
         
-        self.behavioral_encoder = ModalityEncoder(
-            input_dim=behavioral_input_dim,
-            d_model=d_model,
-            n_layers=n_encoder_layers,
-            n_heads=n_heads,
-            d_ff=d_ff,
-            dropout=dropout
-        )
-        
         # Cross-modal fusion transformer
         self.fusion_transformer = CrossModalFusionTransformer(
             d_model=d_model,
@@ -399,7 +389,7 @@ class NeuroFormer(nn.Module):
             n_heads=n_heads,
             d_ff=d_ff,
             dropout=dropout,
-            n_modalities=3
+            n_modalities=2
         )
         
         # Classification head
@@ -417,7 +407,6 @@ class NeuroFormer(nn.Module):
         if use_auxiliary_loss:
             self.eeg_decoder = nn.Linear(d_model, eeg_input_dim)
             self.eyetracking_decoder = nn.Linear(d_model, eyetracking_input_dim)
-            self.behavioral_decoder = nn.Linear(d_model, behavioral_input_dim)
 
         # Optional cross-modal representation-space alignment (off by default).
         if use_alignment:
@@ -429,23 +418,20 @@ class NeuroFormer(nn.Module):
         self,
         eeg: torch.Tensor,
         eyetracking: torch.Tensor,
-        behavioral: torch.Tensor,
         eeg_mask: Optional[torch.Tensor] = None,
         eyetracking_mask: Optional[torch.Tensor] = None,
-        behavioral_mask: Optional[torch.Tensor] = None,
         availability: Optional[Dict[str, torch.Tensor]] = None,
         return_attention: bool = False
     ) -> Dict[str, torch.Tensor]:
         """
         Forward pass through NeuroFormer.
-        
+
         Args:
             eeg: EEG features (batch_size, seq_len, eeg_dim)
             eyetracking: Eye-tracking features (batch_size, seq_len, eye_dim)
-            behavioral: Behavioral features (batch_size, seq_len, beh_dim)
             *_mask: Optional padding masks for each modality
             return_attention: Whether to return attention weights
-        
+
         Returns:
             Dictionary containing:
                 - logits: Classification logits (batch_size, n_classes)
@@ -455,23 +441,19 @@ class NeuroFormer(nn.Module):
         # Encode each modality
         eeg_encoded = self.eeg_encoder(eeg, eeg_mask)
         eyetracking_encoded = self.eyetracking_encoder(eyetracking, eyetracking_mask)
-        behavioral_encoded = self.behavioral_encoder(behavioral, behavioral_mask)
-        
+
         # Prepare encoded modalities dictionary
         encoded_modalities = {
             'eeg': eeg_encoded,
-            'eyetracking': eyetracking_encoded,
-            'behavioral': behavioral_encoded
+            'eyetracking': eyetracking_encoded
         }
-        
+
         # Prepare masks dictionary
         modality_masks = {}
         if eeg_mask is not None:
             modality_masks['eeg'] = eeg_mask
         if eyetracking_mask is not None:
             modality_masks['eyetracking'] = eyetracking_mask
-        if behavioral_mask is not None:
-            modality_masks['behavioral'] = behavioral_mask
         
         # Cross-modal fusion
         cls_output, full_output = self.fusion_transformer(
@@ -494,8 +476,7 @@ class NeuroFormer(nn.Module):
         if self.use_auxiliary_loss:
             output['reconstructions'] = {
                 'eeg': self.eeg_decoder(eeg_encoded),
-                'eyetracking': self.eyetracking_decoder(eyetracking_encoded),
-                'behavioral': self.behavioral_decoder(behavioral_encoded)
+                'eyetracking': self.eyetracking_decoder(eyetracking_encoded)
             }
 
         # Optional cross-modal alignment: shared-space embeddings + contrastive loss.
@@ -503,7 +484,6 @@ class NeuroFormer(nn.Module):
             pooled = {
                 'eeg': _masked_mean(eeg_encoded, eeg_mask),
                 'eyetracking': _masked_mean(eyetracking_encoded, eyetracking_mask),
-                'behavioral': _masked_mean(behavioral_encoded, behavioral_mask),
             }
             align_emb = self.alignment.embed(pooled)
             output['alignment_embeddings'] = align_emb
@@ -517,7 +497,6 @@ class NeuroFormer(nn.Module):
         self,
         eeg: torch.Tensor,
         eyetracking: torch.Tensor,
-        behavioral: torch.Tensor,
         **kwargs
     ) -> Dict[str, torch.Tensor]:
         """Extract attention weights for interpretability analysis."""
@@ -531,7 +510,6 @@ def create_neuroformer(config: dict) -> NeuroFormer:
     return NeuroFormer(
         eeg_input_dim=config.get('eeg_input_dim', 128),
         eyetracking_input_dim=config.get('eyetracking_input_dim', 96),
-        behavioral_input_dim=config.get('behavioral_input_dim', 64),
         d_model=config.get('d_model', 256),
         n_encoder_layers=config.get('n_encoder_layers', 4),
         n_fusion_layers=config.get('n_fusion_layers', 6),
@@ -551,25 +529,23 @@ if __name__ == "__main__":
     seq_len = 300
     eeg = torch.randn(batch_size, seq_len, 128)
     eyetracking = torch.randn(batch_size, seq_len, 96)
-    behavioral = torch.randn(batch_size, seq_len, 64)
 
     # Baseline (alignment off — headline configuration)
     model = NeuroFormer()
-    output = model(eeg, eyetracking, behavioral)
+    output = model(eeg, eyetracking)
     print(f"Logits shape: {output['logits'].shape}")
     print(f"Probs shape: {output['probs'].shape}")
     print(f"Model parameters: {sum(p.numel() for p in model.parameters()) / 1e6:.2f}M")
 
     # Alignment-enabled variant (optional capability)
     model_a = NeuroFormer(use_alignment=True)
-    out_a = model_a(eeg, eyetracking, behavioral)
+    out_a = model_a(eeg, eyetracking)
     print(f"Alignment loss: {out_a['alignment_loss'].item():.4f}")
     print(f"Shared-embedding dim: {out_a['alignment_embeddings']['eeg'].shape[-1]}")
     # With an availability mask (some modalities missing per subject)
     avail = {
         'eeg': torch.tensor([True, True, True, True]),
         'eyetracking': torch.tensor([True, True, False, True]),
-        'behavioral': torch.tensor([True, False, True, True]),
     }
-    out_b = model_a(eeg, eyetracking, behavioral, availability=avail)
+    out_b = model_a(eeg, eyetracking, availability=avail)
     print(f"Alignment loss (masked): {out_b['alignment_loss'].item():.4f}")

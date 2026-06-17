@@ -2,7 +2,7 @@
 """
 Phase 2 — masked set-fusion model for missing-modality screening.
 
-One small model fuses any subset of {EEG, eye, behaviour}:
+One small model fuses any subset of {EEG, eye}:
 - each present modality -> linear projection to a shared dim + a learned
   per-modality (availability/identity) embedding -> a token;
 - **masked mean pooling** over *present* tokens (absent modalities contribute
@@ -59,10 +59,10 @@ class MaskedSetFusion(nn.Module):
 
 if __name__ == "__main__":  # self-test: forward + one optimizer step
     torch.manual_seed(0)
-    dims = {"eeg": 400, "eye": 11, "behaviour": 6}
+    dims = {"eeg": 400, "eye": 11}
     B = 16
     x = {m: torch.randn(B, d) for m, d in dims.items()}
-    mask = (torch.rand(B, 3) > 0.3)
+    mask = (torch.rand(B, 2) > 0.3)
     mask[mask.sum(1) == 0, 0] = True                       # ensure >=1 present
     model = MaskedSetFusion(dims)
     y = torch.randint(0, 2, (B,)).float()
