@@ -212,7 +212,7 @@ directly address the overparameterization concern.
 The representations $\mathbf{E}$, $\mathbf{Y}$, $\mathbf{Z}$ enter
 \textbf{modality-specific} encoders (separate parameters per modality) with their
 positional and modality-type embeddings applied. Each is a 2-layer transformer
-encoder with 8 attention heads and feed-forward dimension $d_{\text{ff}} = 256$
+encoder with 8 attention heads and feed-forward dimension $d_{\text{ff}} = 1024$
 \cite{Vaswani2017}, producing encoded sequences
 $\tilde{\mathbf{E}}, \tilde{\mathbf{Y}}, \tilde{\mathbf{Z}}$.
 
@@ -244,7 +244,7 @@ rather than mechanistic evidence (Section~\ref{conclusion}).
 
 \subsubsection{Architectural Hyperparameters}
 The compact variant uses $d_{\text{model}} = 128$, $H = 8$ heads ($d_k = 16$),
-$d_{\text{ff}} = 256$, $N_{\text{enc}} = 2$ modality-encoder layers, and
+$d_{\text{ff}} = 1024$, $N_{\text{enc}} = 2$ modality-encoder layers, and
 $N_{\text{fus}} = 2$ fusion layers; dropout $p = 0.3$ throughout. Values were chosen
 via the architectural-depth ablations in Section~\ref{ablation}, where reduced
 capacity matched or exceeded the original 18.9\,M-parameter configuration at this
