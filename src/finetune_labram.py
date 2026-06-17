@@ -74,12 +74,49 @@ def load_all(input_dir, labels_csv, match, all_recordings, window_sec=15.0, max_
     return data, chs
 
 
-def build_model(chs, n_times, freeze_backbone, device):
+HEAD_KEYS = ("head", "classif", "final", "fc_norm", "logit")
+# Attribute-name patterns for the Linear layers LoRA adapts (attention + MLP).
+LORA_PATTERNS = ("qkv", "q_proj", "k_proj", "v_proj", "query", "key", "value",
+                 "out_proj", "proj", "fc1", "fc2", "mlp")
+
+
+def inject_lora(model, r, alpha):
+    """Replace backbone nn.Linear layers (attention/MLP) with LoRALinear in place.
+
+    The base weight stays frozen; only the rank-r A/B update trains. Returns the
+    number of layers wrapped (printed so a cluster run can confirm injection took)."""
+    from cida import LoRALinear
+    n = 0
+    for module in model.modules():
+        for child_name, child in list(module.named_children()):
+            if isinstance(child, nn.Linear) and any(p in child_name.lower() for p in LORA_PATTERNS):
+                setattr(module, child_name,
+                        LoRALinear(child.in_features, child.out_features, r=r, alpha=alpha, base=child))
+                n += 1
+    return n
+
+
+def build_model(chs, n_times, args, device):
     from braindecode.models import InterpolatedLaBraM
     m = InterpolatedLaBraM.from_pretrained(
         "braindecode/labram-pretrained", chs_info=chs, n_times=n_times,
         n_outputs=2, patch_size=200, strict=False)
-    if freeze_backbone:
+    if getattr(args, "lora", False):
+        # PEFT: freeze ALL backbone weights, inject LoRA, keep the head trainable.
+        for par in m.parameters():
+            par.requires_grad = False
+        n_lora = inject_lora(m, args.lora_r, args.lora_alpha)
+        for name, par in m.named_parameters():
+            if any(k in name.lower() for k in HEAD_KEYS):
+                par.requires_grad = True
+        tr = sum(p.numel() for p in m.parameters() if p.requires_grad)
+        tot = sum(p.numel() for p in m.parameters())
+        print(f"[lora] wrapped {n_lora} Linear layers (r={args.lora_r}); "
+              f"trainable {tr:,}/{tot:,} = {100*tr/tot:.2f}%", flush=True)
+        if n_lora == 0:
+            sys.exit("[lora] no Linear layers matched LORA_PATTERNS — inspect "
+                     "model.named_modules() on the cluster and adjust LORA_PATTERNS.")
+    elif args.freeze_backbone:
         n_train = 0
         for name, par in m.named_parameters():
             keep = any(k in name.lower() for k in ("head", "classif", "final", "fc", "norm"))
@@ -106,7 +143,7 @@ def _forward_logits(model, xb):
 
 def run_fold(train, test, chs, args, device):
     n_times = train[0][1].shape[-1]
-    model = build_model(chs, n_times, args.freeze_backbone, device)
+    model = build_model(chs, n_times, args, device)
     # window-level training tensors
     Xtr = np.concatenate([w for _, w, _ in train], 0)
     ytr = np.concatenate([[y] * len(w) for _, w, y in train])
@@ -148,7 +185,7 @@ def smoke_test(data, chs, args, device):
     on a tiny batch. Validates the CUDA env in ~1 min before the full run."""
     print("[smoke] building model + one fwd/bwd step...", flush=True)
     n_times = data[0][1].shape[-1]
-    model = build_model(chs, n_times, args.freeze_backbone, device)
+    model = build_model(chs, n_times, args, device)
     use_amp = (device == "cuda") and not args.no_amp
     opt = torch.optim.Adam([p for p in model.parameters() if p.requires_grad], lr=args.lr)
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
@@ -172,6 +209,10 @@ def main():
     ap.add_argument("--match", default=None); ap.add_argument("--all-recordings", action="store_true")
     ap.add_argument("--epochs", type=int, default=8); ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--lr", type=float, default=1e-4); ap.add_argument("--freeze-backbone", action="store_true")
+    ap.add_argument("--lora", action="store_true",
+                    help="PEFT: freeze backbone, train only rank-r LoRA updates + head "
+                         "(the parameter-efficient middle ground between frozen and full FT)")
+    ap.add_argument("--lora-r", type=int, default=8); ap.add_argument("--lora-alpha", type=int, default=16)
     ap.add_argument("--folds", type=int, default=5); ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--seed", type=int, default=0); ap.add_argument("--max-subj", type=int, default=None)
     ap.add_argument("--max-windows", type=int, default=None,
