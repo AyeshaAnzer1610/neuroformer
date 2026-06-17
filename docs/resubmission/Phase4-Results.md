@@ -22,7 +22,7 @@ generalize to an independent cohort?
 | externalizing | 0.026 | 0.517 ± 0.006 |
 | transfer MIPDB(any-DX)→HBN | 0.025 | 0.508 |
 
-## Conclusion — honest negative
+## Conclusion — no out-of-distribution transfer
 At well-powered scale, **frozen LaBraM RestingState embeddings do not predict HBN
 psychopathology factors**: the general p_factor is at chance (AUC 0.497), and the
 others are at most marginally above (internalizing AUC 0.55 / r 0.09 — significant
@@ -49,9 +49,9 @@ LaBraM fine-tuning but did not complete it due to cluster CUDA-environment issue
 - **Within-cohort:** foundation-model EEG carries transdiagnostic signal
   (MIPDB 0.66) and beats hand-crafted EEG — the positive contribution.
 - **External:** that signal does **not** generalize out-of-distribution under this
-  stringent, well-powered test — a rigorous, honest negative that tempers any
+  stringent, well-powered test — a rigorous, well-powered negative result that tempers any
   generalization claim and quantifies the within-cohort↔OOD gap.
-- Combined with the honest multimodal null (Phase 2), the paper is a **rigorously
+- Combined with the multimodal null (Phase 2), the paper is a **rigorously
   evaluated, cautionary proof-of-concept**: it answers the reviewers' rigor and
   generalization concerns directly, even though the headline is sober.
 

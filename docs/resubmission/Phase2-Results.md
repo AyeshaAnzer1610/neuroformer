@@ -1,4 +1,4 @@
-# Phase 2 Results — Missing-modality fusion (honest negative on accuracy)
+# Phase 2 Results — Missing-modality fusion (no multimodal accuracy gain)
 
 **Question:** does fusing EEG + eye + behaviour beat EEG-alone, and can one model
 handle any subset of modalities? (R3.6 fusion premise, R3.9 3-modality claim,
@@ -28,7 +28,7 @@ Missing-modality cohort: fusion 0.55–0.57. Degradation (train on all, drop one
 test): **drop EEG → 0.47 (chance)**; drop eye → 0.60; **drop behaviour → 0.61
 (removing it helps)**.
 
-## Conclusions (honest)
+## Conclusions
 1. **No fusion strategy beat EEG-alone; all degraded it.** Tried early
    concatenation, attention-based set fusion, weighted and stacking late fusion —
    each ≤ 0.66, validated as correct on synthetic signal (they reach ~1.0 there).
@@ -43,7 +43,7 @@ test): **drop EEG → 0.47 (chance)**; drop eye → 0.60; **drop behaviour → 0
 ## Implications for the paper (framing)
 - Lead with the **FM-EEG contribution** (Phase 1): foundation-model EEG ≫
   hand-crafted EEG; this is the real, defensible result.
-- Present Phase 2 as an **honest multimodal analysis** that directly answers the
+- Present Phase 2 as a **transparent multimodal analysis** that directly answers the
   reviewers' fusion skepticism: in this cohort the extra modalities don't help,
   so we **soften the 3-modality accuracy claim** (R3.9) and report it straight
   (R3.6). The architecture handles real-world missingness (R3.10) even though it

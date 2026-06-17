@@ -221,7 +221,7 @@ All code, preprocessing, the model, the evaluation harness, and per-phase result
 writeups are released (`github.com/AyeshaAnzer1610/neuroformer`). Raw data is public
 and re-downloadable (`scripts/download_data.sh`); the pipeline is one `sbatch` per
 stage. Reporting follows standard ML-in-health practice (subject-level CV, CIs,
-honest negative results).
+candid reporting of negative results where they occur).
 
 ---
 
