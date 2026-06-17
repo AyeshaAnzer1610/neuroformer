@@ -95,7 +95,7 @@ code, extracted features, and trained checkpoints on GitHub.
 \subsection{Modality-Specific Feature Extraction}
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.95\textwidth]{Figures/feature_extraction_pipelines.png}
+\includegraphics[width=0.95\textwidth]{figures/feature_extraction_pipelines.png}
 \caption{Modality-specific preprocessing and feature-extraction pipelines. EEG (top)
 is aggregated across the six MIPDB paradigms within each participant and mapped to
 \textbf{frozen foundation-model embeddings}; eye-tracking features (middle) are
@@ -184,7 +184,7 @@ features lacked.
 \subsection{Model Architecture}
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.95\textwidth]{Figures/neuroformer_architecture_diagram.png}
+\includegraphics[width=0.95\textwidth]{figures/neuroformer_architecture_diagram.png}
 \caption{NeuroFormer architecture (compact variant). The EEG stream enters as frozen
 LaBraM embeddings; each modality stream receives a learned modality-type token
 (\texttt{[EEG]}, \texttt{[Eye]}, \texttt{[Beh]}) and sinusoidal positional encoding,
