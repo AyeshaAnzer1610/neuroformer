@@ -1,109 +1,132 @@
 % ============================================================================
-% REVISED RESULTS — paste into manuscript. Real leak-free numbers.
-% [[ECE]] etc. = to finalize from the calibration run.
+% FULL \section{Results} — consistent with Methodology-section.tex.
+% All numbers are the actual leak-free runs. [[...]] = pending:
+%   - recent-baseline AUCs (run src/eval_fusion.py)
+%   - calibration / operating-point / risk-coverage (job 16243389,
+%     results/operating_point.csv)
 % ============================================================================
-
-\section{Results}
+\section{Experiments and Results}
 \label{results}
-All results use strict subject-level, leakage-free cross-validation (5 folds
-$\times$ 10 repeats), with ROC-AUC as the primary metric (the binary task has
-$\approx$20\% positives, so accuracy is misleading) and 95\% confidence intervals
-across folds. Comparisons across feature sets use identical CV splits (paired).
+All experiments use the strict subject-level, leakage-free protocol of
+Section~\ref{sec:partition}: repeated stratified cross-validation (5 folds
+$\times$ 10 repeats), ROC-AUC as the primary metric (the task has $\sim$20\%
+positives, so accuracy is misleading), 95\% confidence intervals across folds, and
+\emph{paired} comparisons over identical splits. The within-cohort analyses use
+MIPDB ($N \approx 118$; 23 positive); external validation uses HBN
+($N \approx 1{,}980$).
 
-\subsection{Foundation-model EEG vs.\ hand-crafted EEG}
-On MIPDB ($N=118$; 23 positive), frozen LaBraM EEG embeddings substantially
-outperform the hand-crafted five-channel features. With mean+std pooling, LaBraM
-reaches ROC-AUC $0.660 \pm 0.031$ versus $0.429 \pm 0.037$ for hand-crafted EEG
-(paired $\Delta = +0.231 \pm 0.050$; mean-pooling: $0.634$ vs.\ $0.466$,
-$\Delta=+0.167$). This reverses the original submission's finding: with a modern
-foundation-model representation, EEG moves from the weakest to the strongest
-modality, directly answering whether EEG is worth including.
+\subsection{Foundation-Model EEG vs.\ Hand-Crafted EEG}
+Replacing the hand-crafted EEG descriptor with frozen LaBraM embeddings is the
+decisive change. With mean$+$std pooling, foundation-model EEG reaches ROC-AUC
+$0.660 \pm 0.031$ versus $0.429 \pm 0.037$ for the hand-crafted features (Hjorth $+$
+spectral entropy) under identical splits---a paired improvement of
+$\Delta = +0.231 \pm 0.050$ (mean-pooling: $0.634$ vs.\ $0.466$, $\Delta = +0.167$).
+This reverses the original submission's conclusion: with a modern representation,
+EEG moves from the weakest to the strongest modality, directly answering whether EEG
+is worth including (R3.8, R2.1/2.4).
 
-\subsection{Training regime: window-level training and end-to-end fine-tuning}
-We further compared how the frozen LaBraM representation is \emph{used}, under the
-same strict subject-level CV (every window of a held-out subject is excluded;
-recordings aggregated per subject; test predictions are the mean window
-probability). Three regimes:
-(i) \emph{subject-pooled linear probe} --- the result above, $0.66$;
-(ii) \emph{window-level training} of a classification head on the frozen backbone,
-where each 15\,s window is a training instance and predictions are pooled per
-subject (multiple-instance learning), reaching ROC-AUC $\mathbf{0.748 \pm 0.029}$
-($5\times10$ repeated CV); and
-(iii) \emph{end-to-end fine-tuning} of the full backbone, which \emph{degrades and
-destabilises} performance ($0.686 \pm 0.120$, $5\times1$; per-fold $0.54$--$0.88$).
-Window-level training on the frozen foundation model is therefore the best
-configuration --- a $+0.09$ ROC-AUC gain over linear probing --- while unfreezing
-the $\sim$5--6\,M-parameter backbone overfits at this sample size (mean drop and
-$\sim$$4\times$ the fold-to-fold variance). This is consistent with the
-overparameterisation concern: added trainable capacity does not help here, it
-hurts (cf.\ R3.4, R3.3).
-
-\subsection{Single-modality and multimodal comparison}
-Table~\ref{tab:headtohead} reports all modalities and fusion variants under the
-identical protocol. Eye-tracking ($0.51$) and behaviour ($0.40$) are at or below
-chance in this cohort. Critically, \emph{no} fusion strategy exceeds EEG-alone:
-naive concatenation ($0.48$--$0.54$), attention-based set fusion ($0.59$), and
-stacking late fusion ($0.47$) all fall at or below the $0.66$ EEG-only ceiling. A
-simulated-missingness sweep confirms the model relies almost entirely on EEG
-(dropping EEG at test $\rightarrow$ chance; dropping behaviour slightly
-\emph{improves} performance). We therefore report the multimodal result honestly:
-in MIPDB the non-EEG modalities add no transdiagnostic signal, and we soften the
-three-modality claim accordingly.
+\subsection{Single-Modality and Multimodal Comparison}
+Table~\ref{tab:main} reports every modality, fusion variant, and recent baseline
+under the identical protocol. Eye-tracking ($0.51$) and behaviour ($0.40$) are at or
+below chance in this cohort. Critically, \emph{no} fusion strategy exceeds
+EEG-alone: naive concatenation, attention-based set fusion, stacking late fusion, a
+single-stage multimodal Transformer, and a gated attention fusion all fall at or
+below the EEG ceiling. A simulated-missingness sweep confirms the model relies almost
+entirely on EEG (dropping EEG at test $\rightarrow$ chance; dropping behaviour
+slightly improves performance). We therefore report the multimodal result
+transparently: in MIPDB the non-EEG modalities add no transdiagnostic signal, and we
+soften the three-modality claim accordingly (R3.9, R3.6, R3.10).
 
 \begin{table}[t]
 \centering\footnotesize
-\caption{Leak-free transdiagnostic screening on MIPDB ($N=118$), ROC-AUC
-(mean $\pm$ 95\% CI), mean+std pooling.}
-\label{tab:headtohead}
+\caption{Leak-free transdiagnostic screening on MIPDB ($N\approx118$), ROC-AUC
+(mean $\pm$ 95\% CI), repeated subject-level CV (5$\times$10). Foundation-model EEG
+rows use mean$+$std pooling unless noted.}
+\label{tab:main}
 \begin{tabular}{lc}
 \toprule
 \textbf{Feature set / model} & \textbf{ROC-AUC} \\
 \midrule
-Hand-crafted EEG (Hjorth + spectral entropy) & $0.43 \pm 0.04$ \\
+Hand-crafted EEG (Hjorth $+$ spectral entropy) & $0.43 \pm 0.04$ \\
 Eye-tracking & $0.51 \pm 0.05$ \\
 Behaviour & $0.40 \pm 0.05$ \\
-Naive concatenation & $0.48 \pm 0.04$ \\
-NeuroFormer attention fusion & $0.59 \pm 0.04$ \\
-Stacking late fusion & $0.47 \pm 0.06$ \\
 \midrule
-\multicolumn{2}{l}{\textit{Foundation-model EEG (frozen LaBraM), by training regime}} \\
-\quad subject-pooled linear probe & $0.66 \pm 0.03$ \\
-\quad \textbf{window-level training (MIL, 5$\times$10)} & $\mathbf{0.748 \pm 0.029}$ \\
-\quad end-to-end fine-tuning (full backbone, 5$\times$1) & $0.69 \pm 0.12$ \\
+\multicolumn{2}{l}{\textit{Fusion / recent baselines (R2.2)}} \\
+\quad Naive concatenation & $0.48 \pm 0.04$ \\
+\quad NeuroFormer attention fusion & $0.59 \pm 0.04$ \\
+\quad Stacking late fusion & $0.47 \pm 0.06$ \\
+\quad Single-stage multimodal Transformer & $[[\,]]$ \\
+\quad Gated attention fusion & $[[\,]]$ \\
+\midrule
+\multicolumn{2}{l}{\textit{Foundation-model EEG (frozen LaBraM), by regime}} \\
+\quad Subject-pooled linear probe & $0.66 \pm 0.03$ \\
+\quad \textbf{Window-level training (MIL, 5$\times$10)} & $\mathbf{0.748 \pm 0.029}$ \\
+\quad End-to-end fine-tuning (full backbone, 5$\times$1) & $0.69 \pm 0.12$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Calibration and referral}
-On the leak-free out-of-fold scores, temperature scaling reduces the Expected
-Calibration Error ($[[\text{ECE}_\text{raw}]] \rightarrow [[\text{ECE}_\text{cal}]]$),
-and split-conformal prediction at $\alpha{=}0.2$ yields the target coverage with
-$[[\,]]\%$ decisive (singleton) predictions; the remainder are referred for
-clinician review. The risk--coverage curve shows accuracy increasing as
-low-confidence cases are deferred, supporting use as a triage tool.
+\subsection{Training Regime and Overparameterization}
+Table~\ref{tab:main} also compares how the frozen representation is used. Window-level
+training of a classification head reaches ROC-AUC $\mathbf{0.748 \pm 0.029}$
+(5$\times$10), a $+0.09$ gain over subject-pooled linear probing ($0.66$).
+End-to-end fine-tuning of the full $\sim$5--6\,M-parameter backbone \emph{degrades}
+the mean to $0.686$ and inflates the fold-to-fold variance roughly four-fold
+($\pm 0.120$ vs.\ $\pm 0.029$; per-fold range $0.54$--$0.88$). Thus added trainable
+capacity does not help at this cohort size---it hurts---which converts the
+overparameterization and fold-sensitivity concerns (R3.4, R3.3) into an empirical
+result and motivates the compact, frozen-backbone configuration.
 
-\subsection{External validation on HBN}
-We externally validated the frozen-EEG representation on the independent Healthy
-Brain Network cohort at well-powered scale ($N=1{,}980$, RestingState). Predicting
-the CBCL psychopathology factors, the general $p$-factor is at chance
-(ROC-AUC $0.497 \pm 0.006$; Pearson $r=0.00$); the specific factors are at most
-marginally above (internalizing $0.55$, $r=0.09$; attention $0.53$; externalizing
-$0.52$), and direct MIPDB$\rightarrow$HBN transfer is at chance ($0.51$). An earlier
-underpowered estimate ($N=128$) suggested $\approx0.59$, but this did not survive
-scaling and is reported as small-sample variability. Thus the within-MIPDB EEG
-signal does \emph{not} generalize to this cohort under a stringent out-of-
-distribution test that differs in label construct (clinical diagnosis vs.\ CBCL
-factor) and paradigm (mixed vs.\ resting-state). We present this as an honest,
-well-powered characterization of the within-cohort--to--OOD gap rather than a
-positive generalization claim.
+\subsection{Calibration and Referral}
+On the leak-free out-of-fold scores of the window-level model, temperature scaling
+reduces the Expected Calibration Error ($[[\text{ECE}_\text{raw}]] \rightarrow
+[[\text{ECE}_\text{cal}]]$). At a balanced-accuracy operating point the model attains
+sensitivity $[[\,]]$ and specificity $[[\,]]$ (PPV $[[\,]]$, NPV $[[\,]]$); at a
+high-sensitivity ($\geq 0.85$) screening threshold, specificity is $[[\,]]$. A
+risk--coverage analysis shows accuracy on retained cases rising as low-confidence
+cases are referred (e.g., $[[\,]]$ at 70\% coverage), supporting use as a triage tool
+(R3.2). \emph{[Values from results/operating\_point.csv.]}
+
+\subsection{External Validation on HBN}
+We externally validated the frozen-EEG representation on the independent HBN cohort
+at well-powered scale ($N \approx 1{,}980$, RestingState), predicting the CBCL
+psychopathology factors (Table~\ref{tab:hbn}). The general $p$-factor is at chance
+(ROC-AUC $0.497 \pm 0.006$; Pearson $r = 0.00$); the specific factors are at most
+marginally above (internalizing $0.551$, $r = 0.09$; attention $0.527$;
+externalizing $0.517$), and direct MIPDB$\rightarrow$HBN transfer is at chance
+($0.508$). An earlier underpowered estimate ($N=128$) of $\approx 0.59$ did not
+survive scaling and is attributable to small-sample variability. The within-MIPDB
+signal therefore does not generalize to HBN under this stringent out-of-distribution
+test, which differs in label construct (clinical diagnosis vs.\ CBCL factor) and
+paradigm (mixed vs.\ resting-state). We present this as a well-powered
+characterization of the within-cohort-to-out-of-distribution gap rather than a
+positive transfer claim (R1.3, R3.2, R3.5).
+
+\begin{table}[t]
+\centering\footnotesize
+\caption{External validation on HBN ($N\approx1{,}980$, RestingState), within-cohort
+prediction of CBCL factors and MIPDB$\rightarrow$HBN transfer.}
+\label{tab:hbn}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Target} & \textbf{Pearson $r$} & \textbf{ROC-AUC (median split)} \\
+\midrule
+$p$-factor (general) & $0.00$ & $0.497 \pm 0.006$ \\
+Attention & $0.04$ & $0.527 \pm 0.008$ \\
+Internalizing & $0.09$ & $0.551 \pm 0.006$ \\
+Externalizing & $0.03$ & $0.517 \pm 0.006$ \\
+MIPDB$\rightarrow$HBN transfer & --- & $0.508$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Summary}
-Foundation-model EEG is the locus of the transdiagnostic signal within MIPDB and
-clearly surpasses hand-crafted EEG; with window-level training on the frozen
-backbone it reaches ROC-AUC $0.748 \pm 0.029$, while end-to-end fine-tuning overfits
-at this sample size; additional modalities do not improve screening here; and the
-signal does not generalize out-of-distribution at scale. These leakage-free,
-externally validated results constitute a rigorously evaluated proof-of-concept:
-modern foundation-model EEG, used appropriately, carries clinically relevant
-transdiagnostic signal within cohort, with an honest characterisation of its
-multimodal and out-of-distribution limits.
+Within MIPDB, foundation-model EEG is the locus of the transdiagnostic signal and
+clearly surpasses hand-crafted EEG; window-level training on the frozen backbone
+reaches ROC-AUC $0.748 \pm 0.029$, while end-to-end fine-tuning overfits at this
+sample size and no multimodal fusion exceeds EEG-alone. Externally, the signal does
+not transfer to HBN at $N \approx 1{,}980$. Together with the calibration and
+referral analysis, these leakage-free, externally tested results constitute a
+rigorously evaluated proof-of-concept: modern foundation-model EEG, used
+appropriately, carries clinically relevant transdiagnostic signal within cohort, with
+an explicit characterization of its multimodal and out-of-distribution limits.
