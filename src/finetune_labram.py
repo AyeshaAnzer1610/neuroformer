@@ -131,15 +131,16 @@ def run_fold(train, test, chs, args, device):
             scaler.scale(loss).backward()
             scaler.step(opt); scaler.update()
     # subject-level eval: mean window prob
-    model.eval(); ys, ps = [], []
+    model.eval(); ys, ps, preds = [], [], []
     with torch.no_grad():
-        for _, w, y in test:
+        for sid, w, y in test:
             x = torch.from_numpy(w).to(device)
             with torch.autocast(device_type="cuda", enabled=use_amp):
                 logits = _forward_logits(model, x)
             p = torch.softmax(logits.float(), -1)[:, 1].mean().item()
-            ys.append(y); ps.append(p)
-    return roc_auc_score(ys, ps) if len(set(ys)) > 1 else np.nan
+            ys.append(y); ps.append(p); preds.append((sid, y, p))
+    auc = roc_auc_score(ys, ps) if len(set(ys)) > 1 else np.nan
+    return auc, preds
 
 
 def smoke_test(data, chs, args, device):
@@ -179,6 +180,9 @@ def main():
     ap.add_argument("--smoke", action="store_true",
                     help="build + one fwd/bwd step only, to validate the CUDA env, then exit")
     ap.add_argument("--out", default="results/finetune_labram.csv")
+    ap.add_argument("--save-preds", default=None,
+                    help="CSV path to dump per-subject out-of-fold predictions "
+                         "(repeat, subject, y_true, p) for calibration/operating-point analysis")
     args = ap.parse_args()
     torch.manual_seed(args.seed); np.random.seed(args.seed)
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -205,11 +209,15 @@ def main():
     y = np.array([d[2] for d in data])
     cv = RepeatedStratifiedKFold(n_splits=args.folds, n_repeats=args.repeats, random_state=args.seed)
     aucs = []
+    pred_rows = []
     for k, (tr, te) in enumerate(cv.split(np.zeros(len(y)), y), 1):
         print(f"[fold {k}/{args.folds*args.repeats}] fine-tuning "
               f"(freeze_backbone={args.freeze_backbone})...", flush=True)
-        auc = run_fold([data[i] for i in tr], [data[i] for i in te], chs, args, device)
+        auc, preds = run_fold([data[i] for i in tr], [data[i] for i in te], chs, args, device)
         aucs.append(auc); print(f"[fold {k}] AUC={auc:.3f}", flush=True)
+        repeat = (k - 1) // args.folds        # 0-based repeat index
+        for sid, yt, p in preds:
+            pred_rows.append({"repeat": repeat, "subject": sid, "y_true": yt, "p": p})
     aucs = np.array([a for a in aucs if not np.isnan(a)])
     ci = 1.96 * aucs.std(ddof=1) / np.sqrt(len(aucs)) if len(aucs) > 1 else float("nan")
     print(f"\n[finetune] {args.folds}x{args.repeats} CV ROC-AUC = {aucs.mean():.3f} "
@@ -218,6 +226,10 @@ def main():
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame({"auc": aucs}).to_csv(args.out, index=False)
     print(f"[done] wrote {args.out}")
+    if args.save_preds:
+        Path(args.save_preds).parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(pred_rows).to_csv(args.save_preds, index=False)
+        print(f"[done] wrote {args.save_preds} ({len(pred_rows)} per-subject OOF preds)")
 
 
 if __name__ == "__main__":

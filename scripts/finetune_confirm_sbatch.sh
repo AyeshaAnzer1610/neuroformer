@@ -24,6 +24,12 @@ export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 
 python src/finetune_labram.py --input "$SCRATCH/mh/data/mipdb" --labels data/labels.csv \
     --all-recordings --freeze-backbone --epochs 8 --batch 16 --max-windows 40 \
-    --folds 5 --repeats 10 --out results/finetune_labram_frozen_r10.csv
+    --folds 5 --repeats 10 --out results/finetune_labram_frozen_r10.csv \
+    --save-preds results/finetune_labram_frozen_r10_preds.csv
 
-echo "=== done; 5x10 frozen confirmation in results/finetune_labram_frozen_r10.csv ==="
+echo "=== fine-tune done; computing operating-point + risk-coverage ==="
+python src/operating_point.py \
+    --preds results/finetune_labram_frozen_r10_preds.csv \
+    --out results/operating_point.csv
+
+echo "=== done; 5x10 frozen + operating-point in results/ ==="
