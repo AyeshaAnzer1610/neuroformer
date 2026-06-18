@@ -262,7 +262,7 @@ def main():
     aucs = np.array([a for a in aucs if not np.isnan(a)])
     ci = 1.96 * aucs.std(ddof=1) / np.sqrt(len(aucs)) if len(aucs) > 1 else float("nan")
     print(f"\n[finetune] {args.folds}x{args.repeats} CV ROC-AUC = {aucs.mean():.3f} "
-          f"+/- {ci:.3f}  (frozen bar = 0.66)")
+          f"+/- {ci:.3f}  (refs: pooled-logreg readout ~0.66; frozen head-only ~0.76)")
     from pathlib import Path
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame({"auc": aucs}).to_csv(args.out, index=False)
