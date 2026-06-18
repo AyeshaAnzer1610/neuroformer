@@ -5,21 +5,22 @@
 (not a new foundation model, and not a generic FM-agnostic wrapper). LaBraM is the
 fixed, frozen backbone; CIDA is the trainable contribution on top of it.
 
-> **Empirical status (2026-06).** Two findings on REAL cached LaBraM embeddings (§8):
-> 1. **Frozen-feature ceiling.** A learned attention-pool head does *not* beat the
->    mean+std readout (0.629 vs 0.643) — no head/pooling tweak breaks the frozen
->    ceiling. The only lever that can is **backbone adaptation (LoRA)**.
-> 2. **Disentanglement: naive GRL fails, the FIX works (partially).** The as-built
->    linear/GRL adapter removed *zero* identity (synthetic + real). The design-doc fix
->    — **nonlinear factor heads + a stronger adversary** — *does* remove identity on
->    real data, with a clean tunable tradeoff: at light strength it cuts subject-
->    decodability ~20% (0.258→0.204) at ~no clinical-AUC cost (0.681→0.670). It does
->    not yet improve the headline accuracy (disentanglement targets leakage/transfer,
->    not in-dist AUC); the transfer benefit (MIPDB→HBN) is still to be measured.
+> **Empirical status (2026-06, real cluster runs on MIPDB).**
+> 1. **More backbone training monotonically HURTS** (matched subject-level 5×5 CV, §8c):
+>    frozen head-only **0.739 ± 0.046** > LoRA 2.88% **0.701 ± 0.048** > full fine-tune
+>    **0.686**. On N≈118 the frozen LaBraM representation is optimal; *any* adaptation
+>    (even parameter-efficient LoRA) only adds variance. This **definitively** answers
+>    the "18.9M params too big" criticism — don't fine-tune at all. There is **no
+>    fine-tuning accuracy gain to claim** (the earlier "PEFT win" was vs a stale 0.66
+>    bar and did not survive the matched baseline).
+> 2. **Disentanglement: naive GRL fails; the fix partially works.** Nonlinear factor
+>    heads + a stronger adversary *do* remove real subject-identity at low accuracy
+>    cost (§8b: decodability 0.258→0.204 at ~no AUC cost), but don't raise in-dist AUC
+>    (it targets leakage/transfer). MIPDB→HBN transfer payoff still to be measured.
 >
-> So: lead with **PEFT adaptation (LoRA) + OcuFM**; disentanglement is now a *working
-> but bounded* component (identity↓ at low cost), promoted from "falsified" to
-> "partial, tunable" — not yet an accuracy claim.
+> So the LaBraM-adaptation story is **"freeze, don't fine-tune"** — a clean
+> negative/efficiency result — paired with **OcuFM** (novel gaze FM) and the
+> disentanglement-for-transfer thread. No fine-tuning accuracy gain is claimed.
 
 ---
 
@@ -231,7 +232,24 @@ identity at a real accuracy cost.
 1. Measure the *transfer* payoff (MIPDB→HBN) — the property disentanglement should help.
 2. Push identity → chance without the AUC cost (HSIC/MI penalty, or orthogonal nuisance-
    subspace projection instead of/with GRL).
-3. Apply on LoRA-adapted features, not just frozen ones.
+
+### 8c. Matched fine-tune comparison — "freeze, don't fine-tune" (real MIPDB, 5×5)
+
+Subject-level **5×5 CV** (n=25), identical data/QC (`--all-recordings --max-windows 40`),
+arm-appropriate budgets (`scripts/finetune_5x5_sbatch.sh`):
+
+| backbone trained | approach | ROC-AUC (n=25) |
+|---|---|---|
+| 0% | **frozen (head only)** | **0.739 ± 0.046** |
+| 2.88% | LoRA r=8 | 0.701 ± 0.048 |
+| 100% | full fine-tune | 0.686 (n=5; 5×5 pending) |
+
+**Monotonic: more backbone training → lower AUC.** On N≈118 the frozen LaBraM
+representation is optimal; LoRA (2.88% params) does **not** beat frozen, and full
+fine-tuning is worst. The headline LaBraM result is therefore **frozen ≈ 0.74**, and the
+adaptation finding is a clean *negative*: **freeze, don't fine-tune** — the strongest
+possible answer to "the model is too big". (An earlier 5×2 pass showed frozen 0.765 /
+LoRA 0.720 / full 0.686; the 5×5 tightens the CIs and confirms the ranking.)
 
 ## 9. References (verified)
 
