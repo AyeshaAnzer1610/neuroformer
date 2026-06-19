@@ -8,7 +8,7 @@ cd ~/mental-health 2>/dev/null || true
 echo "=== your queue ==="
 squeue -u "$USER" 2>/dev/null || true
 
-LOG=$(ls -t mh-lora-*.out mh-5x5-*.out 2>/dev/null | head -1)
+LOG=$(ls -t mh-lora-*.out mh-5x5-*.out mh-transfer-*.out 2>/dev/null | head -1)
 if [ -n "${LOG:-}" ]; then
     echo; echo "=== latest log: $LOG ==="
     echo "--- env / LoRA injection / smoke (must show 'wrapped N>0' + '[smoke] OK') ---"
@@ -22,7 +22,8 @@ else
 fi
 
 echo; echo "=== result CSVs (present once folds finish) ==="
-for f in results/finetune_labram_frozen_5x5.csv results/finetune_labram_lora_5x5.csv \
+for f in results/transfer_hbn_disentangle.csv \
+         results/finetune_labram_frozen_5x5.csv results/finetune_labram_lora_5x5.csv \
          results/finetune_labram_full_5x5.csv \
          results/finetune_labram_lora.csv results/finetune_labram_frozen_r2.csv \
          results/finetune_labram_full.csv; do
