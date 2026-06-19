@@ -101,6 +101,12 @@ def build_model(chs, n_times, args, device):
     m = InterpolatedLaBraM.from_pretrained(
         "braindecode/labram-pretrained", chs_info=chs, n_times=n_times,
         n_outputs=2, patch_size=200, strict=False)
+    bw = getattr(args, "backbone_weights", None)
+    if bw:                                   # load TAPT-adapted backbone over pretrained
+        sd = torch.load(bw, map_location="cpu")
+        missing, unexpected = m.load_state_dict(sd, strict=False)
+        print(f"[backbone] loaded adapted weights from {bw} "
+              f"(missing={len(missing)}, unexpected={len(unexpected)})", flush=True)
     if getattr(args, "lora", False):
         # PEFT: freeze ALL backbone weights, inject LoRA, keep the head trainable.
         for par in m.parameters():
@@ -213,6 +219,9 @@ def main():
                     help="PEFT: freeze backbone, train only rank-r LoRA updates + head "
                          "(the parameter-efficient middle ground between frozen and full FT)")
     ap.add_argument("--lora-r", type=int, default=8); ap.add_argument("--lora-alpha", type=int, default=16)
+    ap.add_argument("--backbone-weights", default=None,
+                    help="load a TAPT-adapted backbone state_dict over the pretrained "
+                         "weights (src/tapt_pretrain.py output) before freeze/readout")
     ap.add_argument("--folds", type=int, default=5); ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--seed", type=int, default=0); ap.add_argument("--max-subj", type=int, default=None)
     ap.add_argument("--max-windows", type=int, default=None,
