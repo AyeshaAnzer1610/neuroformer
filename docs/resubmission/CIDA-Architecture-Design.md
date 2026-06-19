@@ -13,14 +13,19 @@ fixed, frozen backbone; CIDA is the trainable contribution on top of it.
 >    the "18.9M params too big" criticism — don't fine-tune at all. There is **no
 >    fine-tuning accuracy gain to claim** (the earlier "PEFT win" was vs a stale 0.66
 >    bar and did not survive the matched baseline).
-> 2. **Disentanglement: naive GRL fails; the fix partially works.** Nonlinear factor
->    heads + a stronger adversary *do* remove real subject-identity at low accuracy
->    cost (§8b: decodability 0.258→0.204 at ~no AUC cost), but don't raise in-dist AUC
->    (it targets leakage/transfer). MIPDB→HBN transfer payoff still to be measured.
+> 2. **Disentanglement: naive GRL fails; the fix removes identity but buys nothing
+>    downstream (yet).** Nonlinear factor heads + a stronger adversary *do* remove real
+>    subject-identity at low accuracy cost (§8b: decodability 0.258→0.204 at ~no AUC
+>    cost) — but it does **not** raise in-dist AUC, and the MIPDB→HBN transfer payoff is
+>    **null** (§8d): transfer stays ~0.52 (chance) with or without disentanglement, on
+>    1,980 HBN subjects. The cross-cohort barrier is **domain + label shift**, not the
+>    subject-identity confound, so identity removal can't fix it.
 >
-> So the LaBraM-adaptation story is **"freeze, don't fine-tune"** — a clean
-> negative/efficiency result — paired with **OcuFM** (novel gaze FM) and the
-> disentanglement-for-transfer thread. No fine-tuning accuracy gain is claimed.
+> So the honest tally: the LaBraM-adaptation story is **"freeze, don't fine-tune"** (a
+> clean negative/efficiency result, ~0.74); **OcuFM** is a novel *proposed* gaze FM (not
+> pretrained); and **disentanglement** is a working mechanism (identity↓) with **no
+> demonstrated downstream benefit** — a rigorous-evaluation contribution, not a SOTA
+> accuracy claim. We report all of it straight.
 
 ---
 
@@ -228,8 +233,26 @@ On the **real cached LaBraM embeddings** (118 MIPDB subjects, subject-level CV):
 tunable tradeoff. At λ_adv=0.1, identity ↓ ~20% at ~no AUC cost. Stronger removes more
 identity at a real accuracy cost.
 
-**Remaining fix thread (to promote disentanglement to an accuracy/transfer claim):**
-1. Measure the *transfer* payoff (MIPDB→HBN) — the property disentanglement should help.
+### 8d. Transfer payoff — MIPDB→HBN (real, all-releases; `experiments/transfer_hbn.py`)
+
+Train the window-level head on MIPDB (frozen LaBraM), apply to **1,980 HBN subjects**,
+median-split AUC on p_factor (3 seeds):
+
+| setting | MIPDB→HBN AUC |
+|---|---|
+| plain logreg transfer (reference) | 0.516 |
+| disentangle OFF | 0.520 |
+| disentangle λ=0.25 | 0.511 |
+| disentangle λ=0.5 | 0.513 |
+| disentangle λ=1.0 | 0.523 |
+
+**Null result: disentanglement does not lift transfer** — all ~0.51–0.52 (chance),
+matching the prior plain-transfer collapse (`src/eval_hbn.py`). The cross-cohort barrier
+is **domain shift + label mismatch** (MIPDB any-DX vs HBN CBCL p_factor), which
+identity-removal does not address. Honest boundary, reported as-is.
+
+**Remaining threads (would be needed to make disentanglement a *claim*):**
+1. A transfer setting without the label mismatch (same target both cohorts).
 2. Push identity → chance without the AUC cost (HSIC/MI penalty, or orthogonal nuisance-
    subspace projection instead of/with GRL).
 
