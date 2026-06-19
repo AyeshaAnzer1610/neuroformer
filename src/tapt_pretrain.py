@@ -121,7 +121,7 @@ def main():
     ap.add_argument("--extra-dirs", nargs="*", default=[],
                     help="extra subject-parent dirs to add (e.g. HBN) for Stage 2")
     ap.add_argument("--match", default=None); ap.add_argument("--all-recordings", action="store_true")
-    ap.add_argument("--epochs", type=int, default=50); ap.add_argument("--batch", type=int, default=32)
+    ap.add_argument("--epochs", type=int, default=50); ap.add_argument("--batch", type=int, default=12)
     ap.add_argument("--lr", type=float, default=1e-4); ap.add_argument("--temp", type=float, default=0.2)
     ap.add_argument("--max-subj", type=int, default=None)
     ap.add_argument("--max-per-subj", type=int, default=40, help="cap windows/subject (memory)")
