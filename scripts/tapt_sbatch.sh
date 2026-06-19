@@ -23,7 +23,8 @@ source ~/envs/mh311gpu/bin/activate
 cd ~/mental-health
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 MIPDB=$SCRATCH/mh/data/mipdb
-CKPT=$SCRATCH/mh/ckpt/labram_tapt_mipdb.pt
+# SCRATCH is quota-bound; write the checkpoint to project space (925 GiB free).
+CKPT=/project/def-abais/$USER/mh/ckpt/labram_tapt_mipdb.pt
 mkdir -p "$(dirname "$CKPT")"
 
 echo "=== [0/3] smoke: build backbone + projector + one contrastive step ==="
