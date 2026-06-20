@@ -6,13 +6,14 @@
 fixed, frozen backbone; CIDA is the trainable contribution on top of it.
 
 > **Empirical status (2026-06, real cluster runs on MIPDB).**
-> 1. **More backbone training monotonically HURTS** (matched subject-level 5×5 CV, §8c):
->    frozen head-only **0.739 ± 0.046** > LoRA 2.88% **0.701 ± 0.048** > full fine-tune
->    **0.686**. On N≈118 the frozen LaBraM representation is optimal; *any* adaptation
->    (even parameter-efficient LoRA) only adds variance. This **definitively** answers
->    the "18.9M params too big" criticism — don't fine-tune at all. There is **no
->    fine-tuning accuracy gain to claim** (the earlier "PEFT win" was vs a stale 0.66
->    bar and did not survive the matched baseline).
+> 1. **Adaptation uniformly fails — frozen is optimal** (matched subject-level CV, §8c):
+>    frozen head-only **0.739–0.765** > LoRA 2.88% **0.701** > full fine-tune **0.686**
+>    ≈ contrastive SSL continued pretraining (TAPT) **0.684**. On N≈118 *every* form of
+>    adaptation we tried — full FT, parameter-efficient LoRA, **and** self-supervised
+>    continued pretraining — degrades the frozen representation. This **definitively**
+>    answers the "18.9M params too big" criticism (don't adapt at all) and is a complete
+>    "when-not-to-adapt-foundation-models" finding. There is **no adaptation accuracy
+>    gain to claim** (the early "PEFT win" was vs a stale 0.66 bar; it did not survive).
 > 2. **Disentanglement: naive GRL fails; the fix removes identity but buys nothing
 >    downstream (yet).** Nonlinear factor heads + a stronger adversary *do* remove real
 >    subject-identity at low accuracy cost (§8b: decodability 0.258→0.204 at ~no AUC
@@ -265,9 +266,15 @@ arm-appropriate budgets (`scripts/finetune_5x5_sbatch.sh`):
 |---|---|---|
 | 0% | **frozen (head only)** | **0.739 ± 0.046** |
 | 2.88% | LoRA r=8 | 0.701 ± 0.048 |
-| 100% | full fine-tune | 0.686 (n=5; 5×5 pending) |
+| 100% | full fine-tune | 0.686 (n=5; 5×5 timed out) |
+| SSL (contrastive TAPT) | continued pretrain on unlabeled MIPDB | 0.684 ± 0.072 (5×2) |
 
-**Monotonic: more backbone training → lower AUC.** On N≈118 the frozen LaBraM
+**Adaptation uniformly fails: every method loses to frozen.** Full FT (0.686), LoRA
+(0.701), and self-supervised contrastive continued pretraining (TAPT, 0.684) all fall
+below frozen-pretrained (0.739–0.765). TAPT's contrastive loss collapsed to 0.19
+(too-easy task at batch 12 / ~22 negatives), so it learned trivial augmentation-
+invariance that discarded clinical signal. **On N≈118 the frozen LaBraM representation
+is optimal; full FT, PEFT, and SSL continued pretraining all degrade it.** On N≈118 the frozen LaBraM
 representation is optimal; LoRA (2.88% params) does **not** beat frozen, and full
 fine-tuning is worst. The headline LaBraM result is therefore **frozen ≈ 0.74**, and the
 adaptation finding is a clean *negative*: **freeze, don't fine-tune** — the strongest
