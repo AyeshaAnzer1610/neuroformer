@@ -1,14 +1,19 @@
-# Paper outline — "Freeze, don't fine-tune" (final results; NeuroFormer fusion as context)
+# Paper outline — framework + rigorous study (per-modality FMs, fused; freeze-don't-adapt)
 
-**Type:** rigorous empirical study. Honest finding is a **well-powered negative/
-equivalence**: a *frozen* EEG transformer foundation model matches or beats every
-adaptation strategy across a 25× range of sample sizes. **Architecture in the results:
-LaBraM (transformer) + a small classifier head, EEG-only.** NeuroFormer (the EEG+eye
-fusion transformer) appears as the **motivating baseline/context**, not the main model.
+**Type:** a **framework paper backed by a rigorous empirical study.** Two complementary
+contributions: (1) a *proposed* framework — per-modality foundation-model representations
+(EEG via the LaBraM recipe; eye via the proposed **OcuFM**) fused in a transformer — and
+(2) a well-powered, leak-free evaluation of how to use it, whose headline finding is
+**freeze, don't adapt** (a frozen EEG FM matches/beats every adaptation across a 25×
+sample-size range). The framework supplies novelty/positioning; the study supplies rigor.
 
-> Venue reality: this is a negative/equivalence result. **EMBC / IEEE Access are
-> realistic; IEEE TNSRE is a stretch** (journals favor a positive advance). Frame as
-> definitive practitioner guidance + rigor to maximize the journal chance.
+> **Honesty guardrails (non-negotiable, or it gets rejected like v1):** the framework is
+> *proposed + runnable*, **not** claimed to beat EEG-alone — on this cohort eye is at
+> chance and fusion ≈ EEG-alone, and we say so. The empirical *result* is the freeze
+> finding + honest scope, NOT a fusion/FM accuracy win. No SOTA claim.
+>
+> Venue: framework + rigor + honest negatives → **EMBC / IEEE Access realistic; TNSRE a
+> stretch.** The CBraMod generality run is what most raises the bar.
 
 ## Title options
 1. *Freeze, Don't Fine-Tune: Frozen EEG Foundation Models Match or Beat Adaptation
@@ -22,8 +27,14 @@ focus on the EEG foundation model → freezing beats full FT, LoRA, and SSL cont
 pretraining across N=40–1000 → external transfer is chance (domain/label shift) →
 practical guidance: at clinically realistic N, freeze the backbone.
 
-## Contributions (all evidence-backed)
-- **C1 — Comprehensive freeze-vs-adapt across sample size.** Matched, leak-free,
+## Contributions
+- **C0 — Framework (proposed): per-modality foundation models, fused.** EEG via the
+  LaBraM recipe; **OcuFM**, a proposed gaze foundation model (VQ tokenizer + masked-patch
+  pretraining on the LaBraM recipe) that fills the "no gaze FM exists" gap; both fused in
+  a NeuroFormer-style cross-modal transformer, with an identity-disentangling adapter
+  (CIDA). Implemented + runnable skeletons. *Proposed/positioning — explicitly NOT claimed
+  to beat EEG-alone here (eye ≈ chance); offered as a blueprint for richer paired data.*
+- **C1 — Comprehensive freeze-vs-adapt across sample size (the empirical result).** Matched, leak-free,
   subject-level CV on MIPDB (N≈118) + within-HBN N-sweep (150→1000): frozen LaBraM+head
   is **never significantly beaten** by full FT, LoRA, or SSL-TAPT; **significantly
   better at small N** (HBN N=150 p=0.026; N=500 p=0.054) and tied at N=1000 (+0.013,
