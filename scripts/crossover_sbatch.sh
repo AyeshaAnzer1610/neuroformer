@@ -18,6 +18,7 @@
 # SMOKE-test a new backbone first:  add --smoke via finetune_labram (see notes).
 set -euo pipefail
 N=${1:?need N}; MODE=${2:?need frozen|full|lora}; COHORT=${3:-hbn}; BB=${4:-labram}
+FOLDS=${5:-3}; REPEATS=${6:-1}        # bump (e.g. 5 3) on decisive N for significance
 # per-backbone sampling/window (each FM expects its own): LaBraM 200Hz/15s; CBraMod/EEGPT 250Hz/4s
 if [ "$BB" = "labram" ]; then SF=200; WIN=15; else SF=250; WIN=4; fi
 
@@ -50,6 +51,6 @@ echo "[xover] backbone=$BB cohort=$COHORT N=$N mode=$MODE sfreq=$SF win=${WIN}s 
 python src/finetune_labram.py --input "$INPUT" --labels "$LABELS" $MATCH \
     --backbone "$BB" --sfreq "$SF" --window-sec "$WIN" \
     --max-subj "$N" $FLAG --all-recordings --epochs 8 --batch 16 --max-windows 30 \
-    --folds 3 --repeats 1 \
+    --folds "$FOLDS" --repeats "$REPEATS" \
     --out "results/crossover_${BB}_${COHORT}_${MODE}_N${N}.csv"
 echo "[xover] done -> results/crossover_${BB}_${COHORT}_${MODE}_N${N}.csv"
