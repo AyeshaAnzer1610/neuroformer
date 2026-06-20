@@ -52,6 +52,7 @@ def paired(a, b, na, nb):
     w = ss.wilcoxon(a, b).pvalue if (ss is not None and n >= 6) else float("nan")
     print(f"  {na} vs {nb}  PAIRED (n={n}): delta={mean:+.3f}  paired-t p={p:.4f}  "
           f"Wilcoxon p={w:.4f}  dz={dz:+.2f}")
+    return p
 
 
 def welch(a, b, na, nb):
@@ -63,6 +64,7 @@ def welch(a, b, na, nb):
     ps = a.std(ddof=1)
     d = (ma - mb) / ps if ps > 0 else float("inf")
     print(f"  {na} vs {nb}  Welch (n={len(a)},{len(b)}): delta={ma-mb:+.3f}  p={p:.4f}  d~{d:+.2f}")
+    return p
 
 
 print(f"[stats] scipy {'available' if ss else 'ABSENT (normal-approx p; Wilcoxon skipped)'}")
@@ -71,10 +73,20 @@ fr2 = load("finetune_labram_frozen_r2.csv");  lo2 = load("finetune_labram_lora.c
 full = load("finetune_labram_full.csv");      tapt = load("finetune_labram_tapt_5x2.csv")
 
 print("\n=== Frozen vs adaptation (does frozen significantly win?) ===")
+pvals = []
 if fr5 is not None and lo5 is not None and len(fr5) == len(lo5):
-    paired(fr5, lo5, "frozen_5x5", "LoRA_5x5")          # same CV splits -> paired
+    pvals.append(("frozen vs LoRA", paired(fr5, lo5, "frozen_5x5", "LoRA_5x5")))
 if fr2 is not None and tapt is not None and len(fr2) == len(tapt):
-    paired(fr2, tapt, "frozen_5x2", "TAPT_5x2")         # same 5x2 splits -> paired
+    pvals.append(("frozen vs TAPT", paired(fr2, tapt, "frozen_5x2", "TAPT_5x2")))
 if fr5 is not None and full is not None:
-    welch(fr5, full, "frozen_5x5", "full_FT")           # unmatched n -> Welch
+    pvals.append(("frozen vs full", welch(fr5, full, "frozen_5x5", "full_FT")))
+
+# Holm-Bonferroni correction across the family of comparisons (reviewers expect this).
+if pvals:
+    print("\n  Holm-corrected (family-wise):")
+    k = len(pvals)
+    for rank, (name, p) in enumerate(sorted(pvals, key=lambda x: x[1])):
+        thr = 0.05 / (k - rank)
+        print(f"    {name:<16} p={p:.4f}  Holm thr={thr:.4f}  "
+              f"{'significant' if p < thr else 'n.s.'}")
 print("\n(delta=>0 => frozen higher; p<0.05 => significant. Use for the 'freeze' claim's rigor.)")
