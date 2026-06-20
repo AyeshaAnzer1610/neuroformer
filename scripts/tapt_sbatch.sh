@@ -27,21 +27,23 @@ export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 MIPDB=$SCRATCH/mh/data/mipdb
 # SCRATCH is quota-bound; write the checkpoint to project space (925 GiB free).
-CKPT=/project/def-abais/$USER/mh/ckpt/labram_tapt_mipdb.pt
+# v2 = GENTLE TAPT (low LR, few epochs, mild augs) so it doesn't destroy the
+# pretrained init like v1 (lr 1e-4/50ep -> loss 0.19 -> 0.684, worse than frozen).
+CKPT=/project/def-abais/$USER/mh/ckpt/labram_tapt_mipdb_gentle.pt
 mkdir -p "$(dirname "$CKPT")"
 
 echo "=== [0/3] smoke: build backbone + projector + one contrastive step (batch 12) ==="
 python src/tapt_pretrain.py --input "$MIPDB" --max-subj 4 --batch 12 --smoke
 
-echo "=== [1/3] TAPT: contrastive continued pretraining on unlabeled MIPDB ==="
+echo "=== [1/3] GENTLE TAPT: low-LR, few-epoch contrastive pretraining (preserve init) ==="
 python src/tapt_pretrain.py --input "$MIPDB" --all-recordings \
-    --epochs 50 --batch 12 --lr 1e-4 --out "$CKPT"
+    --epochs 10 --batch 12 --lr 1e-5 --out "$CKPT"
 
-echo "=== [2/3] frozen-readout eval of the TAPT-adapted backbone (vs ~0.74 frozen bar) ==="
+echo "=== [2/3] frozen-readout eval of the gentle-TAPT backbone (vs frozen 0.739) ==="
 python src/finetune_labram.py --input "$MIPDB" --labels data/labels.csv \
     --all-recordings --freeze-backbone --backbone-weights "$CKPT" \
     --epochs 8 --batch 16 --max-windows 40 --folds 5 --repeats 2 \
-    --out results/finetune_labram_tapt_5x2.csv
+    --out results/finetune_labram_tapt_gentle_5x2.csv
 
 echo "=== [3/3] done. Compare results/finetune_labram_tapt_5x2.csv to frozen 0.739 (5x5) ==="
 echo "If TAPT > frozen-pretrained, Stage 2: add HBN via --extra-dirs \$SCRATCH/mh/data/hbn_all"

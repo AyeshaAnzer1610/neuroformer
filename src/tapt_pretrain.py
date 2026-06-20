@@ -62,13 +62,15 @@ def collect_windows(input_dir, match, all_recordings, max_subj, max_per_subj):
 
 
 def augment(x):
-    """Two stochastic views of a window batch [B, C, T] (amplitude scale, Gaussian
-    noise, channel dropout, time jitter/roll). Returns a single augmented copy."""
+    """Two stochastic views of a window batch [B, C, T] — CLINICALLY GENTLE so the
+    contrastive invariance doesn't discard signal. The aggressive v1 (±20% amplitude,
+    0.1 noise, 10% channel dropout) crashed the loss to 0.19 and degraded the
+    representation; EEG amplitude and individual channels carry clinical info, so we
+    use only light amplitude jitter (±5%), light noise, and a small benign time roll.
+    No channel dropout."""
     B, C, T = x.shape
-    x = x * (0.8 + 0.4 * torch.rand(B, 1, 1, device=x.device))      # amplitude scale
-    x = x + 0.1 * x.std() * torch.randn_like(x)                     # additive noise
-    drop = (torch.rand(B, C, 1, device=x.device) > 0.1).float()     # 10% channel dropout
-    x = x * drop
+    x = x * (0.95 + 0.1 * torch.rand(B, 1, 1, device=x.device))     # gentle amplitude ±5%
+    x = x + 0.02 * x.std() * torch.randn_like(x)                    # light noise
     shift = int(0.05 * T)
     if shift:
         x = torch.roll(x, shifts=int(torch.randint(-shift, shift + 1, (1,)).item()), dims=-1)

@@ -22,7 +22,7 @@ else
 fi
 
 echo; echo "=== result CSVs (present once folds finish) ==="
-for f in results/finetune_labram_tapt_5x2.csv results/transfer_hbn_disentangle.csv \
+for f in results/finetune_labram_tapt_gentle_5x2.csv results/finetune_labram_tapt_5x2.csv results/transfer_hbn_disentangle.csv \
          results/finetune_labram_frozen_5x5.csv results/finetune_labram_lora_5x5.csv \
          results/finetune_labram_full_5x5.csv \
          results/finetune_labram_lora.csv results/finetune_labram_frozen_r2.csv \
