@@ -17,7 +17,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt   # noqa: E402
 
-PAT = re.compile(r"crossover_(labram|cbramod|eegpt)_(\w+?)_(frozen|full|lora)_N(\d+)\.csv$")
+PAT = re.compile(r"crossover_(?:(labram|cbramod|eegpt)_)?(\w+?)_(frozen|full|lora)_N(\d+)\.csv$")
 COL = {"frozen": "#2E6FB5", "full": "#B0303A", "lora": "#2E8B57"}
 MARK = {"labram": "o", "cbramod": "s", "eegpt": "^"}     # marker per backbone, color per mode
 
@@ -38,7 +38,7 @@ for f in glob.glob("results/crossover_*_N*.csv"):
     m = PAT.search(Path(f).name)
     if not m:
         continue
-    bb, _, mode, N = m.group(1), m.group(2), m.group(3), int(m.group(4))
+    bb = m.group(1) or "labram"; mode, N = m.group(3), int(m.group(4))
     v = load(f)
     if not v:
         continue

@@ -17,7 +17,9 @@ import statistics as st
 import sys
 from pathlib import Path
 
-PAT = re.compile(r"crossover_(labram|cbramod|eegpt)_(\w+?)_(frozen|full|lora)_N(\d+)\.csv$")
+# Match BOTH namings: new crossover_<backbone>_<cohort>_<mode>_N<N> and the older
+# crossover_<cohort>_<mode>_N<N> (LaBraM-only, before the --backbone update).
+PAT = re.compile(r"crossover_(?:(labram|cbramod|eegpt)_)?(\w+?)_(frozen|full|lora)_N(\d+)\.csv$")
 want = sys.argv[1] if len(sys.argv) > 1 else None       # optional cohort filter
 
 
@@ -37,7 +39,8 @@ for f in glob.glob("results/crossover_*_N*.csv"):
     m = PAT.search(Path(f).name)
     if not m:
         continue
-    bb, cohort, mode, N = m.group(1), m.group(2), m.group(3), int(m.group(4))
+    bb = m.group(1) or "labram"                          # old name => LaBraM
+    cohort, mode, N = m.group(2), m.group(3), int(m.group(4))
     if want and cohort != want:
         continue
     v = load(f)
