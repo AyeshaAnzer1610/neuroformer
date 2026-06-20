@@ -68,9 +68,10 @@ ROC-AUC ± 95% CI. Significance: paired t / Wilcoxon with Holm correction; Welch
 n. Calibration: ECE, Brier. External: train MIPDB, test HBN.
 
 ### 3.5 OcuFM: a proposed gaze foundation model (new model, C4)
-Eye-tracking has **no** pretrained foundation model (unlike EEG), forcing hand-crafted
-gaze features. We propose **OcuFM**, the first gaze FM built on the LaBraM recipe, to
-close that gap:
+Gaze representation-learning models exist (GLASS; **GazeMTM**, which adapts the MOMENT
+time-series FM), but none use the **discrete neural-tokenizer + masked-patch** recipe that
+makes LaBraM effective for EEG. We propose **OcuFM**, a gaze FM on that recipe (we do
+**not** claim the first gaze FM — we position against GazeMTM/GLASS):
 - **Input:** multi-channel gaze stream — position (x, y), pupil, and derived velocity/
   acceleration — resampled to a canonical rate and cut into per-channel time patches.
 - **Tokenizer:** a vector-quantized tokenizer trained to reconstruct **kinematic +
