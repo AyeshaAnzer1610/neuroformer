@@ -6,14 +6,14 @@
 fixed, frozen backbone; CIDA is the trainable contribution on top of it.
 
 > **Empirical status (2026-06, real cluster runs on MIPDB).**
-> 1. **Adaptation uniformly fails — frozen is optimal** (matched subject-level CV, §8c):
->    frozen head-only **0.739–0.765** > LoRA 2.88% **0.701** > full fine-tune **0.686**
->    ≈ contrastive SSL continued pretraining (TAPT) **0.684**. On N≈118 *every* form of
->    adaptation we tried — full FT, parameter-efficient LoRA, **and** self-supervised
->    continued pretraining — degrades the frozen representation. This **definitively**
->    answers the "18.9M params too big" criticism (don't adapt at all) and is a complete
->    "when-not-to-adapt-foundation-models" finding. There is **no adaptation accuracy
->    gain to claim** (the early "PEFT win" was vs a stale 0.66 bar; it did not survive).
+> 1. **No adaptation significantly beats frozen at N≈118** (matched subject-level CV, §8c):
+>    means favor frozen **0.739–0.765** over LoRA **0.701**, full FT **0.686**, contrastive
+>    TAPT **0.684**, but **none of the gaps are significant** (frozen vs LoRA paired
+>    p=0.061; frozen vs full p=0.45). The honest claim is **equivalence + efficiency** —
+>    adaptation provides no benefit over frozen at this scale, so don't pay its cost —
+>    which still answers "18.9M params too big." It is **not** "frozen significantly wins."
+>    The **adaptation×sample-size crossover** (frozen vs FT across N, on MIPDB+HBN) is the
+>    experiment that would turn this into a significant, positive finding (the TNSRE plan).
 > 2. **Disentanglement: naive GRL fails; the fix removes identity but buys nothing
 >    downstream (yet).** Nonlinear factor heads + a stronger adversary *do* remove real
 >    subject-identity at low accuracy cost (§8b: decodability 0.258→0.204 at ~no AUC
@@ -269,12 +269,14 @@ arm-appropriate budgets (`scripts/finetune_5x5_sbatch.sh`):
 | 100% | full fine-tune | 0.686 (n=5; 5×5 timed out) |
 | SSL (contrastive TAPT) | continued pretrain on unlabeled MIPDB | 0.684 ± 0.072 (5×2) |
 
-**Adaptation uniformly fails: every method loses to frozen.** Full FT (0.686), LoRA
-(0.701), and self-supervised contrastive continued pretraining (TAPT, 0.684) all fall
-below frozen-pretrained (0.739–0.765). TAPT's contrastive loss collapsed to 0.19
-(too-easy task at batch 12 / ~22 negatives), so it learned trivial augmentation-
-invariance that discarded clinical signal. **On N≈118 the frozen LaBraM representation
-is optimal; full FT, PEFT, and SSL continued pretraining all degrade it.** On N≈118 the frozen LaBraM
+**No adaptation significantly improves over frozen.** Means favor frozen (0.739–0.765)
+over LoRA (0.701), full FT (0.686), and contrastive TAPT (0.684) — but the differences
+are **not statistically significant**: frozen vs LoRA paired t p=0.061 / Wilcoxon 0.056
+(n=25, dz=0.39); frozen vs full Welch p=0.45 (full only n=5). So the defensible claim is
+**equivalence + efficiency** — adaptation provides *no benefit* over frozen at N≈118, so
+don't pay its compute/variance cost — NOT "frozen significantly wins." (TAPT's contrastive
+loss collapsed to 0.19, degrading the representation; see §8c.) Significance:
+`experiments/stats_tests.py`. On N≈118 the frozen LaBraM
 representation is optimal; LoRA (2.88% params) does **not** beat frozen, and full
 fine-tuning is worst. The headline LaBraM result is therefore **frozen ≈ 0.74**, and the
 adaptation finding is a clean *negative*: **freeze, don't fine-tune** — the strongest
