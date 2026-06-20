@@ -17,8 +17,8 @@ import statistics as st
 import sys
 from pathlib import Path
 
-PAT = re.compile(r"crossover_(\w+?)_(frozen|full|lora)_N(\d+)\.csv$")
-want = sys.argv[1] if len(sys.argv) > 1 else None
+PAT = re.compile(r"crossover_(labram|cbramod|eegpt)_(\w+?)_(frozen|full|lora)_N(\d+)\.csv$")
+want = sys.argv[1] if len(sys.argv) > 1 else None       # optional cohort filter
 
 
 def load(path):
@@ -32,35 +32,35 @@ def load(path):
     return vals
 
 
-rows = {}                                   # (cohort, N) -> {mode: (mean, ci, n)}
+rows = {}                                   # (backbone, cohort, N) -> {mode: (mean, ci, n)}
 for f in glob.glob("results/crossover_*_N*.csv"):
     m = PAT.search(Path(f).name)
     if not m:
         continue
-    cohort, mode, N = m.group(1), m.group(2), int(m.group(3))
+    bb, cohort, mode, N = m.group(1), m.group(2), m.group(3), int(m.group(4))
     if want and cohort != want:
         continue
     v = load(f)
     if not v:
         continue
     ci = 1.96 * st.pstdev(v) / len(v) ** 0.5 if len(v) > 1 else float("nan")
-    rows.setdefault((cohort, N), {})[mode] = (sum(v) / len(v), ci, len(v))
+    rows.setdefault((bb, cohort, N), {})[mode] = (sum(v) / len(v), ci, len(v))
 
 if not rows:
     sys.exit("no crossover_*_N*.csv found yet — run scripts/crossover_sbatch.sh cells first")
 
-out = [["cohort", "N", "frozen", "full", "lora", "crossover(full>=frozen?)"]]
-print(f"\n{'cohort':<8}{'N':>6}{'frozen':>12}{'full':>12}{'lora':>12}   note")
-for (cohort, N) in sorted(rows, key=lambda k: (k[0], k[1])):
-    d = rows[(cohort, N)]
+out = [["backbone", "cohort", "N", "frozen", "full", "lora", "crossover(full>=frozen?)"]]
+print(f"\n{'backbone':<9}{'cohort':<7}{'N':>6}{'frozen':>11}{'full':>11}{'lora':>11}   note")
+for (bb, cohort, N) in sorted(rows, key=lambda k: (k[0], k[1], k[2])):
+    d = rows[(bb, cohort, N)]
     def cell(mode):
         return f"{d[mode][0]:.3f}" if mode in d else "  -  "
     fr = d.get("frozen", (None,))[0]; fu = d.get("full", (None,))[0]
     note = ""
     if fr is not None and fu is not None:
         note = "FT>=frozen" if fu >= fr else "frozen>FT"
-    print(f"{cohort:<8}{N:>6}{cell('frozen'):>12}{cell('full'):>12}{cell('lora'):>12}   {note}")
-    out.append([cohort, N, cell("frozen"), cell("full"), cell("lora"), note])
+    print(f"{bb:<9}{cohort:<7}{N:>6}{cell('frozen'):>11}{cell('full'):>11}{cell('lora'):>11}   {note}")
+    out.append([bb, cohort, N, cell("frozen"), cell("full"), cell("lora"), note])
 
 Path("results").mkdir(exist_ok=True)
 with open("results/crossover_summary.csv", "w", newline="") as fh:

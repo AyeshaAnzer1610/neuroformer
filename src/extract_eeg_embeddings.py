@@ -220,7 +220,7 @@ def list_eeg_files(input_path, match=None):
 
 
 def load_and_window(input_path, notch=60.0, window_sec=15.0, clip_uv=800.0,
-                    max_candidates=6, match=None, all_recordings=False):
+                    max_candidates=6, match=None, all_recordings=False, target_sfreq=200.0):
     """Window a subject's EEG.
 
     Default: pick the best-quality single recording (first QC-passing candidate).
@@ -238,7 +238,7 @@ def load_and_window(input_path, notch=60.0, window_sec=15.0, clip_uv=800.0,
     reason = "no candidates tried"
     kept_windows, kept_raw = [], None
     for f in cands[:cap]:
-        raw = preprocess(load_raw(f), notch=notch)
+        raw = preprocess(load_raw(f), notch=notch, target_sfreq=target_sfreq)
         try:
             windows = make_windows(raw, window_sec=window_sec, clip_uv=clip_uv)
         except ValueError as e:                       # too short -> try next file

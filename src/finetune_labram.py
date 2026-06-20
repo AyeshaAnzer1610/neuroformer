@@ -49,8 +49,11 @@ def _load_labels(path):
     sys.exit("labels need a DX_Status or p_factor column")
 
 
-def load_all(input_dir, labels_csv, match, all_recordings, window_sec=15.0, max_subj=None):
-    """Per-subject QC windows + labels. Returns list of (sid, windows, y), chs_info."""
+def load_all(input_dir, labels_csv, match, all_recordings, window_sec=15.0, max_subj=None,
+             sfreq=200.0):
+    """Per-subject QC windows + labels. Returns list of (sid, windows, y), chs_info.
+
+    sfreq resamples per backbone (LaBraM 200; CBraMod/EEGPT 250)."""
     lab = _load_labels(labels_csv)
     from pathlib import Path
     subs = sorted(p for p in Path(input_dir).iterdir() if p.is_dir())
@@ -63,7 +66,7 @@ def load_all(input_dir, labels_csv, match, all_recordings, window_sec=15.0, max_
             continue
         try:
             raw, w = load_and_window(p, match=match, window_sec=window_sec,
-                                     all_recordings=all_recordings)
+                                     all_recordings=all_recordings, target_sfreq=sfreq)
         except Exception as e:  # noqa: BLE001
             print(f"[skip] {sid}: {e}"); continue
         if chs is None:
@@ -96,11 +99,36 @@ def inject_lora(model, r, alpha):
     return n
 
 
+def _build_backbone(chs, n_times, args):
+    """Construct a pretrained EEG foundation backbone (n_outputs=2) per --backbone.
+
+    All braindecode FMs share the from_pretrained pattern but differ in expected
+    sfreq/channels (LaBraM 200 Hz montage-interpolated; CBraMod/EEGPT 250 Hz). The
+    data sfreq/window must match (--sfreq/--window-sec); smoke-validate each on Nibi."""
+    bb = getattr(args, "backbone", "labram")
+    n_chans = len(chs)
+    if bb == "labram":
+        from braindecode.models import InterpolatedLaBraM
+        return InterpolatedLaBraM.from_pretrained(
+            "braindecode/labram-pretrained", chs_info=chs, n_times=n_times,
+            n_outputs=2, patch_size=200, strict=False)
+    if bb == "cbramod":                                   # channel-agnostic; 250 Hz
+        from braindecode.models import CBraMod
+        return CBraMod.from_pretrained(
+            "braindecode/cbramod-pretrained", n_outputs=2, n_chans=n_chans,
+            n_times=n_times, sfreq=int(getattr(args, "sfreq", 250)))
+    if bb == "eegpt":                                     # 250 Hz; channel projection
+        from braindecode.models import EEGPT
+        return EEGPT.from_pretrained(
+            "braindecode/eegpt-pretrained", n_chans=n_chans, n_outputs=2,
+            chan_proj_type="linear")
+    raise SystemExit(f"unknown --backbone {bb} (labram|cbramod|eegpt)")
+
+
 def build_model(chs, n_times, args, device):
-    from braindecode.models import InterpolatedLaBraM
-    m = InterpolatedLaBraM.from_pretrained(
-        "braindecode/labram-pretrained", chs_info=chs, n_times=n_times,
-        n_outputs=2, patch_size=200, strict=False)
+    m = _build_backbone(chs, n_times, args)
+    print(f"[backbone] {getattr(args, 'backbone', 'labram')}  n_chans={len(chs)}  "
+          f"n_times={n_times}  total_params={sum(p.numel() for p in m.parameters()):,}", flush=True)
     bw = getattr(args, "backbone_weights", None)
     if bw:                                   # load TAPT-adapted backbone over pretrained
         sd = torch.load(bw, map_location="cpu")
@@ -123,14 +151,19 @@ def build_model(chs, n_times, args, device):
             sys.exit("[lora] no Linear layers matched LORA_PATTERNS — inspect "
                      "model.named_modules() on the cluster and adjust LORA_PATTERNS.")
     elif args.freeze_backbone:
-        n_train = 0
+        npar = 0
         for name, par in m.named_parameters():
             keep = any(k in name.lower() for k in ("head", "classif", "final", "fc", "norm"))
             par.requires_grad = keep
-            n_train += par.requires_grad
-        if n_train == 0:                       # fallback: unfreeze everything
+            npar += par.requires_grad
+        if npar == 0:                          # fallback: unfreeze everything
             for par in m.parameters():
                 par.requires_grad = True
+        tr = sum(p.numel() for p in m.parameters() if p.requires_grad)
+        tot = sum(p.numel() for p in m.parameters())
+        # WARN if "frozen" accidentally became full FT (head keys didn't match this model)
+        tag = "OK frozen-head" if (0 < tr < 0.5 * tot) else "WARNING: froze 0 -> training ALL"
+        print(f"[freeze] trainable {tr:,}/{tot:,} = {100*tr/tot:.2f}%  [{tag}]", flush=True)
     return m.to(device)
 
 
@@ -213,6 +246,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", required=True); ap.add_argument("--labels", default="data/labels.csv")
     ap.add_argument("--match", default=None); ap.add_argument("--all-recordings", action="store_true")
+    ap.add_argument("--backbone", default="labram", choices=["labram", "cbramod", "eegpt"],
+                    help="pretrained EEG foundation backbone (C1: test the freeze finding "
+                         "across FMs, not just LaBraM)")
+    ap.add_argument("--sfreq", type=float, default=200.0,
+                    help="resample rate; LaBraM=200, CBraMod/EEGPT=250")
+    ap.add_argument("--window-sec", type=float, default=15.0, help="window length (s)")
     ap.add_argument("--epochs", type=int, default=8); ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--lr", type=float, default=1e-4); ap.add_argument("--freeze-backbone", action="store_true")
     ap.add_argument("--lora", action="store_true",
@@ -248,7 +287,7 @@ def main():
 
     rng = np.random.default_rng(args.seed)
     data, chs = load_all(args.input, args.labels, args.match, args.all_recordings,
-                         max_subj=args.max_subj)
+                         window_sec=args.window_sec, max_subj=args.max_subj, sfreq=args.sfreq)
     if args.max_windows:
         data = [(sid, _cap_windows(w, args.max_windows, rng), y) for sid, w, y in data]
     if not data:
