@@ -156,10 +156,13 @@ class OcuFM(nn.Module):
 
     @torch.no_grad()
     def embed_windows(self, x):
-        """Frozen inference: gaze [B, C, T] -> per-channel token embeddings [B, n, C, d]
-        (the tensor CIDA consumes; channels become CIDA's graph nodes)."""
+        """Frozen inference: gaze [B, C, T] -> ENCODED per-channel tokens [B, n, C, d].
+        Runs the pretrained Transformer encoder (no masking) — the learned representation,
+        not the raw patch projection. (Bugfix: previously returned un-encoded patches.)"""
         tok, _ = self.embed(x)                                  # [B, C, n, d]
-        return tok.permute(0, 2, 1, 3).contiguous()             # [B, n, C, d]
+        B, C, n, d = tok.shape
+        enc = self.encoder(tok.reshape(B, C * n, d))            # learned repr [B, C*n, d]
+        return enc.reshape(B, C, n, d).permute(0, 2, 1, 3).contiguous()  # [B, n, C, d]
 
 
 if __name__ == "__main__":  # self-test: masked-patch pretraining on synthetic gaze
