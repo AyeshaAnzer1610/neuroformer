@@ -90,7 +90,7 @@ def ocufm_embed(ckpt, Xwin, device):
 
 def handcrafted(Xwin):
     """Baseline: per-window channel mean/std/range -> [N, 15]."""
-    return np.concatenate([Xwin.mean(-1), Xwin.std(-1), Xwin.ptp(-1)], axis=1)
+    return np.concatenate([Xwin.mean(-1), Xwin.std(-1), np.ptp(Xwin, axis=-1)], axis=1)
 
 
 def probe(feat, y, groups, name):
