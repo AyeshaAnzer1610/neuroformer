@@ -33,7 +33,7 @@ from sklearn.preprocessing import StandardScaler
 from ocufm import OcuFM
 from ocufm_pretrain import _derive_channels
 
-FN = re.compile(r"S_\d+_(\d+)_S\d+_([A-Za-z0-9]+)")     # -> (subject, task)
+FN = re.compile(r"S_(\d+)_S\d+_([A-Za-z0-9]+)")          # S_<subject>_S<sess>_<TASK> -> (subject, task)
 
 
 def load_labeled(path, sfreq, window_sec, max_win_per_rec=20, max_rec=None):
