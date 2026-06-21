@@ -42,33 +42,42 @@ def _derive_channels(x, y, pupil, sfreq):
 
 def load_gazebase_windows(path, download, sfreq=250.0, window_sec=4.0,
                           max_rec=None, max_win_per_rec=20):
-    """Load GazeBase via pymovements -> windows [N, 5, T]. Cluster-only (needs pymovements
-    + the downloaded corpus). The exact column names can vary by pymovements version; we
-    look them up defensively and print what we find on first use."""
-    import pymovements as pm
-    ds = pm.Dataset("GazeBase", path=path)
-    if download:
-        ds.download()
-    ds.load()
-    win = int(window_sec * sfreq)
+    """Load GazeBase by parsing its per-task CSVs directly with pandas — NO pymovements
+    (its polars/pyarrow deps don't build on the cluster). GazeBase CSV columns are
+    n,x,y,val,dP,lab (1000 Hz; x,y in degrees; dP=pupil; val!=0 => invalid). We detect
+    columns case-insensitively and print the header on first file."""
+    import glob
+    import pandas as pd
+    files = sorted(glob.glob(str(Path(path) / "**" / "*.csv"), recursive=True))
+    if max_rec:
+        files = files[:max_rec]
+    if not files:
+        sys.exit(f"no GazeBase *.csv under {path} — download + unzip it there first")
+    win = int(window_sec * sfreq); step = max(1, int(round(1000.0 / sfreq)))
     out, printed = [], False
-    recs = ds.gaze[:max_rec] if max_rec else ds.gaze
-    for g in recs:
-        df = g.frame                                    # polars DataFrame
-        cols = {c.lower(): c for c in df.columns}
+    rng = np.random.default_rng(0)
+    for f in files:
+        try:
+            df = pd.read_csv(f)
+        except Exception:  # noqa: BLE001
+            continue
+        cols = {c.lower().strip(): c for c in df.columns}
         if not printed:
-            print(f"[gazebase] columns: {list(df.columns)}", flush=True); printed = True
+            print(f"[gazebase] {len(files)} csv files; columns: {list(df.columns)}", flush=True)
+            printed = True
         def col(*names):
             for n in names:
                 if n in cols:
-                    return np.asarray(df[cols[n]].to_numpy(), float)
+                    return df[cols[n]].to_numpy(float)
             return None
-        x = col("x", "x_left", "xpos"); y = col("y", "y_left", "ypos")
-        pupil = col("pupil", "pupil_left", "pupil_area", "pa")
+        x = col("x", "xpos", "gx"); y = col("y", "ypos", "gy")
+        pupil = col("dp", "pupil", "pa", "pupil_area")
+        val = col("val", "validity")
         if x is None or y is None:
             continue
-        # resample 1000 Hz -> sfreq by simple decimation (GazeBase is 1000 Hz)
-        step = max(1, int(round(1000.0 / sfreq)))
+        if val is not None:                              # blank invalid samples
+            bad = val != 0
+            x = x.copy(); y = y.copy(); x[bad] = np.nan; y[bad] = np.nan
         x, y = x[::step], y[::step]
         pupil = pupil[::step] if pupil is not None else None
         ch = _derive_channels(x, y, pupil, sfreq)        # [5, T']
@@ -77,10 +86,10 @@ def load_gazebase_windows(path, download, sfreq=250.0, window_sec=4.0,
             continue
         w = ch[:, :nwin * win].reshape(5, nwin, win).transpose(1, 0, 2)  # [nwin,5,win]
         if max_win_per_rec and len(w) > max_win_per_rec:
-            w = w[np.random.default_rng(0).choice(len(w), max_win_per_rec, replace=False)]
+            w = w[rng.choice(len(w), max_win_per_rec, replace=False)]
         out.append(w.astype(np.float32))
     if not out:
-        sys.exit("no GazeBase windows loaded — check pymovements columns/path")
+        sys.exit("no GazeBase windows parsed — check the CSV columns printed above")
     X = np.concatenate(out, 0)
     print(f"[gazebase] {len(X)} windows, shape {X.shape}", flush=True)
     return X

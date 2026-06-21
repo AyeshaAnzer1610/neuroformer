@@ -7,19 +7,15 @@
 #SBATCH --time=08:00:00
 #SBATCH --output=%x-%j.out
 #
-# Pretrain OcuFM (gaze FM) on GazeBase. PREREQS done ONCE on a LOGIN node (internet):
-#   deactivate 2>/dev/null
-#   module load gcc arrow            # provides pyarrow (Alliance blocks the pip version)
-#   source ~/envs/mh311gpu/bin/activate
-#   pip install pymovements
-#   GAZE=/project/def-abais/$USER/mh/data/gazebase
-#   python -c "import pymovements as pm; pm.Dataset('GazeBase', path='$GAZE').download()"
-# (compute nodes are offline, so download + pip must be on the login node first.)
+# Pretrain OcuFM (gaze FM) on GazeBase. NO pymovements (its polars/pyarrow deps don't
+# build on the cluster) -- we parse GazeBase CSVs directly with pandas.
+# PREREQ (ONCE, login node): download + unzip GazeBase CSVs to
+#   /project/def-abais/$USER/mh/data/gazebase/   (from figshare: "GazeBase" Sci Data 2021)
+#   e.g.  wget <figshare round zips> -P $GAZE && (cd $GAZE && for z in *.zip; do unzip -q $z; done)
 #
 # Submit:  sbatch scripts/ocufm_pretrain_sbatch.sh
 set -euo pipefail
-# 'arrow' module provides pyarrow (pymovements/polars need it); must precede venv activate.
-module load StdEnv/2023 gcc python/3.11 arrow cuda cudnn
+module load StdEnv/2023 gcc python/3.11 cuda cudnn
 export LD_LIBRARY_PATH=$(printf '%s' "${LD_LIBRARY_PATH:-}" | tr ':' '\n' | grep -vF "$HOME/cuda-toolkit" | paste -sd:)
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 source ~/envs/mh311gpu/bin/activate
