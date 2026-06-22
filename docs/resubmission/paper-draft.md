@@ -130,12 +130,15 @@ Leak-free CV, identical protocol:
 | EEG-alone | 0.661 |
 | eye-alone | 0.522 (chance) |
 | concat | 0.644 |
-| fusion transformer | 0.587 |
+| set-fusion (attn) | 0.587 |
 | 1-stage multimodal transformer | 0.617 |
 | gated attention fusion | 0.556 |
+| **NeuroFormer (full cross-modal transformer, end-to-end, 5×3)** | **0.668 ± 0.051** |
 
-Every fusion variant is **below EEG-alone**; the complete multimodal architecture does not
-beat single-modality EEG.
+Every fusion variant — including the **complete NeuroFormer cross-modal transformer run
+end-to-end (0.668)** — only *ties* EEG-alone (~0.66) and stays **below** the frozen
+window-level EEG (0.739). The complete multimodal architecture does **not** beat
+single-modality EEG. (`train_neuroformer.py`; `results/neuroformer_cv.csv`.)
 
 ### 4.4 External transfer is chance (C3)
 MIPDB→HBN (1,980 subjects): ROC-AUC **~0.52** (median-split p-factor). An identity-
