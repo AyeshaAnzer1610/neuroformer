@@ -107,6 +107,21 @@ Matched subject-level CV on MIPDB:
 No adaptation significantly beats frozen (frozen vs LoRA paired *p*=0.061; vs full
 *p*=0.45; n.s. after Holm). Frozen is also the cheapest (tiny head vs 5.8M).
 
+**Robustness across FM families.** To check the 0.74 ceiling is not a LaBraM artifact,
+we ran the identical frozen-readout protocol with a second, independently-pretrained EEG
+FM, **CBraMod** (ICLR'25, TUAB-SOTA; 5.2M params, channel-agnostic, 250 Hz × 4 s windows):
+
+| frozen backbone | ROC-AUC (5×5) |
+|---|---|
+| **LaBraM** (reproduced) | **0.739 ± 0.047** |
+| CBraMod | 0.602 ± 0.044 |
+
+A different EEG FM with the same frozen readout does **not** exceed frozen LaBraM (it is
+in fact lower), so the ~0.74 ceiling reflects the task/cohort, not a single architecture.
+(EEGPT was pretrained on a fixed 64-ch 10-10 montage and has no montage-interpolation
+variant in braindecode; it could not be fairly evaluated on the 129-ch EGI cohort and is
+omitted rather than reported with a re-initialized channel projection.)
+
 ### 4.2 No crossover across sample size (C1)
 Within-HBN, varying only N (well-powered 5×3 at N≤500):
 
@@ -158,7 +173,8 @@ hurts. Multimodal fusion cannot help when the auxiliary modality is at chance, a
 cross-cohort transfer is bounded by domain/label shift rather than removable confounds.
 **Limitations:** one primary cohort (N≈118); heterogeneous "any-diagnosis" label and a
 crude p-factor median split; modest within-HBN signal; OcuFM proposed but not pretrained
-(no large gaze corpus). Single FM family in the headline (CBraMod replication in progress).
+(no large gaze corpus). The headline uses LaBraM; we replicate the frozen ceiling with a
+second FM family (CBraMod, 0.602) but EEGPT could not be fairly run on the 129-ch montage.
 
 ## 6. Conclusion
 For small-cohort transdiagnostic EEG screening: **freeze a single-modality EEG foundation

@@ -118,10 +118,17 @@ def _build_backbone(chs, n_times, args):
             "braindecode/cbramod-pretrained", n_outputs=2, n_chans=n_chans,
             n_times=n_times, sfreq=int(getattr(args, "sfreq", 250)))
     if bb == "eegpt":                                     # 250 Hz; channel projection
+        # EEGPT pretrained on a FIXED 64-ch 10-10 montage (config carries chs_info);
+        # MIPDB is 129-ch EGI. Pass OUR montage (chs_info=chs) so the linear channel
+        # projection maps 129->model latent (its intended cross-montage adapter), and
+        # strict=False so the 64-ch pretrained projection weights are re-init for 129.
+        # The channel adapter is then TRAINED downstream (kept trainable in the freeze
+        # logic via the "chan"/"proj"/"spatial"/"adapter" keys) — a fair frozen-encoder
+        # readout. If it lands ~chance, report as montage-incompatibility, not a score.
         from braindecode.models import EEGPT
         return EEGPT.from_pretrained(
-            "braindecode/eegpt-pretrained", n_chans=n_chans, n_outputs=2,
-            chan_proj_type="linear")
+            "braindecode/eegpt-pretrained", chs_info=chs, n_outputs=2,
+            chan_proj_type="linear", strict=False)
     raise SystemExit(f"unknown --backbone {bb} (labram|cbramod|eegpt)")
 
 
@@ -151,9 +158,14 @@ def build_model(chs, n_times, args, device):
             sys.exit("[lora] no Linear layers matched LORA_PATTERNS — inspect "
                      "model.named_modules() on the cluster and adjust LORA_PATTERNS.")
     elif args.freeze_backbone:
+        keep_keys = ["head", "classif", "final", "fc", "norm"]
+        # EEGPT: also train the channel-projection adapter (its cross-montage mechanism;
+        # re-init for our 129-ch EGI). Substrings chosen NOT to match attention qkv "proj".
+        if getattr(args, "backbone", "labram") == "eegpt":
+            keep_keys += ["chan_", "spatial", "adapter", "chan_proj", "chan_conv"]
         npar = 0
         for name, par in m.named_parameters():
-            keep = any(k in name.lower() for k in ("head", "classif", "final", "fc", "norm"))
+            keep = any(k in name.lower() for k in keep_keys)
             par.requires_grad = keep
             npar += par.requires_grad
         if npar == 0:                          # fallback: unfreeze everything
