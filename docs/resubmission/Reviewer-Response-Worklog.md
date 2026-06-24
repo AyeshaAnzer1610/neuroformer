@@ -1,13 +1,25 @@
 # Reviewer-Response Worklog — NeuroFormer (IEEE Access, Access-2026-19478)
 
-> **Purpose.** A single living document to drive the resubmission. For each reviewer
-> comment: (a) the current **evidence** with live numbers, (b) a **ready-to-paste
-> response**, (c) **status** and what (if anything) is left. Pick it up any time —
-> the status column tells you where to resume.
+> **⚠️ SUPERSEDED FRAMING (2026-06-24).** The project is now split into **two separate
+> papers**:
+> - **(A) This IEEE Access resubmission** keeps the **original NeuroFormer paper
+>   (0.912, eye/behaviour-dominant, hand-crafted 3-modality)** and answers the reviewers
+>   *within that framework*. The authoritative point-by-point response is
+>   **[IEEE-Response-to-Reviewers-Formal.md](IEEE-Response-to-Reviewers-Formal.md)**
+>   (IEEE concern→response→action template). Reviewer asks needing new runs (R1.3
+>   external, R3.3 robustness, R3.4 compact, R2.2 baselines) run on the **authors'
+>   original pipeline** (not in this repo) and fill `[[ ]]`.
+> - **(B) A new paper** carries the **foundation-model EEG** results (0.748 window-level,
+>   multi-backbone, HBN external null) — drafted in [paper-draft.md](paper-draft.md).
 >
-> Companion docs: full prose in [Response-to-Reviewers.md](Response-to-Reviewers.md);
-> adversarial register in [reviewer-objections.md](reviewer-objections.md);
-> manuscript prose in [paper-draft.md](paper-draft.md).
+> **The §0 numbers below (0.748 etc.) belong to paper (B), not the Access resubmission.**
+> Treat this worklog as the (B)-paper evidence ledger + a cross-reference of which
+> reviewer concern each (B) result happens to answer. For the actual resubmission, use the
+> formal doc above.
+
+> **Purpose.** A single living document of reviewer comments → evidence → response →
+> status. Companion docs: [Response-to-Reviewers.md](Response-to-Reviewers.md);
+> [reviewer-objections.md](reviewer-objections.md); [paper-draft.md](paper-draft.md).
 
 **Status legend:** ✅ done · ✍️ text-only (write-up pending, no run needed) ·
 🖥️ needs/awaiting a cluster run · ⚠️ honest limitation (own it) · ❓ author decision.
