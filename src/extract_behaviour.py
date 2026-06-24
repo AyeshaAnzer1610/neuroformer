@@ -69,11 +69,13 @@ def probe(subject_dir):
 # --------------------------------------------------- accuracy from behavioural CSV
 def _accuracy_and_codes(beh_files):
     """From SAIIT_2AFC block CSVs: accuracy = mean(trialLR == RespLR) over valid
-    trials, plus the CD_TG / CD_RESP trigger codes read from row 1."""
-    import numpy as np
+    trials, plus the EEG trigger codes for target (CD_TG) and the button/response
+    (CD_BUTTONS) read from row 1. NOTE: CD_RESP (=94) is NOT the response event —
+    it collides with the per-recording file markers (90-97); the actual response
+    trigger is CD_BUTTONS (=12), verified against the events-code histograms."""
     import pandas as pd
     correct = total = 0
-    cd_tg = cd_resp = None
+    cd_tg = cd_btn = None
     for f in beh_files:
         try:
             df = pd.read_csv(f)
@@ -84,14 +86,14 @@ def _accuracy_and_codes(beh_files):
             rl = pd.to_numeric(df["RespLR"], errors="coerce")
             v = tl.notna() & rl.notna()
             correct += int((tl[v] == rl[v]).sum()); total += int(v.sum())
-        if cd_tg is None and "CD_TG" in df.columns and "CD_RESP" in df.columns:
+        if cd_tg is None and "CD_TG" in df.columns and "CD_BUTTONS" in df.columns:
             try:
                 cd_tg = int(float(df["CD_TG"].dropna().iloc[0]))
-                cd_resp = int(float(df["CD_RESP"].dropna().iloc[0]))
+                cd_btn = int(float(df["CD_BUTTONS"].dropna().iloc[0]))
             except Exception:  # noqa: BLE001
                 pass
     acc = (correct / total) if total else float("nan")
-    return acc, total, cd_tg, cd_resp
+    return acc, total, cd_tg, cd_btn
 
 
 # ------------------------------------------------------ RT from EEG events files
@@ -133,27 +135,28 @@ def behaviour_features(subject_dir, sfreq=SFREQ_DEFAULT):
         or sorted(p.rglob("*SAIIT_2AFC*.csv"))
     if not beh_files:
         raise ValueError("no SAIIT_2AFC behavioural CSVs (run --probe)")
-    acc, n_trials, cd_tg, cd_resp = _accuracy_and_codes(beh_files)
+    acc, n_trials, cd_tg, cd_btn = _accuracy_and_codes(beh_files)
 
     rts = []
-    if cd_tg is not None:
+    if cd_tg is not None and cd_btn is not None:
         for ef in sorted(p.rglob("*_events.csv")):
             ev = _parse_events(ef)
             codes = {c for c, _ in ev}
-            if cd_tg in codes and cd_resp in codes:
-                rts += _rts_from_events(ev, cd_tg, cd_resp)
+            if cd_tg in codes and cd_btn in codes:          # = the SAIIT recordings
+                rts += _rts_from_events(ev, cd_tg, cd_btn)  # target -> next button
     rt = np.array(rts, float) / float(sfreq)            # samples -> seconds
     rt = rt[(rt > 0.05) & (rt < 5.0)]                   # plausible RT window
 
     if rt.size == 0:
-        print(f"[beh ] {p.name}: WARN no RT pairs (cd_tg={cd_tg} cd_resp={cd_resp}); "
+        print(f"[beh ] {p.name}: WARN no RT pairs (target={cd_tg} button={cd_btn}); "
               f"accuracy-only. acc={acc:.3f} n_trials={n_trials}")
         feats = np.array([np.nan, np.nan, np.nan, np.nan, np.nan, acc], np.float32)
     else:
         feats = np.array([rt.mean(), rt.std(), np.median(rt), rt.min(), rt.max(), acc],
                          dtype=np.float32)
-        print(f"[beh ] {p.name}: {rt.size} RT trials (codes {cd_tg}->{cd_resp}) | "
-              f"rt_mean={feats[0]:.3f}s acc={acc:.3f} n_acc_trials={n_trials}")
+        print(f"[beh ] {p.name}: {rt.size} RT trials (target {cd_tg} -> button {cd_btn}) | "
+              f"rt_mean={feats[0]:.3f}s rt_med={feats[2]:.3f}s acc={acc:.3f} "
+              f"n_acc_trials={n_trials}")
     return feats.reshape(1, -1)
 
 
