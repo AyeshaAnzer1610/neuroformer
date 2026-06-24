@@ -26,8 +26,8 @@ import re
 import sys
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
+# numpy/pandas imported lazily inside the extraction functions so that --probe
+# (pure stdlib: just lists/preview files) runs on the login node without a venv.
 
 BEH_FEATURES = ["rt_mean", "rt_std", "rt_median", "rt_min", "rt_max", "accuracy"]
 
@@ -70,6 +70,7 @@ def probe(subject_dir):
 # ------------------------------------------------------------- SMI Events parse
 def _read_events(path):
     """Read an SMI *Events.txt: tab-separated after a '##'/header preamble."""
+    import pandas as pd
     with open(path, "r", errors="replace") as f:
         lines = f.readlines()
     hdr = next((i for i, l in enumerate(lines)
@@ -85,6 +86,8 @@ def _read_events(path):
 def _rt_accuracy_from_events(df):
     """Best-effort: pair stimulus->response messages for RT; correct/incorrect tags
     for accuracy. Returns (rt_array_seconds, accuracy_float) or (None, None)."""
+    import numpy as np
+    import pandas as pd
     msgcol = next((c for c in df.columns
                    if re.search(r"msg|message|descr|event|text|comment", c, re.I)), None)
     timecol = next((c for c in df.columns if re.search(r"time", c, re.I)), None)
@@ -113,6 +116,7 @@ def _rt_accuracy_from_events(df):
 
 
 def behaviour_features(subject_dir):
+    import numpy as np
     p = Path(subject_dir)
     ev_files = [f for f in p.rglob("*Events.txt") if TASK_PAT.search(f.name)] \
         or list(p.rglob("*Events.txt"))
@@ -149,6 +153,7 @@ def main():
 
     if args.probe:
         probe(args.input); return
+    import numpy as np
     if args.batch:
         parent = Path(args.input)
         if not args.output_dir:
