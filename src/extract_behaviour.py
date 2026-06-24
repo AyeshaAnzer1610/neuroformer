@@ -31,13 +31,12 @@ from pathlib import Path
 
 BEH_FEATURES = ["rt_mean", "rt_std", "rt_median", "rt_min", "rt_max", "accuracy"]
 
-# SAIIT_2AFC task tag and the SMI message/column patterns we look for. These are
-# best-effort defaults; --probe shows the real strings so they can be corrected.
-TASK_PAT = re.compile(r"SAIIT|2AFC|Contrast", re.I)
-STIM_MSG = re.compile(r"stim|onset|target|trial.?start", re.I)
-RESP_MSG = re.compile(r"resp|button|key|answer|press", re.I)
-CORRECT_MSG = re.compile(r"correct|hit", re.I)
-INCORRECT_MSG = re.compile(r"incorrect|wrong|miss|error", re.I)
+# MIPDB SAIIT_2AFC behaviour:
+#   accuracy  <- Behavioral/csv/<sid>_SAIIT_2AFC_Block*.csv  (trialLR vs RespLR)
+#   RT        <- EEG/preprocessed/csv_format/*_events.csv     (latency CD_RESP - CD_TG)
+# Target/response trigger codes (CD_TG, CD_RESP) are auto-read from row 1 of each
+# behavioural block, then matched in the events files -> no hard-coded code map.
+SFREQ_DEFAULT = 500.0   # MIPDB EEG native sampling rate (events latency in samples)
 
 
 # ---------------------------------------------------------------- probe mode
@@ -67,76 +66,94 @@ def probe(subject_dir):
                 print("   |", line.rstrip()[:160])
 
 
-# ------------------------------------------------------------- SMI Events parse
-def _read_events(path):
-    """Read an SMI *Events.txt: tab-separated after a '##'/header preamble."""
-    import pandas as pd
-    with open(path, "r", errors="replace") as f:
-        lines = f.readlines()
-    hdr = next((i for i, l in enumerate(lines)
-                if ("Time" in l and ("Type" in l or "Trial" in l)) or l.startswith("Time\t")),
-               None)
-    if hdr is None:
-        return None
-    df = pd.read_csv(path, sep="\t", skiprows=hdr, low_memory=False, engine="python")
-    df.columns = [c.strip() for c in df.columns]
-    return df
-
-
-def _rt_accuracy_from_events(df):
-    """Best-effort: pair stimulus->response messages for RT; correct/incorrect tags
-    for accuracy. Returns (rt_array_seconds, accuracy_float) or (None, None)."""
+# --------------------------------------------------- accuracy from behavioural CSV
+def _accuracy_and_codes(beh_files):
+    """From SAIIT_2AFC block CSVs: accuracy = mean(trialLR == RespLR) over valid
+    trials, plus the CD_TG / CD_RESP trigger codes read from row 1."""
     import numpy as np
     import pandas as pd
-    msgcol = next((c for c in df.columns
-                   if re.search(r"msg|message|descr|event|text|comment", c, re.I)), None)
-    timecol = next((c for c in df.columns if re.search(r"time", c, re.I)), None)
-    if msgcol is None or timecol is None:
-        return None, None
-    t = pd.to_numeric(df[timecol], errors="coerce")
-    msg = df[msgcol].astype(str)
-    rts, last_stim = [], None
-    n_corr = n_total = 0
-    for ti, mi in zip(t, msg):
-        if STIM_MSG.search(mi):
-            last_stim = ti
-        elif RESP_MSG.search(mi) and last_stim is not None and np.isfinite(ti):
-            rts.append((ti - last_stim))
-            last_stim = None
-        if CORRECT_MSG.search(mi):
-            n_corr += 1; n_total += 1
-        elif INCORRECT_MSG.search(mi):
-            n_total += 1
-    rts = np.array([r for r in rts if np.isfinite(r) and r > 0], float)
-    # SMI times are microseconds -> seconds if values are large
-    if rts.size and np.median(rts) > 1e4:
-        rts = rts / 1e6
-    acc = (n_corr / n_total) if n_total else np.nan
-    return (rts if rts.size else None), acc
+    correct = total = 0
+    cd_tg = cd_resp = None
+    for f in beh_files:
+        try:
+            df = pd.read_csv(f)
+        except Exception:  # noqa: BLE001
+            continue
+        if "trialLR" in df.columns and "RespLR" in df.columns:
+            tl = pd.to_numeric(df["trialLR"], errors="coerce")
+            rl = pd.to_numeric(df["RespLR"], errors="coerce")
+            v = tl.notna() & rl.notna()
+            correct += int((tl[v] == rl[v]).sum()); total += int(v.sum())
+        if cd_tg is None and "CD_TG" in df.columns and "CD_RESP" in df.columns:
+            try:
+                cd_tg = int(float(df["CD_TG"].dropna().iloc[0]))
+                cd_resp = int(float(df["CD_RESP"].dropna().iloc[0]))
+            except Exception:  # noqa: BLE001
+                pass
+    acc = (correct / total) if total else float("nan")
+    return acc, total, cd_tg, cd_resp
 
 
-def behaviour_features(subject_dir):
+# ------------------------------------------------------ RT from EEG events files
+def _parse_events(path):
+    """Repeating-header events CSV -> list of (code:int, latency:int)."""
+    out = []
+    for line in open(path, "r", errors="replace"):
+        s = line.strip()
+        if not s or s.startswith('"type"') or s.startswith("type"):
+            continue
+        parts = [x.strip().strip('"').strip() for x in s.split(",")]
+        if len(parts) < 3:
+            continue
+        try:
+            out.append((int(float(parts[0])), int(float(parts[2]))))
+        except (ValueError, IndexError):
+            continue
+    return out
+
+
+def _rts_from_events(events, cd_tg, cd_resp):
+    """Pair each target (CD_TG) with the next response (CD_RESP); RT in samples."""
+    rts, last_tg = [], None
+    for code, lat in events:
+        if code == cd_tg:
+            last_tg = lat
+        elif code == cd_resp and last_tg is not None:
+            dt = lat - last_tg
+            if dt > 0:
+                rts.append(dt)
+            last_tg = None
+    return rts
+
+
+def behaviour_features(subject_dir, sfreq=SFREQ_DEFAULT):
     import numpy as np
     p = Path(subject_dir)
-    ev_files = [f for f in p.rglob("*Events.txt") if TASK_PAT.search(f.name)] \
-        or list(p.rglob("*Events.txt"))
-    all_rt, accs = [], []
-    for f in ev_files:
-        df = _read_events(f)
-        if df is None:
-            continue
-        rt, acc = _rt_accuracy_from_events(df)
-        if rt is not None:
-            all_rt.append(rt)
-        if acc is not None and np.isfinite(acc):
-            accs.append(acc)
-    if not all_rt:
-        raise ValueError("no RT pairs parsed from *Events.txt (run --probe to inspect)")
-    rt = np.concatenate(all_rt)
-    acc = float(np.mean(accs)) if accs else np.nan
-    feats = np.array([rt.mean(), rt.std(), np.median(rt), rt.min(), rt.max(), acc],
-                     dtype=np.float32)
-    print(f"[beh ] {subject_dir}: {rt.size} trials | rt_mean={feats[0]:.3f}s acc={acc}")
+    beh_files = sorted(p.glob("Behavioral/csv/*SAIIT_2AFC*.csv")) \
+        or sorted(p.rglob("*SAIIT_2AFC*.csv"))
+    if not beh_files:
+        raise ValueError("no SAIIT_2AFC behavioural CSVs (run --probe)")
+    acc, n_trials, cd_tg, cd_resp = _accuracy_and_codes(beh_files)
+
+    rts = []
+    if cd_tg is not None:
+        for ef in sorted(p.rglob("*_events.csv")):
+            ev = _parse_events(ef)
+            codes = {c for c, _ in ev}
+            if cd_tg in codes and cd_resp in codes:
+                rts += _rts_from_events(ev, cd_tg, cd_resp)
+    rt = np.array(rts, float) / float(sfreq)            # samples -> seconds
+    rt = rt[(rt > 0.05) & (rt < 5.0)]                   # plausible RT window
+
+    if rt.size == 0:
+        print(f"[beh ] {p.name}: WARN no RT pairs (cd_tg={cd_tg} cd_resp={cd_resp}); "
+              f"accuracy-only. acc={acc:.3f} n_trials={n_trials}")
+        feats = np.array([np.nan, np.nan, np.nan, np.nan, np.nan, acc], np.float32)
+    else:
+        feats = np.array([rt.mean(), rt.std(), np.median(rt), rt.min(), rt.max(), acc],
+                         dtype=np.float32)
+        print(f"[beh ] {p.name}: {rt.size} RT trials (codes {cd_tg}->{cd_resp}) | "
+              f"rt_mean={feats[0]:.3f}s acc={acc:.3f} n_acc_trials={n_trials}")
     return feats.reshape(1, -1)
 
 
