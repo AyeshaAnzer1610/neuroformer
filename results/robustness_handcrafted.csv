@@ -1,0 +1,4 @@
+model,auc,ci95,protocol
+EEG-alone (handcrafted),0.5286764705882352,,5x1
+eye-alone,0.5205882352941177,,5x1
+concat (EEG+eye),0.5354411764705882,,5x1
