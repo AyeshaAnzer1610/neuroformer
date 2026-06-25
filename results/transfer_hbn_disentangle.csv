@@ -1,6 +1,0 @@
-setting,auc
-logreg-transfer,0.5162019347025147
-disentangle OFF,0.5204824546635934
-disentangle lam=0.25,0.5114367698229124
-disentangle lam=0.5,0.5132848824455488
-disentangle lam=1.0,0.5231420499357718

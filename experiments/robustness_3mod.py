@@ -10,7 +10,7 @@ Inputs (complete-case = subjects with all three):
         (rt_mean, rt_std, rt_median, rt_min, rt_max, accuracy; see extract_behaviour.py)
 
 Reports per-modality logreg baselines, naive concat, and the 3-modality NeuroFormer
-(src/neuroformer_3mod.py) with early stopping, as per-repeat ROC-AUC mean +/- 95% CI.
+(src/neuroformer.py) with early stopping, as per-repeat ROC-AUC mean +/- 95% CI.
 
     python experiments/robustness_3mod.py --beh-dir data/processed_beh --nf-repeats 5
 """
@@ -184,7 +184,7 @@ def main():
     if not args.skip_nf:
         import torch
         import torch.nn as nn
-        from neuroformer_3mod import create_neuroformer
+        from neuroformer import create_neuroformer
         dims = {"eeg": Xe.shape[1], "eye": Xy.shape[1], "beh": Xb.shape[1]}
         nf = [{"sid": s, "y": int(lab[s] > 0), "eeg": eeg[s], "eye": eye[s], "beh": beh[s]}
               for s in subs]

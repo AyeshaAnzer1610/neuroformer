@@ -1,104 +1,55 @@
-# NeuroFormer
+# NeuroFormer — Hierarchical Multimodal Mental-Health Screening (EEG · Eye-Tracking · Behaviour)
 
-**A two-foundation-model, missing-modality transformer for transdiagnostic
-mental-health screening from EEG and eye-tracking — identity-disentangled, with
-external validation.**
+Code and data pipeline for the IEEE Access paper *"NeuroFormer: A Hierarchical
+Multimodal Framework for Binary Mental Health Screening from EEG, Eye-Tracking, and
+Behavioural Signals"* (Anzer & Bais), and its resubmission materials.
 
-NeuroFormer fuses two non-invasive modalities, each through its own *foundation-model*
-representation, adapted by a shared identity-disentangling adapter (CIDA) and combined
-by a missing-modality fusion transformer:
+NeuroFormer fuses three non-invasive modalities from the Child Mind Institute **MIPDB**
+cohort through a two-stage transformer (modality-specific encoders → cross-modal fusion)
+for binary diagnosed-vs-control screening.
 
-- **EEG** → frozen **LaBraM** + **CIDA** ([`src/cida.py`](src/cida.py))
-- **Eye-tracking** → frozen **OcuFM** (a proposed gaze foundation model on the LaBraM
-  recipe, [`src/ocufm.py`](src/ocufm.py)) + **CIDA**
-
-The unifying idea: both EEG and gaze are *identity-dominated* signals (which is what
-produced our original data-leakage result), so one disentanglement adapter — **CIDA** —
-serves both. Behaviour was dropped (below chance, ~0.40, in this cohort). This repo
-contains the models, the leak-free evaluation pipeline, and the analysis behind the
-IEEE Access submission. See [docs/resubmission/CIDA-Architecture-Design.md](docs/resubmission/CIDA-Architecture-Design.md)
-and [docs/resubmission/OcuFM-Architecture-Design.md](docs/resubmission/OcuFM-Architecture-Design.md).
-
-## Summary of findings (leak-free, subject-level evaluation)
-
-- **Foundation-model EEG is the locus of signal.** Frozen LaBraM embeddings reach
-  ROC-AUC ≈ 0.66 for transdiagnostic screening on MIPDB (N≈118), versus ≈ 0.45 for
-  the prior hand-crafted EEG features.
-- **Identity-disentangled adaptation (CIDA).** Both EEG and gaze foundation embeddings
-  encode subject/site identity; CIDA factors identity out of the clinical signal via a
-  parameter-efficient adapter (~2–3% trainable params) on the frozen backbones — directly
-  targeting the leakage/overfit/external-collapse failure modes.
-- **A foundation model for gaze (OcuFM).** Eye-tracking gains the same kind of pretrained
-  representation EEG has, closing the modality asymmetry. *Proposed + runnable; not yet
-  pretrained — no accuracy gain is claimed until it is.*
-- **External validation.** On the independent Healthy Brain Network (HBN) cohort,
-  the frozen EEG representation predicts the general psychopathology factor
-  out-of-distribution — scaled to ~2,000+ subjects across releases.
-- **Calibrated, referral-aware** predictions (temperature scaling + conformal) for
-  screening triage.
-
-All performance is measured under strict subject-level, leakage-free
-cross-validation. Empirical headline signal remains EEG; OcuFM/CIDA gains are reported
-honestly once run.
-
-## Repository structure
+## Layout
 
 | Path | Contents |
 |---|---|
-| `src/` | NeuroFormer model, LaBraM/OcuFM + CIDA adapters, EEG/eye feature extraction, fusion, calibration, fine-tuning, evaluation |
-| `scripts/` | Data download + Alliance-cluster (SLURM) job scripts |
-| `notebooks/` | Exploratory / live analysis |
-| `docs/resubmission/` | Method writeups, results, reviewer responses, literature grounding |
-| `figures/` | Manuscript figures |
-| `results/` | Metrics tables (small CSVs) |
+| `src/neuroformer.py` | The 3-modality NeuroFormer architecture (EEG + eye + behaviour encoders, cross-modal fusion transformer, optional auxiliary reconstruction). |
+| `src/extract_handcrafted_eeg.py` | Hand-crafted EEG features from raw MIPDB. |
+| `src/extract_eye_features.py` | Eye-tracking features from SMI `*Samples.txt`. |
+| `src/extract_behaviour.py` | SAIIT_2AFC behaviour: accuracy (`trialLR` vs `RespLR`) + reaction time (event timing `CD_TG`→`CD_BUTTONS`). |
+| `data/processed_handcrafted/` | Per-subject hand-crafted EEG features. |
+| `data/eye_features.csv` | Per-block eye-tracking features. |
+| `data/processed_beh/` | Per-subject behaviour features (RT stats + accuracy). |
+| `data/labels.csv`, `data/MIPDB_PublicFile.csv` | Subject labels (`DX_Status`) and metadata. |
+| `experiments/robustness_3mod.py` | Leak-free, subject-level repeated-CV robustness evaluation of the 3-modality model. |
+| `docs/resubmission/` | Reviewer responses and resubmission planning. |
+
+## Reproduce the robustness evaluation
+
+```bash
+python experiments/robustness_3mod.py --beh-dir data/processed_beh --nf-repeats 5
+```
+
+Reports per-modality logistic-regression baselines, naive concatenation, and the
+3-modality NeuroFormer under strict subject-level repeated stratified cross-validation
+(no leakage), with bootstrap confidence intervals.
 
 ## Data
 
-- **MIPDB** (Child Mind Institute) — primary cohort. Public; downloaded from S3.
-- **HBN-EEG** (OpenNeuro ds005505–ds005515) — external validation. Public.
-- Both use the 128/129-channel EGI HydroCel net (same montage → clean cross-dataset
-  transfer). Raw data is public and re-downloadable (`scripts/download_data.sh`); it
-  is **not** committed to git.
+Child Mind Institute **MIPDB** — public; raw data downloaded separately and not committed.
+The extracted per-subject features (EEG, eye, behaviour) are included under `data/`.
 
-## Reproduce
+## Related repository
 
-```bash
-# 1. environment (Alliance cluster login node)
-bash scripts/setup_env_nibi.sh
-# 2. data (public S3)
-bash scripts/download_data.sh mipdb
-# 3. EEG foundation-model embeddings + the head-to-head + comparison
-sbatch scripts/extract_cohort_sbatch.sh
-# 4. external validation on HBN (all releases)
-bash scripts/download_data.sh hbn-rest-releases 1 11
-sbatch scripts/extract_hbn_all_sbatch.sh
-```
-See `docs/resubmission/` for method details and the full result writeups
-(`Phase1-Results.md`, `Phase2-Results.md`, `Phase4-Results.md`).
-
-## Key methods
-
-| File | Role |
-|---|---|
-| `src/neuroformer.py` | The NeuroFormer architecture (encoders + cross-modal fusion + classifier) |
-| `src/cida.py` | CIDA: connectivity-aware, identity-disentangled adapter for a frozen FM |
-| `src/ocufm.py` | OcuFM: proposed gaze foundation model (LaBraM recipe) |
-| `src/multimodal_cida.py` | Two-FM screener: CIDA-on-LaBraM ⊕ CIDA-on-OcuFM → fusion |
-| `src/extract_eeg_embeddings.py` | Frozen LaBraM EEG embeddings (QC, leak-free, batched) |
-| `src/extract_eye_features.py` | Eye-tracking features from raw |
-| `src/compare_fm_vs_handcrafted.py` | Head-to-head + fusion evaluation |
-| `src/train_neuroformer.py` | Leak-free training with modality dropout |
-| `src/eval_hbn.py` | External HBN validation |
-| `src/calibrate.py` | Calibration / selective (referral-aware) prediction |
-| `src/finetune_labram.py` | End-to-end LaBraM fine-tuning |
-| `src/make_figures.py` | Manuscript figures |
+The foundation-model EEG line of work (frozen vs fine-tuned EEG foundation models,
+multi-backbone robustness, external-cohort validation) is a separate research direction
+maintained in its own repository.
 
 ## Citation
 
-A. Anzer and A. Bais, "NeuroFormer: A Foundation-Model, Missing-Modality
-Transformer for Transdiagnostic Mental-Health Screening," *IEEE Access* (under
+A. Anzer and A. Bais, "NeuroFormer: A Hierarchical Multimodal Framework for Binary Mental
+Health Screening from EEG, Eye-Tracking, and Behavioural Signals," *IEEE Access* (under
 review).
 
 ## License
 
-Code: MIT. Data: per the original dataset licenses (MIPDB, HBN).
+Code: MIT. Data: per the original MIPDB dataset license.
