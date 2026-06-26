@@ -81,6 +81,102 @@ class CrossModalTransformer(nn.Module):
         return self.cls(self.tr(toks).mean(1))
 
 
+# ----------------------------------------------------- sequence baselines (R2.2)
+def _seq_pack(subs, eeg, eye, beh, max_len=30):
+    """Per subject: padded EEG window-sequence [L,516] + mask + pooled eye/beh."""
+    de, dy, db = eeg[subs[0]].shape[1], eye[subs[0]].shape[1], beh[subs[0]].shape[1]
+    E = np.zeros((len(subs), max_len, de), np.float32); M = np.zeros((len(subs), max_len), np.float32)
+    Y = np.zeros((len(subs), dy), np.float32); B = np.zeros((len(subs), db), np.float32)
+    for i, s in enumerate(subs):
+        w = eeg[s][:max_len]; E[i, :len(w)] = w; M[i, :len(w)] = 1.0
+        Y[i] = eye[s].mean(0); B[i] = beh[s].mean(0)
+    return E, M, Y, B
+
+
+class _SeqHead(nn.Module):
+    """Reduce EEG sequence -> h, concat pooled eye+beh -> classify."""
+    def __init__(self, kind, de, dy, db, h=64):
+        super().__init__()
+        self.kind = kind
+        if kind == "cnn":
+            self.enc = nn.Sequential(nn.Conv1d(de, h, 3, padding=1), nn.ReLU(),
+                                     nn.Conv1d(h, h, 3, padding=1), nn.ReLU(), nn.AdaptiveAvgPool1d(1))
+        elif kind == "lstm":
+            self.enc = nn.LSTM(de, h, batch_first=True)
+        elif kind == "tcn":
+            self.enc = nn.Sequential(nn.Conv1d(de, h, 3, padding=1, dilation=1), nn.ReLU(),
+                                     nn.Conv1d(h, h, 3, padding=2, dilation=2), nn.ReLU(), nn.AdaptiveAvgPool1d(1))
+        self.cls = nn.Sequential(nn.Linear(h + dy + db, h), nn.ReLU(), nn.Dropout(0.3), nn.Linear(h, 2))
+
+    def forward(self, E, Y, B):
+        if self.kind == "lstm":
+            o, _ = self.enc(E); z = o.mean(1)
+        else:
+            z = self.enc(E.transpose(1, 2)).squeeze(-1)
+        return self.cls(torch.cat([z, Y, B], -1))
+
+
+def cv_seq(kind, packed, y, folds, repeats, seed, device, epochs=40):
+    E, M, Y, B = packed; de, dy, db = E.shape[2], Y.shape[1], B.shape[1]
+    cv = RepeatedStratifiedKFold(n_splits=folds, n_repeats=repeats, random_state=seed)
+    fold = []
+    for tr, te in cv.split(np.zeros(len(y)), y):
+        torch.manual_seed(seed)
+        model = _SeqHead(kind, de, dy, db).to(device)
+        pos = int(y[tr].sum()); neg = len(tr) - pos
+        lossf = nn.CrossEntropyLoss(weight=torch.tensor([1.0, neg / max(pos, 1)], device=device))
+        opt = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+        et = torch.tensor(E[tr], device=device); yt = torch.tensor(Y[tr], device=device); bt = torch.tensor(B[tr], device=device)
+        model.train()
+        for _ in range(epochs):
+            opt.zero_grad(); loss = lossf(model(et, yt, bt), torch.tensor(y[tr], device=device))
+            loss.backward(); opt.step()
+        model.eval()
+        with torch.no_grad():
+            p = torch.softmax(model(torch.tensor(E[te], device=device), torch.tensor(Y[te], device=device),
+                                    torch.tensor(B[te], device=device)), -1)[:, 1].cpu().numpy()
+        fold.append(roc_auc_score(y[te], p) if len(np.unique(y[te])) > 1 else np.nan)
+    return np.array(fold)
+
+
+class TensorFusion(nn.Module):
+    """Tensor Fusion Network (Zadeh et al., EMNLP 2017) — outer product of modality
+    embeddings (with a bias unit) captures uni/bi/tri-modal interactions."""
+    def __init__(self, dims, d=6, n_classes=2):
+        super().__init__()
+        self.mods = list(dims); self.d = d
+        self.proj = nn.ModuleDict({m: nn.Linear(dims[m], d) for m in dims})
+        self.cls = nn.Sequential(nn.Linear((d + 1) ** len(dims), 64), nn.ReLU(),
+                                 nn.Dropout(0.3), nn.Linear(64, n_classes))
+
+    def forward(self, X):
+        hs = [torch.cat([torch.tanh(self.proj[m](X[m])),
+                         torch.ones(X[m].shape[0], 1, device=X[m].device)], -1) for m in self.mods]
+        fused = hs[0]
+        for h in hs[1:]:
+            fused = torch.bmm(fused.unsqueeze(-1), h.unsqueeze(1)).flatten(1)
+        return self.cls(fused)
+
+
+class LowRankFusion(nn.Module):
+    """Low-rank Multimodal Fusion (Liu et al., ACL 2018) — efficient low-rank
+    approximation of the tensor fusion."""
+    def __init__(self, dims, d=16, rank=4, n_classes=2):
+        super().__init__()
+        self.mods = list(dims); self.rank = rank; self.h = 64
+        self.proj = nn.ModuleDict({m: nn.Linear(dims[m], d) for m in dims})
+        self.factors = nn.ParameterDict({m: nn.Parameter(torch.randn(rank, d + 1, self.h) * 0.1) for m in dims})
+        self.cls = nn.Sequential(nn.ReLU(), nn.Dropout(0.3), nn.Linear(self.h, n_classes))
+
+    def forward(self, X):
+        out = 1.0
+        for m in self.mods:
+            h = torch.cat([torch.tanh(self.proj[m](X[m])),
+                           torch.ones(X[m].shape[0], 1, device=X[m].device)], -1)   # [B, d+1]
+            out = out * torch.einsum("bd,rdh->brh", h, self.factors[m])             # [B, rank, h]
+        return self.cls(out.sum(1))
+
+
 def _train_torch_vec(model, Xtr, ytr, device, epochs=60, lr=1e-3, dict_in=False):
     pos = int(ytr.sum()); neg = len(ytr) - pos
     lossf = nn.CrossEntropyLoss(weight=torch.tensor([1.0, neg / max(pos, 1)], device=device))
@@ -258,6 +354,14 @@ def main():
     add("Late-fusion ensemble", cv_late_fusion(Xd, y, args.folds, args.repeats, args.seed))
     add("GMU (gated fusion)", cv_torch_vec(lambda: GMU({"eeg": Xe.shape[1], "eye": Xy.shape[1], "beh": Xb.shape[1]}), Xd, y, args.folds, args.repeats, args.seed, device, dict_in=True))
     add("Cross-modal Transformer", cv_torch_vec(lambda: CrossModalTransformer({"eeg": Xe.shape[1], "eye": Xy.shape[1], "beh": Xb.shape[1]}), Xd, y, args.folds, args.repeats, args.seed, device, dict_in=True))
+    # temporal/sequence baselines (R2.2): 1D-CNN, LSTM, TCN on the EEG window-sequence
+    packed = _seq_pack(subs, eeg, eye, beh)
+    add("1D-CNN (temporal)", cv_seq("cnn", packed, y, args.folds, args.repeats, args.seed, device))
+    add("LSTM (temporal)", cv_seq("lstm", packed, y, args.folds, args.repeats, args.seed, device))
+    add("TCN (temporal)", cv_seq("tcn", packed, y, args.folds, args.repeats, args.seed, device))
+    dims3 = {"eeg": Xe.shape[1], "eye": Xy.shape[1], "beh": Xb.shape[1]}
+    add("Tensor Fusion Network", cv_torch_vec(lambda: TensorFusion(dims3), Xd, y, args.folds, args.repeats, args.seed, device, dict_in=True))
+    add("Low-rank Multimodal Fusion", cv_torch_vec(lambda: LowRankFusion(dims3), Xd, y, args.folds, args.repeats, args.seed, device, dict_in=True))
     if not args.skip_nf:
         nf_arr, nf_gap = neuroformer_cv(subs, lab, eeg, eye, beh, {"eeg", "eye", "beh"}, args.folds, args.nf_repeats, args.seed, device, aux=False)
         add("NeuroFormer (3-modality)", nf_arr)
@@ -265,6 +369,17 @@ def main():
     pd.DataFrame(t2).to_csv(args.out_t2, index=False)
     pd.DataFrame(perfold).to_csv(outdir / "perfold_table2.csv", index=False)
     print(f"[done] Table 2 -> {args.out_t2} (+ perfold_table2.csv)", flush=True)
+
+    # ---------------- Confound analysis (R3.7): does age/sex alone predict the label? ----------------
+    print("\n=== CONFOUND CHECK (R3.7): can age/sex predict diagnosis? ===", flush=True)
+    meta = pd.read_csv("data/labels.csv").set_index("ID")
+    Xconf = np.array([[meta.loc[s, "Age"], meta.loc[s, "Sex"]] for s in subs], float)
+    rep_c = np.nanmean(cv_sklearn(lambda: make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)),
+                                  Xconf, y, args.folds, args.repeats, args.seed).reshape(-1, F), axis=1)
+    mc, cc = float(np.nanmean(rep_c)), _ci95(rep_c)
+    print(f"  age+sex -> diagnosis ROC-AUC = {mc:.3f} +/- {cc:.3f}  "
+          f"({'near chance -> confounds do NOT drive the label' if mc < 0.6 else 'WARN: confound signal'})", flush=True)
+    pd.DataFrame([{"predictor": "age+sex", "auc": mc, "ci95": cc}]).to_csv(outdir / "confound_check.csv", index=False)
 
     # ---------------- Table 3: modality ablation + Δaux + paired p-value (E3) ----------------
     if not args.skip_nf:
