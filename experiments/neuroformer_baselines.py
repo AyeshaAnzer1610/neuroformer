@@ -351,6 +351,40 @@ def _nf_fold(tr_rows, te_rows, dims, A, device, create, aux):
     return te_auc, tr_auc, preds
 
 
+def run_table3(subs, lab, eeg, eye, beh, y, folds, nf_repeats, seed, device, out_t3, outdir):
+    """Table 3: NeuroFormer modality ablation -- 7 non-empty subsets x {with, without aux
+    reconstruction loss} = 14 leak-free CV runs at a single production seed. Headline is
+    pooled-OOF AUC; Daux uses a paired Wilcoxon over folds. Writes table3_ablation.csv +
+    perfold_table3.csv."""
+    from scipy.stats import wilcoxon
+    print("\n=== TABLE 3: modality ablation (NeuroFormer, leak-free, +/- aux) ===", flush=True)
+    subsets = [("EEG", {"eeg"}), ("Eye", {"eye"}), ("Beh", {"beh"}),
+               ("EEG+Eye", {"eeg", "eye"}), ("EEG+Beh", {"eeg", "beh"}),
+               ("Eye+Beh", {"eye", "beh"}), ("EEG+Eye+Beh", {"eeg", "eye", "beh"})]
+    raw, rawoof, pf3 = {}, {}, []
+    for aux in (False, True):
+        for name, mods in subsets:
+            arr, _, _, omat = neuroformer_cv(subs, lab, eeg, eye, beh, mods, folds, nf_repeats, seed, device, aux=aux)
+            raw[(name, aux)] = arr; rawoof[(name, aux)] = omat
+            for i, v in enumerate(np.asarray(arr, float)):
+                pf3.append({"config": name, "aux": int(aux), "fold": i + 1, "auc": v})
+            print(f"  {name:<12} aux={int(aux)}  pooled {pooled_summ(omat, y)[0]:.3f}", flush=True)
+    t3 = []
+    for name, _ in subsets:
+        a0, a1 = raw[(name, False)], raw[(name, True)]
+        m0, c0 = pooled_summ(rawoof[(name, False)], y); m1, c1 = pooled_summ(rawoof[(name, True)], y)
+        try:
+            p = float(wilcoxon(a0, a1).pvalue)        # paired over 25 folds (power); estimate is pooled
+        except ValueError:
+            p = float("nan")
+        t3.append({"config": name, "auc_noaux": m0, "ci_noaux": c0, "auc_aux": m1,
+                   "ci_aux": c1, "daux_pp": (m1 - m0) * 100, "p_value": p})
+        print(f"  {name:<12} -aux {m0:.3f} | +aux {m1:.3f} | dAUC {100*(m1-m0):+.1f}pp | p={p:.3f}", flush=True)
+    pd.DataFrame(t3).to_csv(out_t3, index=False)
+    pd.DataFrame(pf3).to_csv(outdir / "perfold_table3.csv", index=False)
+    print(f"[done] Table 3 -> {out_t3} (+ perfold_table3.csv)")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--folds", type=int, default=5); ap.add_argument("--repeats", type=int, default=5)
@@ -358,6 +392,7 @@ def main():
     ap.add_argument("--nf-seeds", type=int, default=5)   # NeuroFormer is seed-fragile -> report mean+/-std over seeds
     ap.add_argument("--skip-nf", action="store_true")
     ap.add_argument("--skip-t3", action="store_true")   # skip slow modality ablation; just Table 2 + confound stability
+    ap.add_argument("--only-t3", action="store_true")   # run ONLY Table 3 ablation (skip baselines + NF stability + confound)
     ap.add_argument("--out-t2", default="results/table2_baselines.csv")
     ap.add_argument("--out-t3", default="results/table3_ablation.csv")
     args = ap.parse_args()
@@ -383,8 +418,13 @@ def main():
     Xcs = StandardScaler().fit_transform(Xcat)
     print(f"[load] N={len(subs)} pos={int(y.sum())} dims eeg={Xe.shape[1]} eye={Xy.shape[1]} beh={Xb.shape[1]}", flush=True)
     outdir = Path(args.out_t2).parent; outdir.mkdir(parents=True, exist_ok=True)
-    from scipy.stats import wilcoxon
     F = args.folds
+
+    # Fast path: produce ONLY the Table 3 ablation (14 NeuroFormer runs) without re-running
+    # the expensive Table 2 baselines + 8-seed NF stability loop (and without clobbering them).
+    if args.only_t3:
+        run_table3(subs, lab, eeg, eye, beh, y, args.folds, args.nf_repeats, args.seed, device, args.out_t3, outdir)
+        return
 
     def summ(arr):
         a = np.asarray(arr, float)
@@ -488,32 +528,7 @@ def main():
 
     # ---------------- Table 3: modality ablation + Δaux + paired p-value (E3) ----------------
     if not args.skip_nf and not args.skip_t3:
-        print("\n=== TABLE 3: modality ablation (NeuroFormer, leak-free, +/- aux) ===", flush=True)
-        subsets = [("EEG", {"eeg"}), ("Eye", {"eye"}), ("Beh", {"beh"}),
-                   ("EEG+Eye", {"eeg", "eye"}), ("EEG+Beh", {"eeg", "beh"}),
-                   ("Eye+Beh", {"eye", "beh"}), ("EEG+Eye+Beh", {"eeg", "eye", "beh"})]
-        raw, rawoof, pf3 = {}, {}, []
-        for aux in (False, True):
-            for name, mods in subsets:
-                arr, _, _, omat = neuroformer_cv(subs, lab, eeg, eye, beh, mods, args.folds, args.nf_repeats, args.seed, device, aux=aux)
-                raw[(name, aux)] = arr; rawoof[(name, aux)] = omat
-                for i, v in enumerate(np.asarray(arr, float)):
-                    pf3.append({"config": name, "aux": int(aux), "fold": i + 1, "auc": v})
-                print(f"  {name:<12} aux={int(aux)}  pooled {pooled_summ(omat, y)[0]:.3f}", flush=True)
-        t3 = []
-        for name, _ in subsets:
-            a0, a1 = raw[(name, False)], raw[(name, True)]
-            m0, c0 = pooled_summ(rawoof[(name, False)], y); m1, c1 = pooled_summ(rawoof[(name, True)], y)
-            try:
-                p = float(wilcoxon(a0, a1).pvalue)        # paired over 25 folds (power); estimate is pooled
-            except ValueError:
-                p = float("nan")
-            t3.append({"config": name, "auc_noaux": m0, "ci_noaux": c0, "auc_aux": m1,
-                       "ci_aux": c1, "daux_pp": (m1 - m0) * 100, "p_value": p})
-            print(f"  {name:<12} -aux {m0:.3f} | +aux {m1:.3f} | dAUC {100*(m1-m0):+.1f}pp | p={p:.3f}", flush=True)
-        pd.DataFrame(t3).to_csv(args.out_t3, index=False)
-        pd.DataFrame(pf3).to_csv(outdir / "perfold_table3.csv", index=False)
-        print(f"[done] Table 3 -> {args.out_t3} (+ perfold_table3.csv)")
+        run_table3(subs, lab, eeg, eye, beh, y, args.folds, args.nf_repeats, args.seed, device, args.out_t3, outdir)
 
 
 if __name__ == "__main__":
