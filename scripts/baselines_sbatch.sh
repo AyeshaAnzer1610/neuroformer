@@ -17,6 +17,6 @@ source ~/envs/mh311gpu/bin/activate
 cd ~/mental-health
 
 echo "=== NeuroFormer baselines: Table 2 + Table 3 (leak-free 5x5) ==="
-python experiments/neuroformer_baselines.py --repeats 5 --nf-repeats 5 \
+python experiments/neuroformer_baselines.py --repeats 5 --nf-repeats 5 --nf-seeds 8 \
     --out-t2 results/table2_baselines.csv --out-t3 results/table3_ablation.csv
 echo "=== done -> results/table2_baselines.csv + results/table3_ablation.csv ==="
