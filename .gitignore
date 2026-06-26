@@ -17,6 +17,9 @@ results/*
 # (placed after *.csv so the exception wins). Large artifacts (tarballs) stay out.
 !results/*.csv
 !results/*.json
+# Per-participant OOF probs for the 12 baselines (tiny; needed for offline DeLong
+# pairwise + operating-point analyses via scripts/analyze_clinical.py).
+!results/oof_table2.pkl
 *.tsv
 *.xlsx
 *.parquet

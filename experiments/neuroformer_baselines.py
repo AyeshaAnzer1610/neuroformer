@@ -473,14 +473,14 @@ def main():
         # NeuroFormer is seed-fragile -> run K seeds, report mean +/- std of pooled-OOF AUC
         # AND of the confound-adjusted increment. NO single-seed cherry-picking.
         print(f"\n=== NeuroFormer over {args.nf_seeds} seeds (honest stability) ===", flush=True)
-        nf_pooled, nf_incr, nf_oof = [], [], None
+        nf_pooled, nf_incr, nf_oof, nf_nfps = [], [], None, []
         for sd in range(args.seed, args.seed + args.nf_seeds):
             a, g, oof_d, omat = neuroformer_cv(subs, lab, eeg, eye, beh, {"eeg", "eye", "beh"},
                                                args.folds, args.nf_repeats, sd, device, aux=False)
             m, _ = pooled_summ(omat, y)
             nfp = np.array([float(np.mean(oof_d[s])) for s in subs])
             incr = 100.0 * (as_auc(np.hstack([Xconf, nfp[:, None]])) - base_as)
-            nf_pooled.append(m); nf_incr.append(incr); nf_oof = oof_d
+            nf_pooled.append(m); nf_incr.append(incr); nf_oof = oof_d; nf_nfps.append(nfp)
             nf_seed_rows.append({"seed": sd, "nf_pooled_auc": m, "incremental_pp": incr, "gap_pp": g})
             print(f"  seed {sd}: pooled-OOF AUC = {m:.3f} | confound-adj increment = {incr:+.1f}pp", flush=True)
         nf_pooled = np.array(nf_pooled); nf_incr = np.array(nf_incr)
@@ -491,6 +491,10 @@ def main():
         print(f"  >>> confound-adjusted increment = {nf_incr.mean():+.1f} +/- {nf_incr.std(ddof=1):.1f} pp"
               f"  ({'robust >0' if nf_incr.mean() - nf_incr.std(ddof=1) > 0 else 'NOT robustly >0'})", flush=True)
         pd.DataFrame(nf_seed_rows).to_csv(outdir / "nf_seed_stability.csv", index=False)
+        # seed-averaged per-participant OOF prob (most stable single set; for operating-point /
+        # calibration / subgroup analyses offline -- no GPU re-run needed)
+        nf_prob_mean = np.mean(np.stack(nf_nfps), axis=0)
+        pd.DataFrame({"ID": subs, "y": y, "nf_prob": nf_prob_mean}).to_csv(outdir / "oof_nf.csv", index=False)
     pd.DataFrame(t2).to_csv(args.out_t2, index=False)
     pd.DataFrame(perfold).to_csv(outdir / "perfold_table2.csv", index=False)
     import pickle
@@ -506,6 +510,10 @@ def main():
     print(f"  age+sex -> diagnosis ROC-AUC = {mc:.3f} +/- {cc:.3f}  "
           f"({'near chance -> confounds do NOT drive the label' if mc < 0.6 else 'WARN: confound signal'})", flush=True)
     pd.DataFrame([{"predictor": "age+sex", "auc": mc, "ci95": cc}]).to_csv(outdir / "confound_check.csv", index=False)
+    # per-participant age+sex OOF prob (pooled over repeats) -> operating-point / calibration
+    # / subgroup analyses offline, consistent with the pooled-OOF headline metric
+    agesex_prob = np.nanmean(np.asarray(cf_oof, float), axis=0)
+    pd.DataFrame({"ID": subs, "y": y, "agesex_prob": agesex_prob}).to_csv(outdir / "oof_confound.csv", index=False)
 
     # confound-ADJUSTED (decisive for R3.1/R3.7): does NeuroFormer add signal BEYOND age+sex?
     # Reported as mean +/- std of the increment OVER SEEDS (computed in the NF loop above) --
