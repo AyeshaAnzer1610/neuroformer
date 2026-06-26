@@ -102,7 +102,7 @@ def cv_sklearn(clf_fn, X, y, folds, repeats, seed):
         clf = clf_fn(); clf.fit(X[tr], y[tr])
         p = clf.predict_proba(X[te])[:, 1]
         fold.append(roc_auc_score(y[te], p) if len(np.unique(y[te])) > 1 else np.nan)
-    return np.nanmean(np.array(fold).reshape(repeats, folds), axis=1)
+    return np.array(fold)   # raw per-fold AUCs (folds*repeats)
 
 
 def cv_torch_vec(build, Xd, y, folds, repeats, seed, device, dict_in=False, epochs=60):
@@ -119,7 +119,7 @@ def cv_torch_vec(build, Xd, y, folds, repeats, seed, device, dict_in=False, epoc
         with torch.no_grad():
             p = torch.softmax(model(sub(te)), -1)[:, 1].cpu().numpy()
         fold.append(roc_auc_score(y[te], p) if len(np.unique(y[te])) > 1 else np.nan)
-    return np.nanmean(np.array(fold).reshape(repeats, folds), axis=1)
+    return np.array(fold)   # raw per-fold AUCs (folds*repeats)
 
 
 def cv_late_fusion(Xd, y, folds, repeats, seed):
@@ -132,7 +132,7 @@ def cv_late_fusion(Xd, y, folds, repeats, seed):
             clf.fit(Xd[m][tr], y[tr]); ps.append(clf.predict_proba(Xd[m][te])[:, 1])
         p = np.mean(ps, 0)
         fold.append(roc_auc_score(y[te], p) if len(np.unique(y[te])) > 1 else np.nan)
-    return np.nanmean(np.array(fold).reshape(repeats, folds), axis=1)
+    return np.array(fold)   # raw per-fold AUCs (folds*repeats)
 
 
 def neuroformer_cv(subs, lab, eeg, eye, beh, mods, folds, nf_repeats, seed, device, aux):
@@ -150,14 +150,15 @@ def neuroformer_cv(subs, lab, eeg, eye, beh, mods, folds, nf_repeats, seed, devi
         max_len = 64; batch = 16; lr = 1e-4; max_epochs = 200; patience = 20; val_frac = 0.2
     A.seed = seed
     cv = RepeatedStratifiedKFold(n_splits=folds, n_repeats=nf_repeats, random_state=seed)
-    fold = []
+    fold, gaps = [], []
     for tr, te in cv.split(np.zeros(len(y)), y):
         torch.manual_seed(seed)
-        auc = _nf_fold([rows[i] for i in tr], [rows[i] for i in te], dims, A, device,
-                       create_neuroformer, aux)
-        fold.append(auc)
-    rep = np.nanmean(np.array(fold).reshape(nf_repeats, folds), axis=1)
-    return rep
+        te_auc, tr_auc = _nf_fold([rows[i] for i in tr], [rows[i] for i in te], dims, A, device,
+                                  create_neuroformer, aux)
+        fold.append(te_auc)
+        if not (np.isnan(te_auc) or np.isnan(tr_auc)):
+            gaps.append((tr_auc - te_auc) * 100)          # train-test gap in pp (E7)
+    return np.array(fold), (float(np.mean(gaps)) if gaps else float("nan"))
 
 
 def _nf_fold(tr_rows, te_rows, dims, A, device, create, aux):
@@ -208,7 +209,7 @@ def _nf_fold(tr_rows, te_rows, dims, A, device, create, aux):
                 break
     if best_state:
         model.load_state_dict(best_state)
-    return ev(te_rows)
+    return ev(te_rows), ev(tr2)        # (test, train) AUC -> train-test gap (E7)
 
 
 def main():
@@ -231,14 +232,24 @@ def main():
     Xd = {"eeg": Xe, "eye": Xy, "beh": Xb}
     Xcs = StandardScaler().fit_transform(Xcat)
     print(f"[load] N={len(subs)} pos={int(y.sum())} dims eeg={Xe.shape[1]} eye={Xy.shape[1]} beh={Xb.shape[1]}", flush=True)
-    Path(args.out_t2).parent.mkdir(parents=True, exist_ok=True)
+    outdir = Path(args.out_t2).parent; outdir.mkdir(parents=True, exist_ok=True)
+    from scipy.stats import wilcoxon
+    F = args.folds
 
-    # ---------------- Table 2: baselines (all leak-free folds x repeats) ----------------
+    def summ(arr):
+        a = np.asarray(arr, float)
+        rep = np.nanmean(a.reshape(-1, F), axis=1) if len(a) % F == 0 else a
+        return float(np.nanmean(rep)), _ci95(rep)
+
+    # ---------------- Table 2: baselines (raw per-fold saved) ----------------
     print("\n=== TABLE 2: baselines (leak-free %dx%d CV) ===" % (args.folds, args.repeats), flush=True)
-    t2 = []
-    def add(name, rep):
-        t2.append({"model": name, "auc": float(np.nanmean(rep)), "ci95": _ci95(rep)})
-        print(f"  {name:<26} {np.nanmean(rep):.3f} +/- {_ci95(rep):.3f}", flush=True)
+    t2, perfold = [], []
+    def add(name, arr):
+        m, c = summ(arr)
+        t2.append({"model": name, "auc": m, "ci95": c})
+        for i, v in enumerate(np.asarray(arr, float)):
+            perfold.append({"table": "T2", "model": name, "fold": i + 1, "auc": v})
+        print(f"  {name:<26} {m:.3f} +/- {c:.3f}", flush=True)
 
     add("LogReg (concat)", cv_sklearn(lambda: make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)), Xcat, y, args.folds, args.repeats, args.seed))
     add("SVM-RBF (concat)", cv_sklearn(lambda: make_pipeline(StandardScaler(), SVC(probability=True)), Xcat, y, args.folds, args.repeats, args.seed))
@@ -248,24 +259,41 @@ def main():
     add("GMU (gated fusion)", cv_torch_vec(lambda: GMU({"eeg": Xe.shape[1], "eye": Xy.shape[1], "beh": Xb.shape[1]}), Xd, y, args.folds, args.repeats, args.seed, device, dict_in=True))
     add("Cross-modal Transformer", cv_torch_vec(lambda: CrossModalTransformer({"eeg": Xe.shape[1], "eye": Xy.shape[1], "beh": Xb.shape[1]}), Xd, y, args.folds, args.repeats, args.seed, device, dict_in=True))
     if not args.skip_nf:
-        add("NeuroFormer (3-modality)", neuroformer_cv(subs, lab, eeg, eye, beh, {"eeg", "eye", "beh"}, args.folds, args.nf_repeats, args.seed, device, aux=False))
+        nf_arr, nf_gap = neuroformer_cv(subs, lab, eeg, eye, beh, {"eeg", "eye", "beh"}, args.folds, args.nf_repeats, args.seed, device, aux=False)
+        add("NeuroFormer (3-modality)", nf_arr)
+        print(f"  [E7] NeuroFormer train-test gap = {nf_gap:.1f} pp (mean across folds)", flush=True)
     pd.DataFrame(t2).to_csv(args.out_t2, index=False)
-    print(f"[done] Table 2 -> {args.out_t2}", flush=True)
+    pd.DataFrame(perfold).to_csv(outdir / "perfold_table2.csv", index=False)
+    print(f"[done] Table 2 -> {args.out_t2} (+ perfold_table2.csv)", flush=True)
 
-    # ---------------- Table 3: modality ablation (NeuroFormer, +/- aux loss) ----------------
+    # ---------------- Table 3: modality ablation + Δaux + paired p-value (E3) ----------------
     if not args.skip_nf:
-        print("\n=== TABLE 3: modality ablation (NeuroFormer, leak-free) ===", flush=True)
-        t3 = []
+        print("\n=== TABLE 3: modality ablation (NeuroFormer, leak-free, +/- aux) ===", flush=True)
         subsets = [("EEG", {"eeg"}), ("Eye", {"eye"}), ("Beh", {"beh"}),
                    ("EEG+Eye", {"eeg", "eye"}), ("EEG+Beh", {"eeg", "beh"}),
                    ("Eye+Beh", {"eye", "beh"}), ("EEG+Eye+Beh", {"eeg", "eye", "beh"})]
+        raw, pf3 = {}, []
         for aux in (False, True):
             for name, mods in subsets:
-                rep = neuroformer_cv(subs, lab, eeg, eye, beh, mods, args.folds, args.nf_repeats, args.seed, device, aux=aux)
-                t3.append({"config": name, "aux_loss": aux, "auc": float(np.nanmean(rep)), "ci95": _ci95(rep)})
-                print(f"  {name:<14} aux={int(aux)}  {np.nanmean(rep):.3f} +/- {_ci95(rep):.3f}", flush=True)
+                arr, _ = neuroformer_cv(subs, lab, eeg, eye, beh, mods, args.folds, args.nf_repeats, args.seed, device, aux=aux)
+                raw[(name, aux)] = arr
+                for i, v in enumerate(np.asarray(arr, float)):
+                    pf3.append({"config": name, "aux": int(aux), "fold": i + 1, "auc": v})
+                print(f"  {name:<12} aux={int(aux)}  {summ(arr)[0]:.3f}", flush=True)
+        t3 = []
+        for name, _ in subsets:
+            a0, a1 = raw[(name, False)], raw[(name, True)]
+            m0, c0 = summ(a0); m1, c1 = summ(a1)
+            try:
+                p = float(wilcoxon(a0, a1).pvalue)
+            except ValueError:
+                p = float("nan")
+            t3.append({"config": name, "auc_noaux": m0, "ci_noaux": c0, "auc_aux": m1,
+                       "ci_aux": c1, "daux_pp": (m1 - m0) * 100, "p_value": p})
+            print(f"  {name:<12} -aux {m0:.3f} | +aux {m1:.3f} | dAUC {100*(m1-m0):+.1f}pp | p={p:.3f}", flush=True)
         pd.DataFrame(t3).to_csv(args.out_t3, index=False)
-        print(f"[done] Table 3 -> {args.out_t3}")
+        pd.DataFrame(pf3).to_csv(outdir / "perfold_table3.csv", index=False)
+        print(f"[done] Table 3 -> {args.out_t3} (+ perfold_table3.csv)")
 
 
 if __name__ == "__main__":

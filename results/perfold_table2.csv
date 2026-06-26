@@ -1,0 +1,176 @@
+table,model,fold,auc
+T2,LogReg (concat),1,0.6375
+T2,LogReg (concat),2,0.6764705882352942
+T2,LogReg (concat),3,0.46875
+T2,LogReg (concat),4,0.5
+T2,LogReg (concat),5,0.59375
+T2,LogReg (concat),6,0.3375
+T2,LogReg (concat),7,0.6764705882352942
+T2,LogReg (concat),8,0.578125
+T2,LogReg (concat),9,0.6875
+T2,LogReg (concat),10,0.53125
+T2,LogReg (concat),11,0.5999999999999999
+T2,LogReg (concat),12,0.47058823529411764
+T2,LogReg (concat),13,0.78125
+T2,LogReg (concat),14,0.515625
+T2,LogReg (concat),15,0.3125
+T2,LogReg (concat),16,0.4
+T2,LogReg (concat),17,0.5294117647058824
+T2,LogReg (concat),18,0.546875
+T2,LogReg (concat),19,0.75
+T2,LogReg (concat),20,0.59375
+T2,LogReg (concat),21,0.45000000000000007
+T2,LogReg (concat),22,0.6029411764705881
+T2,LogReg (concat),23,0.765625
+T2,LogReg (concat),24,0.375
+T2,LogReg (concat),25,0.359375
+T2,SVM-RBF (concat),1,0.3125
+T2,SVM-RBF (concat),2,0.7647058823529411
+T2,SVM-RBF (concat),3,0.5
+T2,SVM-RBF (concat),4,0.328125
+T2,SVM-RBF (concat),5,0.375
+T2,SVM-RBF (concat),6,0.6625
+T2,SVM-RBF (concat),7,0.5441176470588235
+T2,SVM-RBF (concat),8,0.515625
+T2,SVM-RBF (concat),9,0.296875
+T2,SVM-RBF (concat),10,0.421875
+T2,SVM-RBF (concat),11,0.5375000000000001
+T2,SVM-RBF (concat),12,0.5588235294117647
+T2,SVM-RBF (concat),13,0.609375
+T2,SVM-RBF (concat),14,0.484375
+T2,SVM-RBF (concat),15,0.5625
+T2,SVM-RBF (concat),16,0.5375000000000001
+T2,SVM-RBF (concat),17,0.5294117647058824
+T2,SVM-RBF (concat),18,0.609375
+T2,SVM-RBF (concat),19,0.34375
+T2,SVM-RBF (concat),20,0.234375
+T2,SVM-RBF (concat),21,0.575
+T2,SVM-RBF (concat),22,0.6617647058823529
+T2,SVM-RBF (concat),23,0.25
+T2,SVM-RBF (concat),24,0.5625
+T2,SVM-RBF (concat),25,0.453125
+T2,RandomForest (concat),1,0.66875
+T2,RandomForest (concat),2,0.6470588235294117
+T2,RandomForest (concat),3,0.515625
+T2,RandomForest (concat),4,0.4453125
+T2,RandomForest (concat),5,0.625
+T2,RandomForest (concat),6,0.6625
+T2,RandomForest (concat),7,0.6029411764705883
+T2,RandomForest (concat),8,0.4765625
+T2,RandomForest (concat),9,0.640625
+T2,RandomForest (concat),10,0.6875
+T2,RandomForest (concat),11,0.7937500000000001
+T2,RandomForest (concat),12,0.4411764705882353
+T2,RandomForest (concat),13,0.625
+T2,RandomForest (concat),14,0.4140625
+T2,RandomForest (concat),15,0.4453125
+T2,RandomForest (concat),16,0.5625
+T2,RandomForest (concat),17,0.5294117647058824
+T2,RandomForest (concat),18,0.609375
+T2,RandomForest (concat),19,0.5546875
+T2,RandomForest (concat),20,0.9375
+T2,RandomForest (concat),21,0.58125
+T2,RandomForest (concat),22,0.5
+T2,RandomForest (concat),23,0.7265625
+T2,RandomForest (concat),24,0.671875
+T2,RandomForest (concat),25,0.375
+T2,MLP early-fusion,1,0.725
+T2,MLP early-fusion,2,0.7205882352941176
+T2,MLP early-fusion,3,0.375
+T2,MLP early-fusion,4,0.296875
+T2,MLP early-fusion,5,0.71875
+T2,MLP early-fusion,6,0.375
+T2,MLP early-fusion,7,0.6176470588235294
+T2,MLP early-fusion,8,0.484375
+T2,MLP early-fusion,9,0.75
+T2,MLP early-fusion,10,0.453125
+T2,MLP early-fusion,11,0.3875
+T2,MLP early-fusion,12,0.4117647058823529
+T2,MLP early-fusion,13,0.6875
+T2,MLP early-fusion,14,0.703125
+T2,MLP early-fusion,15,0.453125
+T2,MLP early-fusion,16,0.5375000000000001
+T2,MLP early-fusion,17,0.5588235294117647
+T2,MLP early-fusion,18,0.625
+T2,MLP early-fusion,19,0.765625
+T2,MLP early-fusion,20,0.421875
+T2,MLP early-fusion,21,0.525
+T2,MLP early-fusion,22,0.7352941176470589
+T2,MLP early-fusion,23,0.640625
+T2,MLP early-fusion,24,0.4375
+T2,MLP early-fusion,25,0.359375
+T2,Late-fusion ensemble,1,0.7125
+T2,Late-fusion ensemble,2,0.5441176470588236
+T2,Late-fusion ensemble,3,0.546875
+T2,Late-fusion ensemble,4,0.609375
+T2,Late-fusion ensemble,5,0.5
+T2,Late-fusion ensemble,6,0.5375
+T2,Late-fusion ensemble,7,0.6470588235294117
+T2,Late-fusion ensemble,8,0.578125
+T2,Late-fusion ensemble,9,0.703125
+T2,Late-fusion ensemble,10,0.5625
+T2,Late-fusion ensemble,11,0.6125
+T2,Late-fusion ensemble,12,0.6764705882352942
+T2,Late-fusion ensemble,13,0.71875
+T2,Late-fusion ensemble,14,0.53125
+T2,Late-fusion ensemble,15,0.421875
+T2,Late-fusion ensemble,16,0.5875
+T2,Late-fusion ensemble,17,0.5588235294117647
+T2,Late-fusion ensemble,18,0.421875
+T2,Late-fusion ensemble,19,0.796875
+T2,Late-fusion ensemble,20,0.375
+T2,Late-fusion ensemble,21,0.5375
+T2,Late-fusion ensemble,22,0.44117647058823534
+T2,Late-fusion ensemble,23,0.75
+T2,Late-fusion ensemble,24,0.578125
+T2,Late-fusion ensemble,25,0.390625
+T2,GMU (gated fusion),1,0.48750000000000004
+T2,GMU (gated fusion),2,0.6617647058823529
+T2,GMU (gated fusion),3,0.78125
+T2,GMU (gated fusion),4,0.9375
+T2,GMU (gated fusion),5,0.828125
+T2,GMU (gated fusion),6,0.5625
+T2,GMU (gated fusion),7,0.5588235294117647
+T2,GMU (gated fusion),8,0.859375
+T2,GMU (gated fusion),9,0.78125
+T2,GMU (gated fusion),10,0.5625
+T2,GMU (gated fusion),11,0.3875
+T2,GMU (gated fusion),12,0.8088235294117646
+T2,GMU (gated fusion),13,0.875
+T2,GMU (gated fusion),14,0.625
+T2,GMU (gated fusion),15,0.5
+T2,GMU (gated fusion),16,0.6125
+T2,GMU (gated fusion),17,0.6911764705882353
+T2,GMU (gated fusion),18,0.890625
+T2,GMU (gated fusion),19,0.59375
+T2,GMU (gated fusion),20,0.59375
+T2,GMU (gated fusion),21,0.55
+T2,GMU (gated fusion),22,0.8823529411764706
+T2,GMU (gated fusion),23,0.765625
+T2,GMU (gated fusion),24,0.390625
+T2,GMU (gated fusion),25,0.6875
+T2,Cross-modal Transformer,1,0.9
+T2,Cross-modal Transformer,2,0.7941176470588235
+T2,Cross-modal Transformer,3,0.84375
+T2,Cross-modal Transformer,4,0.484375
+T2,Cross-modal Transformer,5,0.4375
+T2,Cross-modal Transformer,6,0.825
+T2,Cross-modal Transformer,7,0.5882352941176471
+T2,Cross-modal Transformer,8,0.796875
+T2,Cross-modal Transformer,9,0.5625
+T2,Cross-modal Transformer,10,0.546875
+T2,Cross-modal Transformer,11,0.7375
+T2,Cross-modal Transformer,12,0.5147058823529411
+T2,Cross-modal Transformer,13,0.765625
+T2,Cross-modal Transformer,14,0.640625
+T2,Cross-modal Transformer,15,0.546875
+T2,Cross-modal Transformer,16,0.65
+T2,Cross-modal Transformer,17,0.6911764705882353
+T2,Cross-modal Transformer,18,0.515625
+T2,Cross-modal Transformer,19,0.875
+T2,Cross-modal Transformer,20,0.703125
+T2,Cross-modal Transformer,21,0.875
+T2,Cross-modal Transformer,22,0.7058823529411764
+T2,Cross-modal Transformer,23,0.796875
+T2,Cross-modal Transformer,24,0.515625
+T2,Cross-modal Transformer,25,0.8125
