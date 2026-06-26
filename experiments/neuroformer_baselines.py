@@ -130,11 +130,14 @@ def cv_seq(kind, packed, y, folds, repeats, seed, device, epochs=40):
         model.train()
         for _ in range(epochs):
             opt.zero_grad(); loss = lossf(model(et, yt, bt), torch.tensor(y[tr], device=device))
-            loss.backward(); opt.step()
+            if not torch.isfinite(loss):
+                continue
+            loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0); opt.step()
         model.eval()
         with torch.no_grad():
             p = torch.softmax(model(torch.tensor(E[te], device=device), torch.tensor(Y[te], device=device),
                                     torch.tensor(B[te], device=device)), -1)[:, 1].cpu().numpy()
+        p = np.nan_to_num(p, nan=0.5)
         fold.append(roc_auc_score(y[te], p) if len(np.unique(y[te])) > 1 else np.nan)
     return np.array(fold)
 
@@ -186,7 +189,11 @@ def _train_torch_vec(model, Xtr, ytr, device, epochs=60, lr=1e-3, dict_in=False)
         opt.zero_grad()
         out = model(Xtr)
         loss = lossf(out, torch.tensor(ytr, device=device))
-        loss.backward(); opt.step()
+        if not torch.isfinite(loss):
+            continue                                  # skip a diverged step (NaN guard)
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)   # prevent transformer divergence
+        opt.step()
     return model
 
 
@@ -214,6 +221,7 @@ def cv_torch_vec(build, Xd, y, folds, repeats, seed, device, dict_in=False, epoc
         model.eval()
         with torch.no_grad():
             p = torch.softmax(model(sub(te)), -1)[:, 1].cpu().numpy()
+        p = np.nan_to_num(p, nan=0.5)                  # diverged preds -> chance (don't crash)
         fold.append(roc_auc_score(y[te], p) if len(np.unique(y[te])) > 1 else np.nan)
     return np.array(fold)   # raw per-fold AUCs (folds*repeats)
 
