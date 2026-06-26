@@ -1,0 +1,13 @@
+model,subgroup,n,n_pos,auc
+NeuroFormer (3-modality),age<=11,37,12,0.5333333333333333
+NeuroFormer (3-modality),age 11-15,31,8,0.7228260869565217
+NeuroFormer (3-modality),age>15,34,1,0.8787878787878788
+NeuroFormer (3-modality),sex=1,61,13,0.7083333333333333
+NeuroFormer (3-modality),sex=2,41,8,0.6553030303030303
+NeuroFormer (3-modality),overall,102,21,0.7007642563198119
+age+sex,age<=11,37,12,0.455
+age+sex,age 11-15,31,8,0.6630434782608695
+age+sex,age>15,34,1,0.8484848484848485
+age+sex,sex=1,61,13,0.7716346153846154
+age+sex,sex=2,41,8,0.6666666666666667
+age+sex,overall,102,21,0.718694885361552
