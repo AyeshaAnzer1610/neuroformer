@@ -16,7 +16,10 @@ Notes
 - NeuroFormer uses the real 3-modality architecture (src/neuroformer.py) with early-stop.
 """
 import argparse
+import os
 import sys
+
+os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")  # cublas determinism (must precede torch)
 from pathlib import Path
 
 import numpy as np
@@ -39,6 +42,20 @@ from robustness_3mod import load_eeg, load_eye, load_beh, _ci          # noqa: E
 def _ci95(rep):
     rep = np.asarray(rep, float)
     return 1.96 * rep.std(ddof=1) / np.sqrt(len(rep)) if len(rep) > 1 else float("nan")
+
+
+def pooled_summ(oof, y):
+    """Pooled out-of-fold AUC: within each repeat every subject is held out exactly once,
+    so we score ONE AUC per repeat over all N subjects, then average across repeats.
+    Far more stable at small N than averaging tiny per-fold AUCs (Forman & Scholz 2010)."""
+    oof = np.asarray(oof, float)
+    aucs = []
+    for r in range(oof.shape[0]):
+        p = oof[r]; m = ~np.isnan(p)
+        if m.sum() and len(np.unique(y[m])) > 1:
+            aucs.append(roc_auc_score(y[m], np.nan_to_num(p[m], nan=0.5)))
+    aucs = np.array(aucs, float)
+    return (float(np.nanmean(aucs)) if len(aucs) else float("nan")), _ci95(aucs)
 
 
 # ----------------------------------------------------------------- torch baselines
@@ -119,8 +136,8 @@ class _SeqHead(nn.Module):
 def cv_seq(kind, packed, y, folds, repeats, seed, device, epochs=40):
     E, M, Y, B = packed; de, dy, db = E.shape[2], Y.shape[1], B.shape[1]
     cv = RepeatedStratifiedKFold(n_splits=folds, n_repeats=repeats, random_state=seed)
-    fold = []
-    for tr, te in cv.split(np.zeros(len(y)), y):
+    fold = []; oof = np.full((repeats, len(y)), np.nan)
+    for k, (tr, te) in enumerate(cv.split(np.zeros(len(y)), y)):
         torch.manual_seed(seed)
         model = _SeqHead(kind, de, dy, db).to(device)
         pos = int(y[tr].sum()); neg = len(tr) - pos
@@ -138,8 +155,9 @@ def cv_seq(kind, packed, y, folds, repeats, seed, device, epochs=40):
             p = torch.softmax(model(torch.tensor(E[te], device=device), torch.tensor(Y[te], device=device),
                                     torch.tensor(B[te], device=device)), -1)[:, 1].cpu().numpy()
         p = np.nan_to_num(p, nan=0.5)
+        oof[k // folds, te] = p
         fold.append(roc_auc_score(y[te], p) if len(np.unique(y[te])) > 1 else np.nan)
-    return np.array(fold)
+    return np.array(fold), oof
 
 
 class TensorFusion(nn.Module):
@@ -200,18 +218,19 @@ def _train_torch_vec(model, Xtr, ytr, device, epochs=60, lr=1e-3, dict_in=False)
 # ----------------------------------------------------------------- baseline runners
 def cv_sklearn(clf_fn, X, y, folds, repeats, seed):
     cv = RepeatedStratifiedKFold(n_splits=folds, n_repeats=repeats, random_state=seed)
-    fold = []
-    for tr, te in cv.split(X, y):
+    fold = []; oof = np.full((repeats, len(y)), np.nan)
+    for k, (tr, te) in enumerate(cv.split(X, y)):
         clf = clf_fn(); clf.fit(X[tr], y[tr])
         p = clf.predict_proba(X[te])[:, 1]
+        oof[k // folds, te] = p
         fold.append(roc_auc_score(y[te], p) if len(np.unique(y[te])) > 1 else np.nan)
-    return np.array(fold)   # raw per-fold AUCs (folds*repeats)
+    return np.array(fold), oof   # per-fold AUCs + (repeats,N) out-of-fold preds
 
 
 def cv_torch_vec(build, Xd, y, folds, repeats, seed, device, dict_in=False, epochs=60):
     cv = RepeatedStratifiedKFold(n_splits=folds, n_repeats=repeats, random_state=seed)
-    fold = []
-    for tr, te in cv.split(np.zeros(len(y)), y):
+    fold = []; oof = np.full((repeats, len(y)), np.nan)
+    for k, (tr, te) in enumerate(cv.split(np.zeros(len(y)), y)):
         torch.manual_seed(seed)
         def sub(idx):
             return ({m: torch.tensor(Xd[m][idx], dtype=torch.float32, device=device) for m in Xd}
@@ -222,21 +241,23 @@ def cv_torch_vec(build, Xd, y, folds, repeats, seed, device, dict_in=False, epoc
         with torch.no_grad():
             p = torch.softmax(model(sub(te)), -1)[:, 1].cpu().numpy()
         p = np.nan_to_num(p, nan=0.5)                  # diverged preds -> chance (don't crash)
+        oof[k // folds, te] = p
         fold.append(roc_auc_score(y[te], p) if len(np.unique(y[te])) > 1 else np.nan)
-    return np.array(fold)   # raw per-fold AUCs (folds*repeats)
+    return np.array(fold), oof   # per-fold AUCs + (repeats,N) out-of-fold preds
 
 
 def cv_late_fusion(Xd, y, folds, repeats, seed):
     cv = RepeatedStratifiedKFold(n_splits=folds, n_repeats=repeats, random_state=seed)
-    fold = []
-    for tr, te in cv.split(np.zeros(len(y)), y):
+    fold = []; oof = np.full((repeats, len(y)), np.nan)
+    for k, (tr, te) in enumerate(cv.split(np.zeros(len(y)), y)):
         ps = []
         for m in Xd:
             clf = make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000))
             clf.fit(Xd[m][tr], y[tr]); ps.append(clf.predict_proba(Xd[m][te])[:, 1])
         p = np.mean(ps, 0)
+        oof[k // folds, te] = p
         fold.append(roc_auc_score(y[te], p) if len(np.unique(y[te])) > 1 else np.nan)
-    return np.array(fold)   # raw per-fold AUCs (folds*repeats)
+    return np.array(fold), oof   # per-fold AUCs + (repeats,N) out-of-fold preds
 
 
 def neuroformer_cv(subs, lab, eeg, eye, beh, mods, folds, nf_repeats, seed, device, aux):
@@ -255,16 +276,18 @@ def neuroformer_cv(subs, lab, eeg, eye, beh, mods, folds, nf_repeats, seed, devi
     A.seed = seed
     cv = RepeatedStratifiedKFold(n_splits=folds, n_repeats=nf_repeats, random_state=seed)
     fold, gaps, oof = [], [], {}
-    for tr, te in cv.split(np.zeros(len(y)), y):
+    oofmat = np.full((nf_repeats, len(y)), np.nan)        # (repeats, N) for pooled-OOF AUC
+    for k, (tr, te) in enumerate(cv.split(np.zeros(len(y)), y)):
         torch.manual_seed(seed)
         te_auc, tr_auc, preds = _nf_fold([rows[i] for i in tr], [rows[i] for i in te], dims, A,
                                          device, create_neuroformer, aux)
         fold.append(te_auc)
         if not (np.isnan(te_auc) or np.isnan(tr_auc)):
             gaps.append((tr_auc - te_auc) * 100)          # train-test gap in pp (E7)
-        for sid, prob in preds:
+        for j, (sid, prob) in zip(te, preds):
             oof.setdefault(sid, []).append(prob)          # OOF probs across repeats
-    return np.array(fold), (float(np.mean(gaps)) if gaps else float("nan")), oof
+            oofmat[k // folds, j] = prob
+    return np.array(fold), (float(np.mean(gaps)) if gaps else float("nan")), oof, oofmat
 
 
 def _nf_fold(tr_rows, te_rows, dims, A, device, create, aux):
@@ -333,6 +356,15 @@ def main():
     args = ap.parse_args()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
+    torch.backends.cudnn.deterministic = True          # reproducible: byte-identical re-run
+    torch.backends.cudnn.benchmark = False
+    try:
+        torch.use_deterministic_algorithms(True, warn_only=True)
+    except Exception:
+        pass
 
     eeg, eye, beh = load_eeg(), load_eye(), load_beh()
     lab = pd.read_csv("data/labels.csv").set_index("ID")["DX_Status"].to_dict()
@@ -354,13 +386,16 @@ def main():
 
     # ---------------- Table 2: baselines (raw per-fold saved) ----------------
     print("\n=== TABLE 2: baselines (leak-free %dx%d CV) ===" % (args.folds, args.repeats), flush=True)
-    t2, perfold = [], []
-    def add(name, arr):
-        m, c = summ(arr)
-        t2.append({"model": name, "auc": m, "ci95": c})
-        for i, v in enumerate(np.asarray(arr, float)):
+    t2, perfold, oof_store = [], [], {}
+    def add(name, ret):
+        fold, oof = ret
+        m, c = pooled_summ(oof, y)                 # headline: pooled out-of-fold AUC (stable at small N)
+        mpf, cpf = summ(fold)                      # supplement: mean of per-fold AUCs (unstable; for transparency)
+        t2.append({"model": name, "auc": m, "ci95": c, "auc_perfold": mpf, "ci_perfold": cpf})
+        oof_store[name] = oof
+        for i, v in enumerate(np.asarray(fold, float)):
             perfold.append({"table": "T2", "model": name, "fold": i + 1, "auc": v})
-        print(f"  {name:<26} {m:.3f} +/- {c:.3f}", flush=True)
+        print(f"  {name:<26} pooled {m:.3f} +/- {c:.3f}   (per-fold {mpf:.3f})", flush=True)
 
     add("LogReg (concat)", cv_sklearn(lambda: make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)), Xcat, y, args.folds, args.repeats, args.seed))
     add("SVM-RBF (concat)", cv_sklearn(lambda: make_pipeline(StandardScaler(), SVC(probability=True)), Xcat, y, args.folds, args.repeats, args.seed))
@@ -378,20 +413,23 @@ def main():
     add("Tensor Fusion Network", cv_torch_vec(lambda: TensorFusion(dims3), Xd, y, args.folds, args.repeats, args.seed, device, dict_in=True))
     add("Low-rank Multimodal Fusion", cv_torch_vec(lambda: LowRankFusion(dims3), Xd, y, args.folds, args.repeats, args.seed, device, dict_in=True))
     if not args.skip_nf:
-        nf_arr, nf_gap, nf_oof = neuroformer_cv(subs, lab, eeg, eye, beh, {"eeg", "eye", "beh"}, args.folds, args.nf_repeats, args.seed, device, aux=False)
-        add("NeuroFormer (3-modality)", nf_arr)
+        nf_arr, nf_gap, nf_oof, nf_oofmat = neuroformer_cv(subs, lab, eeg, eye, beh, {"eeg", "eye", "beh"}, args.folds, args.nf_repeats, args.seed, device, aux=False)
+        add("NeuroFormer (3-modality)", (nf_arr, nf_oofmat))
         print(f"  [E7] NeuroFormer train-test gap = {nf_gap:.1f} pp (mean across folds)", flush=True)
     pd.DataFrame(t2).to_csv(args.out_t2, index=False)
     pd.DataFrame(perfold).to_csv(outdir / "perfold_table2.csv", index=False)
-    print(f"[done] Table 2 -> {args.out_t2} (+ perfold_table2.csv)", flush=True)
+    import pickle
+    with open(outdir / "oof_table2.pkl", "wb") as f:        # raw OOF -> recompute pooled AUC offline, no GPU
+        pickle.dump({"y": y, "subs": subs, "oof": oof_store}, f)
+    print(f"[done] Table 2 -> {args.out_t2} (+ perfold_table2.csv, oof_table2.pkl)", flush=True)
 
     # ---------------- Confound analysis (R3.7): does age/sex alone predict the label? ----------------
     print("\n=== CONFOUND CHECK (R3.7): can age/sex predict diagnosis? ===", flush=True)
     meta = pd.read_csv("data/labels.csv").set_index("ID")
     Xconf = np.array([[meta.loc[s, "Age"], meta.loc[s, "Sex"]] for s in subs], float)
-    rep_c = np.nanmean(cv_sklearn(lambda: make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)),
-                                  Xconf, y, args.folds, args.repeats, args.seed).reshape(-1, F), axis=1)
-    mc, cc = float(np.nanmean(rep_c)), _ci95(rep_c)
+    _, cf_oof = cv_sklearn(lambda: make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)),
+                           Xconf, y, args.folds, args.repeats, args.seed)
+    mc, cc = pooled_summ(cf_oof, y)              # pooled-OOF, consistent with Table 2
     print(f"  age+sex -> diagnosis ROC-AUC = {mc:.3f} +/- {cc:.3f}  "
           f"({'near chance -> confounds do NOT drive the label' if mc < 0.6 else 'WARN: confound signal'})", flush=True)
     pd.DataFrame([{"predictor": "age+sex", "auc": mc, "ci95": cc}]).to_csv(outdir / "confound_check.csv", index=False)
@@ -403,9 +441,9 @@ def main():
         nf_auc = roc_auc_score(y, nfp)
         r_age = pearsonr(nfp, Xconf[:, 0])[0]; r_sex = pearsonr(nfp, Xconf[:, 1])[0]
         def _as(X):
-            arr = cv_sklearn(lambda: make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)),
-                             X, y, args.folds, args.repeats, args.seed)
-            return float(np.nanmean(np.nanmean(arr.reshape(-1, F), axis=1)))
+            _, o = cv_sklearn(lambda: make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)),
+                              X, y, args.folds, args.repeats, args.seed)
+            return pooled_summ(o, y)[0]              # pooled-OOF, consistent with Table 2
         m_as = _as(Xconf); m_asn = _as(np.hstack([Xconf, nfp[:, None]]))
         print(f"  NeuroFormer OOF AUC = {nf_auc:.3f} | corr(NF,age)={r_age:+.2f} corr(NF,sex)={r_sex:+.2f}", flush=True)
         print(f"  age+sex = {m_as:.3f}  ->  age+sex+NeuroFormer = {m_asn:.3f}  "
@@ -421,20 +459,20 @@ def main():
         subsets = [("EEG", {"eeg"}), ("Eye", {"eye"}), ("Beh", {"beh"}),
                    ("EEG+Eye", {"eeg", "eye"}), ("EEG+Beh", {"eeg", "beh"}),
                    ("Eye+Beh", {"eye", "beh"}), ("EEG+Eye+Beh", {"eeg", "eye", "beh"})]
-        raw, pf3 = {}, []
+        raw, rawoof, pf3 = {}, {}, []
         for aux in (False, True):
             for name, mods in subsets:
-                arr, _, _ = neuroformer_cv(subs, lab, eeg, eye, beh, mods, args.folds, args.nf_repeats, args.seed, device, aux=aux)
-                raw[(name, aux)] = arr
+                arr, _, _, omat = neuroformer_cv(subs, lab, eeg, eye, beh, mods, args.folds, args.nf_repeats, args.seed, device, aux=aux)
+                raw[(name, aux)] = arr; rawoof[(name, aux)] = omat
                 for i, v in enumerate(np.asarray(arr, float)):
                     pf3.append({"config": name, "aux": int(aux), "fold": i + 1, "auc": v})
-                print(f"  {name:<12} aux={int(aux)}  {summ(arr)[0]:.3f}", flush=True)
+                print(f"  {name:<12} aux={int(aux)}  pooled {pooled_summ(omat, y)[0]:.3f}", flush=True)
         t3 = []
         for name, _ in subsets:
             a0, a1 = raw[(name, False)], raw[(name, True)]
-            m0, c0 = summ(a0); m1, c1 = summ(a1)
+            m0, c0 = pooled_summ(rawoof[(name, False)], y); m1, c1 = pooled_summ(rawoof[(name, True)], y)
             try:
-                p = float(wilcoxon(a0, a1).pvalue)
+                p = float(wilcoxon(a0, a1).pvalue)        # paired over 25 folds (power); estimate is pooled
             except ValueError:
                 p = float("nan")
             t3.append({"config": name, "auc_noaux": m0, "ci_noaux": c0, "auc_aux": m1,
