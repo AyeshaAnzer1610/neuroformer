@@ -28,6 +28,15 @@ placeholders — match to your `.bib`.
   current surveys from your field (e.g., multimodal learning in healthcare / affective
   computing) so the bold rows above are positioned as representatives of current families.
 
+**Evaluation metric (pooled out-of-fold AUC).** At N≈102 with ~20 % positives a per-fold AUC is
+high-variance and biased; we report the pooled out-of-fold AUC (one AUC per repeat over all
+held-out subjects, averaged across repeats), the recommended small-sample estimator. Cite:
+- Forman & Scholz, *Apples-to-Apples in Cross-Validation Studies: Pitfalls in Classifier
+  Performance Measurement*, SIGKDD Explorations 2010.
+- Airola, Pahikkala, Waegeman, De Baets & Salakoski, *An experimental comparison of
+  cross-validation techniques for estimating the area under the ROC curve*, Comput. Stat. Data
+  Anal. 2011.
+
 **Statistical comparison.** Per-fold AUCs are saved (`perfold_table2.csv`) → paired Wilcoxon
 vs NeuroFormer with Holm correction (`experiments/analyze_results.py`). Report the corrected
 margin + significance (answers R2.2's "clarify extent of improvement and significance").

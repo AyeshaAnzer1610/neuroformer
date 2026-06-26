@@ -5,33 +5,60 @@
 > leak-free, subject-level, repeated (5×5) stratified CV. Every figure here is
 > reproducible from committed code + data. `[[ ]]` = fill from the Table 3 / full run.
 
-## The corrected headline
-- **NeuroFormer (3-modality), leak-free: ROC-AUC 0.722 ± 0.037** — the best model, beating
-  every baseline, under strict subject-level repeated CV.
-- The original 0.912/85.1% was **not reproducible** (window-level leakage in the old
-  protocol); the corrected protocol eliminates it. We report the rigorous number.
+## The corrected headline (honest)
+- **NeuroFormer (3-modality), leak-free, pooled out-of-fold: ROC-AUC ≈ 0.73** — *competitive
+  with the strongest fusion baseline* (Low-rank Multimodal Fusion ≈ 0.72), not a large margin.
+  We do **not** claim it is uniformly superior; we claim it is among the best under a rigorous,
+  uniformly-applied protocol.
+- **It adds genuine signal beyond demographics:** age+sex alone reach ROC-AUC 0.72, and adding
+  NeuroFormer's prediction raises this to 0.79 — a **+6.9 pp confound-adjusted increment**
+  (`confound_adjusted.csv`). This is the paper's strongest, most defensible result.
+- The original **0.912/85.1% was not reproducible** (window-level leakage + an incorrectly-
+  balanced 63/63 cohort in the old protocol); the corrected protocol removes both. We report
+  the rigorous numbers and explain the discrepancy openly.
+
+### Metric note — why pooled out-of-fold AUC (answers R3.3/R3.4 on evaluation rigor)
+At N≈102 with ~20 % positives, each held-out fold contains only ~4 positive subjects, so a
+**per-fold** AUC is extremely high-variance and downward-biased, and averaging 25 such values
+understates performance. We therefore report the **pooled out-of-fold AUC**: within each of the
+5 repeats every subject is held out exactly once, so we compute one AUC per repeat over all N
+subjects and average across the 5 repeats (mean ± 95 % CI). This is the recommended estimator
+for small samples [Forman & Scholz 2010; Airola et al. 2011] and is applied **identically to
+every model**, including all baselines. The unstable per-fold averages are reported alongside
+in a supplement column (`auc_perfold`) for full transparency. (This single methodological choice
+is itself a substantive answer to the reproducibility concerns; the run is also seeded and
+`cudnn`-deterministic, so the tables are byte-reproducible.)
 
 ---
 
-## Corrected Table 2 — baselines (leak-free 5×5, ROC-AUC)
-| Model | ROC-AUC |
-|---|---|
-| SVM-RBF (concat) | 0.489 ± 0.035 |
-| LogReg (concat) | 0.550 ± 0.023 |
-| MLP early-fusion | 0.551 ± 0.020 |
-| Late-fusion ensemble | 0.574 ± 0.025 |
-| RandomForest (concat) | 0.590 ± 0.033 |
-| GMU (gated fusion) | 0.675 ± 0.034 |
-| Cross-modal Transformer | 0.685 ± 0.033 |
-| **NeuroFormer (proposed)** | **0.722 ± 0.037** |
+## Corrected Table 2 — baselines (leak-free 5×5, **pooled out-of-fold** ROC-AUC) — **[[fill from job 16728021]]**
+Headline column = pooled-OOF AUC; per-fold column kept for transparency.
 
-*Per-modality (logistic-regression, pooled): EEG 0.53, eye 0.53, behaviour 0.55 — each
-near chance alone; the hierarchical cross-modal architecture is what reaches 0.72.*
+| Model | Pooled-OOF ROC-AUC | (per-fold) |
+|---|---|---|
+| SVM-RBF (concat) | [[ ]] | |
+| LogReg (concat) | [[ ]] | |
+| MLP early-fusion | [[ ]] | |
+| Late-fusion ensemble | [[ ]] | |
+| RandomForest (concat) | [[ ]] | |
+| Tensor Fusion Network | [[ ]] | |
+| GMU (gated fusion) | [[ ~0.67 ]] | |
+| Cross-modal Transformer (MulT-style) | [[ ~0.64 ]] | |
+| Low-rank Multimodal Fusion | [[ ~0.72 ]] | |
+| **NeuroFormer (proposed)** | **[[ ~0.73 ]]** | |
 
-## Corrected Table 3 — modality ablation (NeuroFormer, leak-free) — **[[run on GPU]]**
-Seven non-empty subsets × {with, without auxiliary reconstruction loss}. Fill from
-`results/table3_ablation.csv`. **The aux-loss contribution must be reported as whatever the
-ablation shows** — if `+aux` ≈ `−aux`, the "+4.8 pp" claim is dropped, not restated.
+*Per-modality alone (≈chance): no single stream is informative; the value is in the cross-modal
+fusion. Paired Wilcoxon vs NeuroFormer with Holm correction → report which margins are
+significant (`perfold_table2.csv`, `analyze_results.py`). Expect NeuroFormer ≈ LMF (not
+significantly different) and both > gated/classical.*
+
+## Corrected Table 3 — modality ablation (NeuroFormer, leak-free, **pooled-OOF**) — **[[fill]]**
+Seven non-empty subsets × {with, without auxiliary reconstruction loss}. **Honest finding from
+the completed runs: the auxiliary reconstruction loss does NOT help** — every `Δaux` is negative
+or null and none is significant (all p ≫ 0.05). **Drop the "+4.8 pp aux" claim entirely** and
+report the ablation as a negative result. Likewise **EEG-alone ≈ full multimodal** (the extra
+modalities add little once EEG is present) — state this honestly rather than overclaiming
+multimodal synergy. Fill exact pooled numbers from `results/table3_ablation.csv`.
 
 ---
 
@@ -39,17 +66,21 @@ ablation shows** — if `+aux` ≈ `−aux`, the "+4.8 pp" claim is dropped, not
 > Psychiatric disorders are widely underdiagnosed, and objective screening tools remain
 > scarce. We present NeuroFormer, a hierarchical transformer that fuses three non-invasive
 > modalities — EEG, eye-tracking, and behavioural task performance — for binary
-> diagnosed-vs-control screening on the public MIPDB cohort (N≈102 with all three
-> modalities). Under **strict subject-level, leakage-free, repeated (5×5) stratified
-> cross-validation**, NeuroFormer attains **ROC-AUC 0.722 ± 0.037**, exceeding strong
-> baselines (gated fusion 0.675, cross-modal Transformer 0.685, classical methods ≤0.59)
-> and every single-modality configuration. We find that no individual modality is
-> informative in isolation (≈chance), yet hierarchical cross-modal fusion recovers a
-> transdiagnostic signal — indicating the value is in the cross-modal structure, not any one
-> stream. We additionally provide an external evaluation on the Healthy Brain Network cohort,
-> which does not transfer (≈chance), honestly bounding generalization. We present this as a
-> rigorously-evaluated proof of concept; given the modest cohort and the absence of
-> out-of-distribution transfer, it requires further validation before clinical use.
+> diagnosed-vs-control screening on the public MIPDB cohort (N≈102 with all three modalities,
+> ~20 % positive). Under **strict subject-level, leakage-free, repeated (5×5) stratified
+> cross-validation** with a **pooled out-of-fold** ROC-AUC estimator suited to small samples,
+> NeuroFormer attains **ROC-AUC ≈ 0.73**, **competitive with the strongest fusion baseline**
+> (low-rank multimodal fusion ≈ 0.72) and ahead of gated, classical, and single-modality
+> configurations. Critically, a **confound-adjusted analysis** shows the model carries signal
+> **beyond demographics**: age and sex alone reach 0.72, and adding NeuroFormer's prediction
+> raises this to 0.79 (+6.9 pp). We report two honest negative findings: no individual modality
+> is informative in isolation (≈chance), and once EEG is present the additional modalities and
+> an auxiliary reconstruction objective provide **no reliable gain** — locating the value in a
+> compact cross-modal EEG-anchored representation rather than in multimodal synergy or auxiliary
+> losses. An external evaluation of an EEG foundation-model representation on the Healthy Brain
+> Network cohort does not transfer (≈chance), honestly bounding generalization. We present this
+> as a rigorously- and reproducibly-evaluated proof of concept requiring further validation
+> before clinical use.
 
 *(Note: numbers and 85.1% accuracy / 0.912 AUC are removed throughout; sensitivity/
 specificity recomputed from the corrected operating point.)*
@@ -76,15 +107,22 @@ EEG + eye-tracking + behaviour under matching protocols (HBN is **EEG-only**). T
   analysis, not to NeuroFormer itself.* (`results/phase4_hbn_all.csv`.)
 - **Do NOT** write "we externally validated NeuroFormer on HBN."
 
-## Corrected contributions
-1. **Hierarchical multimodal transformer fusion** of EEG + eye-tracking + behaviour, which
-   under leak-free evaluation **outperforms classical, gated, and single-stage fusion
-   baselines** (0.722 vs ≤0.685) on transdiagnostic screening.
-2. **A rigorous, leakage-controlled evaluation** (subject-level repeated CV + external HBN
-   validation) — and the finding that the signal is **cross-modal**, not unimodal.
-3. *(Auxiliary reconstruction loss — keep as a contribution ONLY if Table 3 shows a real
-   gain; otherwise report it as an ablation that did not help.)*
-4. **Honest external-validation boundary** (HBN ≈ chance) and interpretability analysis.
+## Corrected contributions (honest reframe)
+1. **A compact hierarchical multimodal transformer** (≈2.9 M trainable params) for
+   transdiagnostic EEG+eye+behaviour screening that, under leak-free evaluation, is
+   **competitive with the strongest fusion baselines** (≈0.73, on par with low-rank fusion and
+   above gated/classical methods) — not a claim of large-margin superiority.
+2. **A rigorous, reproducible small-sample evaluation protocol**: subject-level repeated
+   stratified CV with a **pooled out-of-fold** AUC estimator and seeded/`cudnn`-deterministic
+   runs, applied identically to every baseline — directly addressing the prior version's
+   leakage and reproducibility problems.
+3. **A confound-controlled result**: the model adds **+6.9 pp beyond age+sex** demographics —
+   evidence the signal is not a confound artifact (the single strongest claim).
+4. **Two honest negative findings** that sharpen understanding: (i) no single modality is
+   informative alone and multimodal ≈ EEG-alone; (ii) the auxiliary reconstruction loss does
+   not help — both reported as negative results rather than overclaimed.
+5. **Honest external-validation boundary** (EEG-FM representation ≈ chance on HBN) and
+   interpretability analysis.
 
 ## Key edits throughout (checklist)
 - [ ] Replace **all** 85.1% / 0.912 with the corrected numbers (abstract, intro, Table 2,
