@@ -76,29 +76,29 @@ T2,RandomForest (concat),24,0.671875
 T2,RandomForest (concat),25,0.375
 T2,MLP early-fusion,1,0.725
 T2,MLP early-fusion,2,0.7205882352941176
-T2,MLP early-fusion,3,0.375
+T2,MLP early-fusion,3,0.359375
 T2,MLP early-fusion,4,0.296875
 T2,MLP early-fusion,5,0.71875
 T2,MLP early-fusion,6,0.375
-T2,MLP early-fusion,7,0.6176470588235294
-T2,MLP early-fusion,8,0.484375
-T2,MLP early-fusion,9,0.75
-T2,MLP early-fusion,10,0.453125
-T2,MLP early-fusion,11,0.3875
-T2,MLP early-fusion,12,0.4117647058823529
+T2,MLP early-fusion,7,0.6029411764705883
+T2,MLP early-fusion,8,0.46875
+T2,MLP early-fusion,9,0.71875
+T2,MLP early-fusion,10,0.515625
+T2,MLP early-fusion,11,0.425
+T2,MLP early-fusion,12,0.36764705882352944
 T2,MLP early-fusion,13,0.6875
-T2,MLP early-fusion,14,0.6875
-T2,MLP early-fusion,15,0.453125
-T2,MLP early-fusion,16,0.5375000000000001
-T2,MLP early-fusion,17,0.5735294117647058
+T2,MLP early-fusion,14,0.671875
+T2,MLP early-fusion,15,0.484375
+T2,MLP early-fusion,16,0.5125
+T2,MLP early-fusion,17,0.5588235294117647
 T2,MLP early-fusion,18,0.625
-T2,MLP early-fusion,19,0.78125
-T2,MLP early-fusion,20,0.421875
-T2,MLP early-fusion,21,0.525
-T2,MLP early-fusion,22,0.7352941176470589
-T2,MLP early-fusion,23,0.640625
-T2,MLP early-fusion,24,0.421875
-T2,MLP early-fusion,25,0.359375
+T2,MLP early-fusion,19,0.8125
+T2,MLP early-fusion,20,0.40625
+T2,MLP early-fusion,21,0.5375
+T2,MLP early-fusion,22,0.7205882352941176
+T2,MLP early-fusion,23,0.625
+T2,MLP early-fusion,24,0.390625
+T2,MLP early-fusion,25,0.375
 T2,Late-fusion ensemble,1,0.7125
 T2,Late-fusion ensemble,2,0.5441176470588236
 T2,Late-fusion ensemble,3,0.546875
@@ -124,178 +124,178 @@ T2,Late-fusion ensemble,22,0.44117647058823534
 T2,Late-fusion ensemble,23,0.75
 T2,Late-fusion ensemble,24,0.578125
 T2,Late-fusion ensemble,25,0.390625
-T2,GMU (gated fusion),1,0.5625
-T2,GMU (gated fusion),2,0.7058823529411764
-T2,GMU (gated fusion),3,0.515625
-T2,GMU (gated fusion),4,0.890625
-T2,GMU (gated fusion),5,0.796875
-T2,GMU (gated fusion),6,0.3625
-T2,GMU (gated fusion),7,0.5147058823529411
-T2,GMU (gated fusion),8,0.828125
-T2,GMU (gated fusion),9,0.78125
-T2,GMU (gated fusion),10,0.6875
+T2,GMU (gated fusion),1,0.6000000000000001
+T2,GMU (gated fusion),2,0.5735294117647058
+T2,GMU (gated fusion),3,0.65625
+T2,GMU (gated fusion),4,0.859375
+T2,GMU (gated fusion),5,0.78125
+T2,GMU (gated fusion),6,0.6875
+T2,GMU (gated fusion),7,0.5
+T2,GMU (gated fusion),8,0.90625
+T2,GMU (gated fusion),9,0.71875
+T2,GMU (gated fusion),10,0.65625
 T2,GMU (gated fusion),11,0.575
 T2,GMU (gated fusion),12,0.7941176470588235
-T2,GMU (gated fusion),13,0.921875
-T2,GMU (gated fusion),14,0.625
-T2,GMU (gated fusion),15,0.734375
-T2,GMU (gated fusion),16,0.6375000000000001
-T2,GMU (gated fusion),17,0.8676470588235293
-T2,GMU (gated fusion),18,0.53125
-T2,GMU (gated fusion),19,0.875
-T2,GMU (gated fusion),20,0.546875
-T2,GMU (gated fusion),21,0.525
-T2,GMU (gated fusion),22,0.6764705882352942
+T2,GMU (gated fusion),13,0.890625
+T2,GMU (gated fusion),14,0.484375
+T2,GMU (gated fusion),15,0.453125
+T2,GMU (gated fusion),16,0.525
+T2,GMU (gated fusion),17,0.8970588235294117
+T2,GMU (gated fusion),18,0.734375
+T2,GMU (gated fusion),19,0.890625
+T2,GMU (gated fusion),20,0.578125
+T2,GMU (gated fusion),21,0.42500000000000004
+T2,GMU (gated fusion),22,0.838235294117647
 T2,GMU (gated fusion),23,0.6875
-T2,GMU (gated fusion),24,0.359375
-T2,GMU (gated fusion),25,0.734375
-T2,Cross-modal Transformer,1,0.925
-T2,Cross-modal Transformer,2,0.7058823529411764
-T2,Cross-modal Transformer,3,0.8125
-T2,Cross-modal Transformer,4,0.359375
-T2,Cross-modal Transformer,5,0.359375
-T2,Cross-modal Transformer,6,0.7625
+T2,GMU (gated fusion),24,0.640625
+T2,GMU (gated fusion),25,0.625
+T2,Cross-modal Transformer,1,0.5
+T2,Cross-modal Transformer,2,0.5
+T2,Cross-modal Transformer,3,0.5
+T2,Cross-modal Transformer,4,0.5
+T2,Cross-modal Transformer,5,0.5
+T2,Cross-modal Transformer,6,0.5
 T2,Cross-modal Transformer,7,0.5
-T2,Cross-modal Transformer,8,0.65625
-T2,Cross-modal Transformer,9,0.59375
-T2,Cross-modal Transformer,10,0.625
-T2,Cross-modal Transformer,11,0.7000000000000001
-T2,Cross-modal Transformer,12,0.3970588235294118
-T2,Cross-modal Transformer,13,0.828125
-T2,Cross-modal Transformer,14,0.640625
-T2,Cross-modal Transformer,15,0.578125
-T2,Cross-modal Transformer,16,0.5625
-T2,Cross-modal Transformer,17,0.6029411764705883
-T2,Cross-modal Transformer,18,0.421875
-T2,Cross-modal Transformer,19,0.859375
-T2,Cross-modal Transformer,20,0.453125
-T2,Cross-modal Transformer,21,0.65
-T2,Cross-modal Transformer,22,0.7794117647058824
-T2,Cross-modal Transformer,23,0.875
-T2,Cross-modal Transformer,24,0.421875
-T2,Cross-modal Transformer,25,0.875
-T2,1D-CNN (temporal),1,0.6375
-T2,1D-CNN (temporal),2,0.6838235294117647
-T2,1D-CNN (temporal),3,0.84375
-T2,1D-CNN (temporal),4,0.59375
+T2,Cross-modal Transformer,8,0.5
+T2,Cross-modal Transformer,9,0.5
+T2,Cross-modal Transformer,10,0.5
+T2,Cross-modal Transformer,11,0.5
+T2,Cross-modal Transformer,12,0.5
+T2,Cross-modal Transformer,13,0.5
+T2,Cross-modal Transformer,14,0.5
+T2,Cross-modal Transformer,15,0.5
+T2,Cross-modal Transformer,16,0.5
+T2,Cross-modal Transformer,17,0.5
+T2,Cross-modal Transformer,18,0.5
+T2,Cross-modal Transformer,19,0.5
+T2,Cross-modal Transformer,20,0.5
+T2,Cross-modal Transformer,21,0.5
+T2,Cross-modal Transformer,22,0.5
+T2,Cross-modal Transformer,23,0.5
+T2,Cross-modal Transformer,24,0.5
+T2,Cross-modal Transformer,25,0.5
+T2,1D-CNN (temporal),1,0.76875
+T2,1D-CNN (temporal),2,0.6911764705882353
+T2,1D-CNN (temporal),3,0.640625
+T2,1D-CNN (temporal),4,0.53125
 T2,1D-CNN (temporal),5,0.34375
-T2,1D-CNN (temporal),6,0.51875
-T2,1D-CNN (temporal),7,0.45588235294117646
-T2,1D-CNN (temporal),8,0.59375
-T2,1D-CNN (temporal),9,0.671875
+T2,1D-CNN (temporal),6,0.5812499999999999
+T2,1D-CNN (temporal),7,0.5
+T2,1D-CNN (temporal),8,0.5390625
+T2,1D-CNN (temporal),9,0.84375
 T2,1D-CNN (temporal),10,0.40625
-T2,1D-CNN (temporal),11,0.8
-T2,1D-CNN (temporal),12,0.4926470588235294
-T2,1D-CNN (temporal),13,0.65625
-T2,1D-CNN (temporal),14,0.59375
-T2,1D-CNN (temporal),15,0.578125
-T2,1D-CNN (temporal),16,0.425
+T2,1D-CNN (temporal),11,0.675
+T2,1D-CNN (temporal),12,0.4117647058823529
+T2,1D-CNN (temporal),13,0.765625
+T2,1D-CNN (temporal),14,0.640625
+T2,1D-CNN (temporal),15,0.6875
+T2,1D-CNN (temporal),16,0.525
 T2,1D-CNN (temporal),17,0.6029411764705882
-T2,1D-CNN (temporal),18,0.5078125
+T2,1D-CNN (temporal),18,0.421875
 T2,1D-CNN (temporal),19,0.7421875
-T2,1D-CNN (temporal),20,0.46875
-T2,1D-CNN (temporal),21,0.7250000000000001
-T2,1D-CNN (temporal),22,0.5294117647058824
-T2,1D-CNN (temporal),23,0.8359375
-T2,1D-CNN (temporal),24,0.359375
-T2,1D-CNN (temporal),25,0.7734375
-T2,LSTM (temporal),1,0.5
-T2,LSTM (temporal),2,0.7941176470588235
-T2,LSTM (temporal),3,0.328125
-T2,LSTM (temporal),4,0.671875
-T2,LSTM (temporal),5,0.453125
-T2,LSTM (temporal),6,0.1875
-T2,LSTM (temporal),7,0.5441176470588236
-T2,LSTM (temporal),8,0.796875
-T2,LSTM (temporal),9,0.515625
-T2,LSTM (temporal),10,0.4375
-T2,LSTM (temporal),11,0.4375
-T2,LSTM (temporal),12,0.5955882352941176
-T2,LSTM (temporal),13,0.796875
-T2,LSTM (temporal),14,0.625
-T2,LSTM (temporal),15,0.40625
-T2,LSTM (temporal),16,0.4
-T2,LSTM (temporal),17,0.6102941176470589
-T2,LSTM (temporal),18,0.59375
-T2,LSTM (temporal),19,0.515625
-T2,LSTM (temporal),20,0.515625
-T2,LSTM (temporal),21,0.5625
-T2,LSTM (temporal),22,0.6176470588235294
-T2,LSTM (temporal),23,0.640625
+T2,1D-CNN (temporal),20,0.5625
+T2,1D-CNN (temporal),21,0.925
+T2,1D-CNN (temporal),22,0.6470588235294117
+T2,1D-CNN (temporal),23,0.78125
+T2,1D-CNN (temporal),24,0.375
+T2,1D-CNN (temporal),25,0.859375
+T2,LSTM (temporal),1,0.51875
+T2,LSTM (temporal),2,0.7647058823529411
+T2,LSTM (temporal),3,0.3671875
+T2,LSTM (temporal),4,0.40625
+T2,LSTM (temporal),5,0.59375
+T2,LSTM (temporal),6,0.225
+T2,LSTM (temporal),7,0.4852941176470588
+T2,LSTM (temporal),8,0.71875
+T2,LSTM (temporal),9,0.484375
+T2,LSTM (temporal),10,0.40625
+T2,LSTM (temporal),11,0.3625
+T2,LSTM (temporal),12,0.6176470588235294
+T2,LSTM (temporal),13,0.75
+T2,LSTM (temporal),14,0.703125
+T2,LSTM (temporal),15,0.34375
+T2,LSTM (temporal),16,0.42500000000000004
+T2,LSTM (temporal),17,0.4852941176470588
+T2,LSTM (temporal),18,0.53125
+T2,LSTM (temporal),19,0.578125
+T2,LSTM (temporal),20,0.546875
+T2,LSTM (temporal),21,0.6625000000000001
+T2,LSTM (temporal),22,0.6617647058823529
+T2,LSTM (temporal),23,0.578125
 T2,LSTM (temporal),24,0.3125
-T2,LSTM (temporal),25,0.3984375
-T2,TCN (temporal),1,0.56875
-T2,TCN (temporal),2,0.7499999999999999
-T2,TCN (temporal),3,0.8046875
-T2,TCN (temporal),4,0.578125
-T2,TCN (temporal),5,0.34375
-T2,TCN (temporal),6,0.6124999999999999
-T2,TCN (temporal),7,0.39705882352941174
-T2,TCN (temporal),8,0.546875
-T2,TCN (temporal),9,0.640625
-T2,TCN (temporal),10,0.5
-T2,TCN (temporal),11,0.625
-T2,TCN (temporal),12,0.38235294117647056
-T2,TCN (temporal),13,0.765625
-T2,TCN (temporal),14,0.65625
-T2,TCN (temporal),15,0.53125
-T2,TCN (temporal),16,0.58125
-T2,TCN (temporal),17,0.5808823529411765
-T2,TCN (temporal),18,0.7578125
-T2,TCN (temporal),19,0.7109375
-T2,TCN (temporal),20,0.609375
-T2,TCN (temporal),21,0.725
-T2,TCN (temporal),22,0.5147058823529411
-T2,TCN (temporal),23,0.75
-T2,TCN (temporal),24,0.3515625
-T2,TCN (temporal),25,0.6640625
-T2,Tensor Fusion Network,1,0.75
-T2,Tensor Fusion Network,2,0.6029411764705882
-T2,Tensor Fusion Network,3,0.578125
-T2,Tensor Fusion Network,4,0.578125
-T2,Tensor Fusion Network,5,0.6875
-T2,Tensor Fusion Network,6,0.6375000000000001
-T2,Tensor Fusion Network,7,0.5147058823529411
-T2,Tensor Fusion Network,8,0.96875
-T2,Tensor Fusion Network,9,0.6875
-T2,Tensor Fusion Network,10,0.546875
-T2,Tensor Fusion Network,11,0.5
-T2,Tensor Fusion Network,12,0.6617647058823529
-T2,Tensor Fusion Network,13,0.796875
-T2,Tensor Fusion Network,14,0.484375
-T2,Tensor Fusion Network,15,0.359375
-T2,Tensor Fusion Network,16,0.48750000000000004
-T2,Tensor Fusion Network,17,0.6323529411764706
-T2,Tensor Fusion Network,18,0.515625
-T2,Tensor Fusion Network,19,0.8125
-T2,Tensor Fusion Network,20,0.65625
-T2,Tensor Fusion Network,21,0.85
-T2,Tensor Fusion Network,22,0.6323529411764706
-T2,Tensor Fusion Network,23,0.640625
-T2,Tensor Fusion Network,24,0.484375
-T2,Tensor Fusion Network,25,0.5625
-T2,Low-rank Multimodal Fusion,1,0.8
-T2,Low-rank Multimodal Fusion,2,0.8088235294117647
-T2,Low-rank Multimodal Fusion,3,0.640625
-T2,Low-rank Multimodal Fusion,4,0.78125
-T2,Low-rank Multimodal Fusion,5,0.734375
-T2,Low-rank Multimodal Fusion,6,0.8
-T2,Low-rank Multimodal Fusion,7,0.5882352941176471
-T2,Low-rank Multimodal Fusion,8,0.78125
-T2,Low-rank Multimodal Fusion,9,0.796875
-T2,Low-rank Multimodal Fusion,10,0.59375
-T2,Low-rank Multimodal Fusion,11,0.775
-T2,Low-rank Multimodal Fusion,12,0.6176470588235294
-T2,Low-rank Multimodal Fusion,13,0.828125
-T2,Low-rank Multimodal Fusion,14,0.625
-T2,Low-rank Multimodal Fusion,15,0.703125
-T2,Low-rank Multimodal Fusion,16,0.575
-T2,Low-rank Multimodal Fusion,17,0.8970588235294117
-T2,Low-rank Multimodal Fusion,18,0.625
-T2,Low-rank Multimodal Fusion,19,0.828125
-T2,Low-rank Multimodal Fusion,20,0.765625
-T2,Low-rank Multimodal Fusion,21,0.7125
-T2,Low-rank Multimodal Fusion,22,0.6617647058823529
-T2,Low-rank Multimodal Fusion,23,0.609375
-T2,Low-rank Multimodal Fusion,24,0.5
+T2,LSTM (temporal),25,0.375
+T2,TCN (temporal),1,0.7312500000000001
+T2,TCN (temporal),2,0.6470588235294117
+T2,TCN (temporal),3,0.6640625
+T2,TCN (temporal),4,0.40625
+T2,TCN (temporal),5,0.4609375
+T2,TCN (temporal),6,0.6625
+T2,TCN (temporal),7,0.48529411764705876
+T2,TCN (temporal),8,0.5078125
+T2,TCN (temporal),9,0.84375
+T2,TCN (temporal),10,0.5078125
+T2,TCN (temporal),11,0.7125
+T2,TCN (temporal),12,0.40441176470588236
+T2,TCN (temporal),13,0.6875
+T2,TCN (temporal),14,0.546875
+T2,TCN (temporal),15,0.40625
+T2,TCN (temporal),16,0.5125
+T2,TCN (temporal),17,0.6029411764705882
+T2,TCN (temporal),18,0.5390625
+T2,TCN (temporal),19,0.8828125
+T2,TCN (temporal),20,0.578125
+T2,TCN (temporal),21,0.875
+T2,TCN (temporal),22,0.6176470588235294
+T2,TCN (temporal),23,0.921875
+T2,TCN (temporal),24,0.3125
+T2,TCN (temporal),25,0.78125
+T2,Tensor Fusion Network,1,0.5625
+T2,Tensor Fusion Network,2,0.5735294117647058
+T2,Tensor Fusion Network,3,0.5
+T2,Tensor Fusion Network,4,0.78125
+T2,Tensor Fusion Network,5,0.53125
+T2,Tensor Fusion Network,6,0.9375
+T2,Tensor Fusion Network,7,0.6323529411764706
+T2,Tensor Fusion Network,8,0.75
+T2,Tensor Fusion Network,9,0.71875
+T2,Tensor Fusion Network,10,0.8125
+T2,Tensor Fusion Network,11,0.475
+T2,Tensor Fusion Network,12,0.5882352941176471
+T2,Tensor Fusion Network,13,0.71875
+T2,Tensor Fusion Network,14,0.609375
+T2,Tensor Fusion Network,15,0.5625
+T2,Tensor Fusion Network,16,0.41250000000000003
+T2,Tensor Fusion Network,17,0.47058823529411764
+T2,Tensor Fusion Network,18,0.640625
+T2,Tensor Fusion Network,19,0.65625
+T2,Tensor Fusion Network,20,0.515625
+T2,Tensor Fusion Network,21,0.6125
+T2,Tensor Fusion Network,22,0.6617647058823529
+T2,Tensor Fusion Network,23,0.796875
+T2,Tensor Fusion Network,24,0.5625
+T2,Tensor Fusion Network,25,0.78125
+T2,Low-rank Multimodal Fusion,1,0.7250000000000001
+T2,Low-rank Multimodal Fusion,2,0.926470588235294
+T2,Low-rank Multimodal Fusion,3,0.71875
+T2,Low-rank Multimodal Fusion,4,0.75
+T2,Low-rank Multimodal Fusion,5,0.59375
+T2,Low-rank Multimodal Fusion,6,0.7375
+T2,Low-rank Multimodal Fusion,7,0.5
+T2,Low-rank Multimodal Fusion,8,0.984375
+T2,Low-rank Multimodal Fusion,9,0.78125
+T2,Low-rank Multimodal Fusion,10,0.796875
+T2,Low-rank Multimodal Fusion,11,0.625
+T2,Low-rank Multimodal Fusion,12,0.9558823529411764
+T2,Low-rank Multimodal Fusion,13,0.671875
+T2,Low-rank Multimodal Fusion,14,0.609375
+T2,Low-rank Multimodal Fusion,15,0.5625
+T2,Low-rank Multimodal Fusion,16,0.6
+T2,Low-rank Multimodal Fusion,17,0.9558823529411764
+T2,Low-rank Multimodal Fusion,18,0.71875
+T2,Low-rank Multimodal Fusion,19,0.84375
+T2,Low-rank Multimodal Fusion,20,0.59375
+T2,Low-rank Multimodal Fusion,21,0.825
+T2,Low-rank Multimodal Fusion,22,0.6470588235294117
+T2,Low-rank Multimodal Fusion,23,0.703125
+T2,Low-rank Multimodal Fusion,24,0.78125
 T2,Low-rank Multimodal Fusion,25,0.625
