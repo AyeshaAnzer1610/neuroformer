@@ -260,10 +260,13 @@ def cv_late_fusion(Xd, y, folds, repeats, seed):
     return np.array(fold), oof   # per-fold AUCs + (repeats,N) out-of-fold preds
 
 
-def neuroformer_cv(subs, lab, eeg, eye, beh, mods, folds, nf_repeats, seed, device, aux):
-    """3-modality NeuroFormer on a chosen modality subset (mods), early-stop, leak-free."""
+def neuroformer_cv(subs, lab, eeg, eye, beh, mods, folds, nf_repeats, seed, device, aux, cfg=None):
+    """3-modality NeuroFormer on a chosen modality subset (mods), early-stop, leak-free.
+    cfg overrides architecture/regularization (None -> production defaults)."""
     from neuroformer import create_neuroformer
     from robustness_3mod import make_batch3, _pad  # reuse padded batch
+    cfg = {**{"d_model": 128, "n_encoder_layers": 2, "n_fusion_layers": 2, "n_heads": 8,
+              "dropout": 0.3, "lr": 1e-4, "weight_decay": 1e-4}, **(cfg or {})}
     y = np.array([int(lab[s] > 0) for s in subs])
     dims = {"eeg": eeg[subs[0]].shape[1], "eye": eye[subs[0]].shape[1], "beh": beh[subs[0]].shape[1]}
     rows = [{"sid": s, "y": int(lab[s] > 0),
@@ -272,8 +275,8 @@ def neuroformer_cv(subs, lab, eeg, eye, beh, mods, folds, nf_repeats, seed, devi
              "beh": beh[s] if "beh" in mods else np.zeros((1, dims["beh"]), np.float32)} for s in subs]
 
     class A:
-        max_len = 64; batch = 16; lr = 1e-4; max_epochs = 200; patience = 20; val_frac = 0.2
-    A.seed = seed
+        max_len = 64; batch = 16; max_epochs = 200; patience = 20; val_frac = 0.2
+    A.seed = seed; A.lr = cfg["lr"]; A.wd = cfg["weight_decay"]; A.cfg = cfg
     cv = RepeatedStratifiedKFold(n_splits=folds, n_repeats=nf_repeats, random_state=seed)
     fold, gaps, oof = [], [], {}
     oofmat = np.full((nf_repeats, len(y)), np.nan)        # (repeats, N) for pooled-OOF AUC
@@ -296,13 +299,15 @@ def _nf_fold(tr_rows, te_rows, dims, A, device, create, aux):
     tri, vai = train_test_split(np.arange(len(tr_rows)), test_size=A.val_frac, stratify=ytr,
                                 random_state=A.seed)
     tr2 = [tr_rows[i] for i in tri]; va = [tr_rows[i] for i in vai]
+    c = A.cfg
     model = create({"eeg_input_dim": dims["eeg"], "eyetracking_input_dim": dims["eye"],
-                    "behavioral_input_dim": dims["beh"], "d_model": 128, "n_encoder_layers": 2,
-                    "n_fusion_layers": 2, "n_heads": 8, "dropout": 0.3, "n_classes": 2,
+                    "behavioral_input_dim": dims["beh"], "d_model": c["d_model"],
+                    "n_encoder_layers": c["n_encoder_layers"], "n_fusion_layers": c["n_fusion_layers"],
+                    "n_heads": c["n_heads"], "dropout": c["dropout"], "n_classes": 2,
                     "use_auxiliary_loss": aux}).to(device)
     pos = sum(r["y"] for r in tr2); neg = len(tr2) - pos
     lossf = nn.CrossEntropyLoss(weight=torch.tensor([1.0, neg / max(pos, 1)], device=device))
-    opt = torch.optim.Adam(model.parameters(), lr=A.lr, weight_decay=1e-4)
+    opt = torch.optim.Adam(model.parameters(), lr=A.lr, weight_decay=A.wd)
 
     def ev(rows):
         model.eval()
