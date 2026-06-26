@@ -15,17 +15,30 @@ the priority and **rebuilt the entire evaluation under a strict, leakage-control
 subject-level, repeated (5×5) stratified cross-validation protocol, with every number
 produced by released, reproducible code.**
 
-**Important note on the corrected results.** Under this rigorous protocol the headline
-figures change, and we report them transparently: NeuroFormer attains **ROC-AUC
-0.722 ± 0.037** (not the previously reported 0.912), still **exceeding every baseline**
-(gated fusion 0.675, cross-modal Transformer 0.685, classical methods ≤0.59). The earlier
-number reflected a window-level leakage in the prior protocol; the corrected, leak-free
-evaluation is more conservative and fully reproducible. We have also corrected the cohort
-description (the complete-case all-three-modality sample is **N≈102, ~20% positive**, an
-*unbalanced* cohort — not 63/63), and we now report **balanced metrics (ROC-AUC, balanced
-accuracy)** with class-weighted training. We believe the corrected manuscript is
-substantially more rigorous and trustworthy, and that its findings directly resolve the
-reviewers' central concerns.
+**Important note on the corrected results (full transparency).** Under this rigorous protocol
+the headline figures change substantially, and we report them honestly. Using a **pooled
+out-of-fold AUC averaged over multiple random seeds** (the appropriate, stable estimator at
+this sample size), NeuroFormer attains **ROC-AUC ≈ [[0.62 / sweep best]]**, **not** the
+previously reported 0.912. The prior number reflected **window-level leakage** in the old
+protocol together with an **incorrectly-stated cohort** (the manuscript described a balanced
+63/63 sample; the actual complete-case all-three-modality sample is **N≈102, ~20% positive**,
+*unbalanced*). We further report two findings that the rigorous evaluation makes unavoidable
+and that we state plainly rather than obscure:
+
+1. **NeuroFormer does not outperform strong, simpler baselines** under leak-free evaluation
+   (e.g. low-rank multimodal fusion ≈ 0.71); and
+2. **A demographic age+sex predictor reaches ROC-AUC ≈ 0.72 on this cohort**, which **no model
+   reliably exceeds** — a confound-adjusted analysis shows the proposed model adds **no
+   significant signal beyond age and sex** (increment −0.7 ± 1.7 pp over 8 seeds).
+
+We also find the auxiliary reconstruction loss provides no reliable gain, and multimodal fusion
+does not improve over EEG alone. Rather than present these as a method "win," we have rebuilt the
+contribution of the paper around **rigor and reproducibility**: a leakage-controlled re-evaluation
+that (i) explains and corrects an over-optimistic prior result, (ii) establishes honest,
+confound-controlled benchmarks for EEG+eye+behaviour screening on this cohort, and (iii) issues a
+concrete methodological caution to the field. All numbers are produced by released code. *(Final
+framing — method paper vs. reproducibility/negative-results paper — is under discussion with the
+corresponding author; see cover note.)*
 
 Each comment is answered below as **(a) Concern, (b) Response, (c) Action.**
 

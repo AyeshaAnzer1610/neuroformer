@@ -5,17 +5,25 @@
 > leak-free, subject-level, repeated (5×5) stratified CV. Every figure here is
 > reproducible from committed code + data. `[[ ]]` = fill from the Table 3 / full run.
 
-## The corrected headline (honest)
-- **NeuroFormer (3-modality), leak-free, pooled out-of-fold: ROC-AUC ≈ 0.73** — *competitive
-  with the strongest fusion baseline* (Low-rank Multimodal Fusion ≈ 0.72), not a large margin.
-  We do **not** claim it is uniformly superior; we claim it is among the best under a rigorous,
-  uniformly-applied protocol.
-- **It adds genuine signal beyond demographics:** age+sex alone reach ROC-AUC 0.72, and adding
-  NeuroFormer's prediction raises this to 0.79 — a **+6.9 pp confound-adjusted increment**
-  (`confound_adjusted.csv`). This is the paper's strongest, most defensible result.
+## The corrected headline (honest — NEGATIVE / reproducibility result)
+> ⚠️ Built on the **8-seed** leak-free run (`nf_seed_stability.csv`, `confound_adjusted.csv`).
+> The single-seed 0.733 / +6.9 pp figures were **NOT robust** and have been retracted from our
+> own framing. Do not use them.
+
+- **NeuroFormer (3-modality), leak-free, pooled out-of-fold over 8 seeds: ROC-AUC = 0.617 ± 0.019**
+  (best regularized config: **[[fill from `nf_regularize.csv`]]**). The previously-shown 0.733
+  was a single lucky seed.
+- **NeuroFormer does NOT outperform simpler baselines**: Low-rank Multimodal Fusion = 0.708,
+  GMU = 0.669 — both **above** NeuroFormer's 0.617.
+- **No model reliably beats demographics.** Age+sex alone = **0.717**, *higher than every model*.
+  Confound-adjusted increment of NeuroFormer over age+sex = **−0.7 ± 1.7 pp** (`robust_positive
+  = False`) → the model adds **no significant signal beyond age and sex** on this cohort.
 - The original **0.912/85.1% was not reproducible** (window-level leakage + an incorrectly-
-  balanced 63/63 cohort in the old protocol); the corrected protocol removes both. We report
-  the rigorous numbers and explain the discrepancy openly.
+  balanced 63/63 cohort; true N≈102, ~20 % positive, unbalanced). We report the rigorous numbers
+  and explain the discrepancy openly.
+- **Therefore the honest contribution is a leakage-controlled re-evaluation / reproducibility
+  study, not a method "win."** (Final framing pending corresponding-author decision — see
+  `Supervisor-Decision-Memo.md`.)
 
 ### Metric note — why pooled out-of-fold AUC (answers R3.3/R3.4 on evaluation rigor)
 At N≈102 with ~20 % positives, each held-out fold contains only ~4 positive subjects, so a
@@ -34,23 +42,25 @@ is itself a substantive answer to the reproducibility concerns; the run is also 
 ## Corrected Table 2 — baselines (leak-free 5×5, **pooled out-of-fold** ROC-AUC) — **[[fill from job 16728021]]**
 Headline column = pooled-OOF AUC; per-fold column kept for transparency.
 
-| Model | Pooled-OOF ROC-AUC | (per-fold) |
-|---|---|---|
-| SVM-RBF (concat) | [[ ]] | |
-| LogReg (concat) | [[ ]] | |
-| MLP early-fusion | [[ ]] | |
-| Late-fusion ensemble | [[ ]] | |
-| RandomForest (concat) | [[ ]] | |
-| Tensor Fusion Network | [[ ]] | |
-| GMU (gated fusion) | [[ ~0.67 ]] | |
-| Cross-modal Transformer (MulT-style) | [[ ~0.64 ]] | |
-| Low-rank Multimodal Fusion | [[ ~0.72 ]] | |
-| **NeuroFormer (proposed)** | **[[ ~0.73 ]]** | |
+| Model | Pooled-OOF ROC-AUC |
+|---|---|
+| SVM-RBF (concat) | 0.494 |
+| RandomForest (concat) | 0.562 |
+| MLP early-fusion | 0.543 |
+| LogReg (concat) | 0.538 |
+| Late-fusion ensemble | 0.575 |
+| 1D-CNN / TCN (temporal) | ~0.61 |
+| **NeuroFormer (proposed, 8-seed)** | **0.617 ± 0.019** |
+| Tensor Fusion Network | 0.623 |
+| GMU (gated fusion) | 0.669 |
+| Low-rank Multimodal Fusion | **0.708** |
+| **age + sex (demographic confound)** | **0.717 — beats every model** |
 
-*Per-modality alone (≈chance): no single stream is informative; the value is in the cross-modal
-fusion. Paired Wilcoxon vs NeuroFormer with Holm correction → report which margins are
-significant (`perfold_table2.csv`, `analyze_results.py`). Expect NeuroFormer ≈ LMF (not
-significantly different) and both > gated/classical.*
+*Numbers from the deterministic 5×5 run + 8-seed NeuroFormer (`table2_baselines.csv`,
+`nf_seed_stability.csv`). Cross-modal Transformer is unstable (0.50–0.69 across runs; report as
+"did not converge reliably"). The key, uncomfortable observation: **the age+sex predictor (0.717)
+is the strongest model in the table** — on this cohort the recoverable signal is largely
+demographic, and no neural model reliably exceeds it.*
 
 ## Corrected Table 3 — modality ablation (NeuroFormer, leak-free, **pooled-OOF**) — **[[fill]]**
 Seven non-empty subsets × {with, without auxiliary reconstruction loss}. **Honest finding from
@@ -62,28 +72,28 @@ multimodal synergy. Fill exact pooled numbers from `results/table3_ablation.csv`
 
 ---
 
-## Corrected Abstract (draft)
-> Psychiatric disorders are widely underdiagnosed, and objective screening tools remain
-> scarce. We present NeuroFormer, a hierarchical transformer that fuses three non-invasive
-> modalities — EEG, eye-tracking, and behavioural task performance — for binary
-> diagnosed-vs-control screening on the public MIPDB cohort (N≈102 with all three modalities,
-> ~20 % positive). Under **strict subject-level, leakage-free, repeated (5×5) stratified
-> cross-validation** with a **pooled out-of-fold** ROC-AUC estimator suited to small samples,
-> NeuroFormer attains **ROC-AUC ≈ 0.73**, **competitive with the strongest fusion baseline**
-> (low-rank multimodal fusion ≈ 0.72) and ahead of gated, classical, and single-modality
-> configurations. Critically, a **confound-adjusted analysis** shows the model carries signal
-> **beyond demographics**: age and sex alone reach 0.72, and adding NeuroFormer's prediction
-> raises this to 0.79 (+6.9 pp). We report two honest negative findings: no individual modality
-> is informative in isolation (≈chance), and once EEG is present the additional modalities and
-> an auxiliary reconstruction objective provide **no reliable gain** — locating the value in a
-> compact cross-modal EEG-anchored representation rather than in multimodal synergy or auxiliary
-> losses. An external evaluation of an EEG foundation-model representation on the Healthy Brain
-> Network cohort does not transfer (≈chance), honestly bounding generalization. We present this
-> as a rigorously- and reproducibly-evaluated proof of concept requiring further validation
-> before clinical use.
+## Corrected Abstract (draft — reproducibility/negative framing)
+> Psychiatric disorders are widely underdiagnosed, and machine-learning screening from passive
+> signals is an active area — but small clinical cohorts make such results fragile and prone to
+> optimistic bias. We revisit a multimodal EEG + eye-tracking + behaviour screening model
+> (NeuroFormer) on the public MIPDB cohort (complete-case N≈102, ~20 % positive, unbalanced)
+> under a **strict subject-level, leakage-free, repeated stratified cross-validation** protocol
+> with a **pooled out-of-fold AUC averaged over multiple seeds**. Under this rigorous evaluation,
+> a previously-reported ROC-AUC of 0.91 is **not reproducible**: we trace it to window-level
+> information leakage and a mis-stated balanced cohort. Corrected, NeuroFormer reaches **ROC-AUC
+> 0.62 ± 0.02**, **below** strong but simpler baselines (low-rank multimodal fusion 0.71), and —
+> most importantly — **no model reliably exceeds a plain age+sex demographic predictor (0.72)**;
+> a confound-adjusted test shows **no significant signal beyond demographics** (−0.7 ± 1.7 pp).
+> Auxiliary reconstruction losses and multimodal fusion provide no reliable gain over EEG alone.
+> We present this as a cautionary, fully-reproducible benchmark: it quantifies how leakage and
+> cohort mis-specification inflate small-N psychiatric ML, provides honest confound-controlled
+> baselines, and offers a rigor checklist for the field. Code and per-seed results are released.
 
-*(Note: numbers and 85.1% accuracy / 0.912 AUC are removed throughout; sensitivity/
-specificity recomputed from the corrected operating point.)*
+*(All 85.1 % / 0.912 figures removed throughout; the paper's claims are reframed from method
+superiority to leakage-controlled re-evaluation. If the regularization sweep
+(`nf_regularize.csv`) lifts NeuroFormer toward ~0.70, soften "below baselines" to "on par with
+baselines but still not exceeding the 0.72 demographic predictor" — the demographics conclusion
+holds either way.)*
 
 ## Corrected cohort description (IMPORTANT — was misstated)
 - The public MIPDB `DX_Status` is **101 control / 22 (=1) / 3 (=2)** → **25 positive of 126**.
@@ -107,22 +117,27 @@ EEG + eye-tracking + behaviour under matching protocols (HBN is **EEG-only**). T
   analysis, not to NeuroFormer itself.* (`results/phase4_hbn_all.csv`.)
 - **Do NOT** write "we externally validated NeuroFormer on HBN."
 
-## Corrected contributions (honest reframe)
-1. **A compact hierarchical multimodal transformer** (≈2.9 M trainable params) for
-   transdiagnostic EEG+eye+behaviour screening that, under leak-free evaluation, is
-   **competitive with the strongest fusion baselines** (≈0.73, on par with low-rank fusion and
-   above gated/classical methods) — not a claim of large-margin superiority.
-2. **A rigorous, reproducible small-sample evaluation protocol**: subject-level repeated
-   stratified CV with a **pooled out-of-fold** AUC estimator and seeded/`cudnn`-deterministic
-   runs, applied identically to every baseline — directly addressing the prior version's
-   leakage and reproducibility problems.
-3. **A confound-controlled result**: the model adds **+6.9 pp beyond age+sex** demographics —
-   evidence the signal is not a confound artifact (the single strongest claim).
-4. **Two honest negative findings** that sharpen understanding: (i) no single modality is
-   informative alone and multimodal ≈ EEG-alone; (ii) the auxiliary reconstruction loss does
-   not help — both reported as negative results rather than overclaimed.
-5. **Honest external-validation boundary** (EEG-FM representation ≈ chance on HBN) and
-   interpretability analysis.
+## Corrected contributions (honest — reproducibility study)
+1. **A leakage-controlled re-evaluation that overturns an over-optimistic prior result.** We
+   identify window-level leakage + a mis-stated balanced cohort behind a reported 0.91 AUC, and
+   show that under strict subject-level, multi-seed, pooled-OOF evaluation the true performance
+   is far lower (NeuroFormer 0.62 ± 0.02).
+2. **A rigorous, reproducible small-sample protocol** — subject-level repeated stratified CV +
+   pooled out-of-fold AUC + multi-seed mean±std, applied identically to every model — that we
+   recommend as a template for small-N psychiatric ML.
+3. **The decisive confound finding**: on MIPDB a plain **age+sex predictor (0.72) outperforms
+   every model**, and the proposed model adds **no significant signal beyond demographics**
+   (−0.7 ± 1.7 pp over 8 seeds). This reframes "screening signal" as largely demographic on this
+   cohort — an important, honest caution.
+4. **Negative findings on architecture choices**: auxiliary reconstruction loss gives no gain;
+   multimodal fusion does not beat EEG alone — reported plainly, not buried.
+5. **Honest generalization boundary** (EEG-FM representation ≈ chance on HBN, N≈1,980) and
+   interpretability caveats.
+
+> If the corresponding author prefers to keep a *method* paper, the only honest version is
+> "a compact multimodal transformer that performs **on par with** simple fusion baselines under
+> rigorous evaluation," with contributions 2–5 as the substance — but it still cannot claim to
+> beat baselines or demographics. Recommend the reproducibility framing above.
 
 ## Key edits throughout (checklist)
 - [ ] Replace **all** 85.1% / 0.912 with the corrected numbers (abstract, intro, Table 2,
