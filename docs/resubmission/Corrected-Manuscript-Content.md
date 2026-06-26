@@ -54,6 +54,28 @@ ablation shows** — if `+aux` ≈ `−aux`, the "+4.8 pp" claim is dropped, not
 *(Note: numbers and 85.1% accuracy / 0.912 AUC are removed throughout; sensitivity/
 specificity recomputed from the corrected operating point.)*
 
+## Corrected cohort description (IMPORTANT — was misstated)
+- The public MIPDB `DX_Status` is **101 control / 22 (=1) / 3 (=2)** → **25 positive of 126**.
+- The all-three-modality complete-case used here is **N = 102: 21 positive, 81 control**.
+- **The cohort is UNBALANCED (~20% positive)** — *not* the "63 diagnosed / 63 matched controls,
+  50:50" stated in the manuscript. Correct this everywhere it appears (§III.A.1, abstract).
+- Because of the imbalance, report **class-weighted training + balanced metrics (ROC-AUC,
+  balanced accuracy)**, not raw accuracy (raw "85.1%" was tied to the incorrect balanced
+  cohort). The corrected pipeline already uses class-weighted loss + ROC-AUC.
+
+## External validation (HBN) — honest handling (recommended)
+The **full 3-modality NeuroFormer cannot be externally validated**: no public cohort has
+EEG + eye-tracking + behaviour under matching protocols (HBN is **EEG-only**). Therefore:
+- **Keep external validation as a limitation** (as the original draft honestly did): *"No
+  external validation of the full multimodal model was possible, as no public dataset
+  provides all three modalities under consistent acquisition."*
+- **Add one Discussion sentence** noting that even a strong EEG representation (a pretrained
+  EEG foundation model) **fails to transfer to the large Healthy Brain Network cohort**
+  (general-psychopathology ROC-AUC ≈ 0.50, N≈1,980) — reinforcing the caution about
+  out-of-distribution generalization. *Attribute this clearly to an EEG-only foundation-model
+  analysis, not to NeuroFormer itself.* (`results/phase4_hbn_all.csv`.)
+- **Do NOT** write "we externally validated NeuroFormer on HBN."
+
 ## Corrected contributions
 1. **Hierarchical multimodal transformer fusion** of EEG + eye-tracking + behaviour, which
    under leak-free evaluation **outperforms classical, gated, and single-stage fusion
