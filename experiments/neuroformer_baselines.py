@@ -304,7 +304,9 @@ def _nf_fold(tr_rows, te_rows, dims, A, device, create, aux):
             l = lossf(loss, b["y"].to(device))
             if isinstance(o, dict) and "recon_loss" in o:
                 l = l + o["recon_loss"]
-            l.backward(); opt.step()
+            l.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)   # match robustness_3mod (stabilizes NF)
+            opt.step()
         v, _ = ev(va); v = 0.0 if np.isnan(v) else v
         if v > best + 1e-4:
             best, bad = v, 0
