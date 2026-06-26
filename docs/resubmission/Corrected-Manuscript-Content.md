@@ -65,13 +65,33 @@ Headline column = pooled-OOF AUC; per-fold column kept for transparency.
 is the strongest model in the table** — on this cohort the recoverable signal is largely
 demographic, and no neural model reliably exceeds it.*
 
-## Corrected Table 3 — modality ablation (NeuroFormer, leak-free, **pooled-OOF**) — **[[fill]]**
-Seven non-empty subsets × {with, without auxiliary reconstruction loss}. **Honest finding from
-the completed runs: the auxiliary reconstruction loss does NOT help** — every `Δaux` is negative
-or null and none is significant (all p ≫ 0.05). **Drop the "+4.8 pp aux" claim entirely** and
-report the ablation as a negative result. Likewise **EEG-alone ≈ full multimodal** (the extra
-modalities add little once EEG is present) — state this honestly rather than overclaiming
-multimodal synergy. Fill exact pooled numbers from `results/table3_ablation.csv`.
+## Corrected Table 3 — modality ablation (NeuroFormer, leak-free, **pooled-OOF**)
+Seven non-empty modality subsets × {without, with auxiliary reconstruction loss}, leak-free 5×5 CV,
+pooled out-of-fold ROC-AUC (±95% CI). `Δaux` = AUC(+aux) − AUC(−aux); p = paired Wilcoxon over folds.
+
+| Modality subset | AUC (−aux) | AUC (+aux) | Δaux (pp) | p |
+|---|---|---|---|---|
+| EEG             | 0.649 ± 0.042 | 0.641 ± 0.026 | −0.8 | 0.563 |
+| Eye             | 0.530 ± 0.025 | 0.521 ± 0.017 | −0.9 | 0.977 |
+| Beh             | 0.508 ± 0.007 | 0.504 ± 0.023 | −0.4 | 0.830 |
+| EEG + Eye       | 0.674 ± 0.041 | 0.645 ± 0.039 | −2.9 | 0.968 |
+| EEG + Beh       | 0.673 ± 0.044 | 0.670 ± 0.055 | −0.3 | 0.444 |
+| Eye + Beh       | 0.540 ± 0.013 | 0.520 ± 0.024 | −2.0 | 0.183 |
+| **EEG + Eye + Beh (full)** | **0.662 ± 0.050** | 0.627 ± 0.049 | −3.5 | 0.346 |
+
+*Numbers from `results/table3_ablation.csv` (per-fold in `perfold_table3.csv`), single production seed,
+same leak-free 5×5 protocol as Table 2.*
+
+**Two honest negative findings, both confirmed by the data:**
+1. **The auxiliary reconstruction loss does NOT help.** Every `Δaux` is negative (−0.3 to −3.5 pp) and
+   **none is statistically significant** (all p ≥ 0.18). **Drop the "+4.8 pp aux" claim entirely** and
+   report the ablation as a negative result.
+2. **EEG-alone ≈ full multimodal.** EEG alone reaches 0.649 vs. the full three-modality model 0.662
+   (+1.3 pp); the best subset is EEG+Eye / EEG+Beh (~0.67), and adding the third modality does *not*
+   improve over the best pair. Eye-alone (0.530) and behaviour-alone (0.508) are at chance, so **no
+   single non-EEG modality is informative** and there is **no reliable multimodal synergy** — state this
+   plainly rather than overclaiming fusion gains. (Every subset stays in 0.50–0.67, below the age+sex
+   demographic baseline of 0.72.)
 
 ---
 
@@ -149,7 +169,7 @@ EEG + eye-tracking + behaviour under matching protocols (HBN is **EEG-only**). T
       `DX_Status` is **~20% positive, not 63/63** (correct the cohort description honestly).
 - [ ] Reframe the eye-dominant claim — leak-free, **no single modality is informative alone**;
       the gain is the fusion.
-- [ ] Aux-loss claim: gate on Table 3.
+- [x] Aux-loss claim: **resolved** — Table 3 shows aux loss does NOT help (all Δaux<0, n.s.); claim dropped.
 - [ ] Add a short "Reproducibility & corrected evaluation" paragraph explaining the
       leakage-controlled protocol (this is what makes it defensible and answers R3.3/R3.4).
 - [ ] Soften every clinical/deployment claim to proof-of-concept (R3.2).
