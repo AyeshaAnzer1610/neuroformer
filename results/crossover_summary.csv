@@ -1,0 +1,8 @@
+backbone,cohort,N,frozen,full,lora,crossover(full>=frozen?)
+labram,hbn,150,0.495,0.426,  -  ,frozen>FT
+labram,hbn,300,0.543,0.521,  -  ,frozen>FT
+labram,hbn,500,0.571,0.524,  -  ,frozen>FT
+labram,hbn,1000,0.539,0.553,  -  ,FT>=frozen
+labram,mipdb,40,0.810,0.688,  -  ,frozen>FT
+labram,mipdb,80,  -  ,0.776,  -  ,
+labram,mipdb,118,  -  ,0.660,  -  ,
