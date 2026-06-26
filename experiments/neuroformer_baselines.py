@@ -246,15 +246,17 @@ def neuroformer_cv(subs, lab, eeg, eye, beh, mods, folds, nf_repeats, seed, devi
         max_len = 64; batch = 16; lr = 1e-4; max_epochs = 200; patience = 20; val_frac = 0.2
     A.seed = seed
     cv = RepeatedStratifiedKFold(n_splits=folds, n_repeats=nf_repeats, random_state=seed)
-    fold, gaps = [], []
+    fold, gaps, oof = [], [], {}
     for tr, te in cv.split(np.zeros(len(y)), y):
         torch.manual_seed(seed)
-        te_auc, tr_auc = _nf_fold([rows[i] for i in tr], [rows[i] for i in te], dims, A, device,
-                                  create_neuroformer, aux)
+        te_auc, tr_auc, preds = _nf_fold([rows[i] for i in tr], [rows[i] for i in te], dims, A,
+                                         device, create_neuroformer, aux)
         fold.append(te_auc)
         if not (np.isnan(te_auc) or np.isnan(tr_auc)):
             gaps.append((tr_auc - te_auc) * 100)          # train-test gap in pp (E7)
-    return np.array(fold), (float(np.mean(gaps)) if gaps else float("nan"))
+        for sid, prob in preds:
+            oof.setdefault(sid, []).append(prob)          # OOF probs across repeats
+    return np.array(fold), (float(np.mean(gaps)) if gaps else float("nan")), oof
 
 
 def _nf_fold(tr_rows, te_rows, dims, A, device, create, aux):
@@ -280,7 +282,7 @@ def _nf_fold(tr_rows, te_rows, dims, A, device, create, aux):
             lo = o["logits"] if isinstance(o, dict) else o
             p = torch.softmax(lo, -1)[:, 1].cpu().numpy()
         yy = np.array([r["y"] for r in rows])
-        return roc_auc_score(yy, p) if len(np.unique(yy)) > 1 else np.nan
+        return (roc_auc_score(yy, p) if len(np.unique(yy)) > 1 else np.nan), p
 
     best, bad, best_state = -1.0, 0, None
     for _ in range(A.max_epochs):
@@ -295,7 +297,7 @@ def _nf_fold(tr_rows, te_rows, dims, A, device, create, aux):
             if isinstance(o, dict) and "recon_loss" in o:
                 l = l + o["recon_loss"]
             l.backward(); opt.step()
-        v = ev(va); v = 0.0 if np.isnan(v) else v
+        v, _ = ev(va); v = 0.0 if np.isnan(v) else v
         if v > best + 1e-4:
             best, bad = v, 0
             best_state = {k: x.detach().clone() for k, x in model.state_dict().items()}
@@ -305,7 +307,10 @@ def _nf_fold(tr_rows, te_rows, dims, A, device, create, aux):
                 break
     if best_state:
         model.load_state_dict(best_state)
-    return ev(te_rows), ev(tr2)        # (test, train) AUC -> train-test gap (E7)
+    te_auc, te_p = ev(te_rows)
+    tr_auc, _ = ev(tr2)
+    preds = list(zip([r["sid"] for r in te_rows], [float(x) for x in te_p]))   # OOF for confound test
+    return te_auc, tr_auc, preds
 
 
 def main():
@@ -363,7 +368,7 @@ def main():
     add("Tensor Fusion Network", cv_torch_vec(lambda: TensorFusion(dims3), Xd, y, args.folds, args.repeats, args.seed, device, dict_in=True))
     add("Low-rank Multimodal Fusion", cv_torch_vec(lambda: LowRankFusion(dims3), Xd, y, args.folds, args.repeats, args.seed, device, dict_in=True))
     if not args.skip_nf:
-        nf_arr, nf_gap = neuroformer_cv(subs, lab, eeg, eye, beh, {"eeg", "eye", "beh"}, args.folds, args.nf_repeats, args.seed, device, aux=False)
+        nf_arr, nf_gap, nf_oof = neuroformer_cv(subs, lab, eeg, eye, beh, {"eeg", "eye", "beh"}, args.folds, args.nf_repeats, args.seed, device, aux=False)
         add("NeuroFormer (3-modality)", nf_arr)
         print(f"  [E7] NeuroFormer train-test gap = {nf_gap:.1f} pp (mean across folds)", flush=True)
     pd.DataFrame(t2).to_csv(args.out_t2, index=False)
@@ -381,6 +386,25 @@ def main():
           f"({'near chance -> confounds do NOT drive the label' if mc < 0.6 else 'WARN: confound signal'})", flush=True)
     pd.DataFrame([{"predictor": "age+sex", "auc": mc, "ci95": cc}]).to_csv(outdir / "confound_check.csv", index=False)
 
+    # confound-ADJUSTED (decisive for R3.1/R3.7): does NeuroFormer add signal BEYOND age+sex?
+    if not args.skip_nf:
+        from scipy.stats import pearsonr
+        nfp = np.array([float(np.mean(nf_oof[s])) for s in subs])     # mean OOF prob per subject
+        nf_auc = roc_auc_score(y, nfp)
+        r_age = pearsonr(nfp, Xconf[:, 0])[0]; r_sex = pearsonr(nfp, Xconf[:, 1])[0]
+        def _as(X):
+            arr = cv_sklearn(lambda: make_pipeline(StandardScaler(), LogisticRegression(max_iter=2000)),
+                             X, y, args.folds, args.repeats, args.seed)
+            return float(np.nanmean(np.nanmean(arr.reshape(-1, F), axis=1)))
+        m_as = _as(Xconf); m_asn = _as(np.hstack([Xconf, nfp[:, None]]))
+        print(f"  NeuroFormer OOF AUC = {nf_auc:.3f} | corr(NF,age)={r_age:+.2f} corr(NF,sex)={r_sex:+.2f}", flush=True)
+        print(f"  age+sex = {m_as:.3f}  ->  age+sex+NeuroFormer = {m_asn:.3f}  "
+              f"(incremental dAUC = {100*(m_asn-m_as):+.1f}pp)", flush=True)
+        print(f"  >>> {'NeuroFormer ADDS signal beyond demographics' if (m_asn-m_as) > 0.02 else 'WARNING: NeuroFormer does NOT clearly exceed the demographic baseline'}", flush=True)
+        pd.DataFrame([{"nf_oof_auc": nf_auc, "corr_age": r_age, "corr_sex": r_sex,
+                       "age_sex_auc": m_as, "age_sex_nf_auc": m_asn,
+                       "incremental_pp": 100*(m_asn-m_as)}]).to_csv(outdir / "confound_adjusted.csv", index=False)
+
     # ---------------- Table 3: modality ablation + Δaux + paired p-value (E3) ----------------
     if not args.skip_nf:
         print("\n=== TABLE 3: modality ablation (NeuroFormer, leak-free, +/- aux) ===", flush=True)
@@ -390,7 +414,7 @@ def main():
         raw, pf3 = {}, []
         for aux in (False, True):
             for name, mods in subsets:
-                arr, _ = neuroformer_cv(subs, lab, eeg, eye, beh, mods, args.folds, args.nf_repeats, args.seed, device, aux=aux)
+                arr, _, _ = neuroformer_cv(subs, lab, eeg, eye, beh, mods, args.folds, args.nf_repeats, args.seed, device, aux=aux)
                 raw[(name, aux)] = arr
                 for i, v in enumerate(np.asarray(arr, float)):
                     pf3.append({"config": name, "aux": int(aux), "fold": i + 1, "auc": v})
