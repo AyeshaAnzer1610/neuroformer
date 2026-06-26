@@ -35,10 +35,12 @@ reproducibility study**, not a "NeuroFormer is SOTA" paper. I need your decision
 a mis-stated cohort (manuscript said balanced 63/63; the real complete-case sample is N≈102,
 ~20 % positive, **unbalanced**).
 
-> One experiment still running: a **regularization sweep** (`nf_regularize.csv`) to check whether
-> 0.62 is partly an overfitting artifact. Best case it lifts NeuroFormer to ~0.70 — **on par with
-> baselines but still not above the 0.72 demographic predictor.** It cannot change the core
-> conclusion.
+> **Regularization sweep — done (`nf_regularize.csv`).** We tested whether 0.62 was an
+> overfitting/capacity artifact via a pre-declared 5-config sweep. It is **not**: the best config
+> is the full-capacity baseline (0.656 ± 0.032), and reducing capacity or adding regularization
+> only makes it *worse* (down to 0.52). NeuroFormer's honest ceiling on this cohort is **≈0.62–0.66
+> — below both the LMF baseline (0.71) and the age+sex predictor (0.72).** We tried to rescue the
+> result and could not; the negative finding is complete.
 
 ## The decision (yours)
 1. **Reframe as a reproducibility / negative-results paper** *(my recommendation).* Contribution =

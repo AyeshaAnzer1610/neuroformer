@@ -11,8 +11,11 @@
 > own framing. Do not use them.
 
 - **NeuroFormer (3-modality), leak-free, pooled out-of-fold over 8 seeds: ROC-AUC = 0.617 ± 0.019**
-  (best regularized config: **[[fill from `nf_regularize.csv`]]**). The previously-shown 0.733
-  was a single lucky seed.
+  (the previously-shown 0.733 was a single lucky seed). A **pre-declared 5-config regularization
+  sweep** (`nf_regularize.csv`) confirms this is **not an under-regularization artifact**: the
+  best config is the full-capacity baseline (0.656 ± 0.032 over 4 seeds), and *reducing capacity
+  or adding regularization only makes it worse* (down to 0.52). NeuroFormer's honest ceiling on
+  this cohort is ≈0.62–0.66.
 - **NeuroFormer does NOT outperform simpler baselines**: Low-rank Multimodal Fusion = 0.708,
   GMU = 0.669 — both **above** NeuroFormer's 0.617.
 - **No model reliably beats demographics.** Age+sex alone = **0.717**, *higher than every model*.
@@ -89,11 +92,10 @@ multimodal synergy. Fill exact pooled numbers from `results/table3_ablation.csv`
 > cohort mis-specification inflate small-N psychiatric ML, provides honest confound-controlled
 > baselines, and offers a rigor checklist for the field. Code and per-seed results are released.
 
-*(All 85.1 % / 0.912 figures removed throughout; the paper's claims are reframed from method
-superiority to leakage-controlled re-evaluation. If the regularization sweep
-(`nf_regularize.csv`) lifts NeuroFormer toward ~0.70, soften "below baselines" to "on par with
-baselines but still not exceeding the 0.72 demographic predictor" — the demographics conclusion
-holds either way.)*
+*(All 85.1 % / 0.912 figures removed throughout; claims reframed from method superiority to
+leakage-controlled re-evaluation. The regularization sweep is in: NeuroFormer's ceiling is
+≈0.62–0.66, **below** baselines and demographics — "below baselines" wording stands, no softening
+needed.)*
 
 ## Corrected cohort description (IMPORTANT — was misstated)
 - The public MIPDB `DX_Status` is **101 control / 22 (=1) / 3 (=2)** → **25 positive of 126**.
