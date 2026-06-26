@@ -7,319 +7,222 @@ Screening from EEG, Eye-Tracking, and Behavioural Signals
 
 ---
 
-We thank the Associate Editor and all four reviewers for their careful, constructive, and
-encouraging assessments — all four affirmed that the work contributes to the body of
-knowledge and is technically sound. The reviews converged on two themes: (i) **rigor and
-generalization** (external/out-of-distribution validation, fold-sensitivity at small N,
-overparameterization, fairer and stronger baselines), and (ii) **theoretical grounding**
-(neurocognitive basis of the modality contributions, fusion theory, and a justification of
-the interpretability design). This revision addresses every point.
+We thank the Associate Editor and all four reviewers for their careful and constructive
+assessments — all four affirmed that the work contributes to the body of knowledge and is
+technically sound. In preparing this revision we took the reviewers' rigor concerns
+(R3.3 fold sensitivity, R3.4 overparameterization, R3.5 generalization, R2.2 baselines) as
+the priority and **rebuilt the entire evaluation under a strict, leakage-controlled,
+subject-level, repeated (5×5) stratified cross-validation protocol, with every number
+produced by released, reproducible code.**
 
-The original study and its primary results are **retained** and **reinforced**:
-NeuroFormer attains accuracy 85.1% ± 1.9% / ROC-AUC 0.912 ± 0.015 under stratified
-subject-level cross-validation, with eye-tracking and behavioural streams carrying the
-dominant signal. To answer the reviewers, we add: (1) a **leakage-audited, repeated and
-nested cross-validation robustness analysis**; (2) a **real external validation** on an
-independent cohort; (3) a **compact-model variant** addressing overparameterization;
-(4) **stronger, protocol-unified SOTA baselines** with significance testing;
-(5) **neurocognitive and representation-learning theory** sections; and
-(6) an **evaluated interpretability** analysis with expert validation. We also identify
-**self-supervised / foundation-model EEG representations** as a concrete future direction
-for strengthening the EEG pathway (Section V).
+**Important note on the corrected results.** Under this rigorous protocol the headline
+figures change, and we report them transparently: NeuroFormer attains **ROC-AUC
+0.722 ± 0.037** (not the previously reported 0.912), still **exceeding every baseline**
+(gated fusion 0.675, cross-modal Transformer 0.685, classical methods ≤0.59). The earlier
+number reflected a window-level leakage in the prior protocol; the corrected, leak-free
+evaluation is more conservative and fully reproducible. We have also corrected the cohort
+description (the complete-case all-three-modality sample is **N≈102, ~20% positive**, an
+*unbalanced* cohort — not 63/63), and we now report **balanced metrics (ROC-AUC, balanced
+accuracy)** with class-weighted training. We believe the corrected manuscript is
+substantially more rigorous and trustworthy, and that its findings directly resolve the
+reviewers' central concerns.
 
-Below, each comment is reproduced and answered as **(a) Reviewer's concern,
-(b) Response, (c) Action taken.** All references point to the revised manuscript; items in
-`[[...]]` are values to be finalized from the in-progress runs before resubmission.
+Each comment is answered below as **(a) Concern, (b) Response, (c) Action.**
 
 ---
 
 ## Reviewer 1
 
-### R1.1 — "Provide theoretical justification for the integration of explainability modules."
+**R1.1 — Theoretical justification for the explainability modules.**
+- (a) Interpretability was introduced without grounding.
+- (b) Agreed.
+- (c) New Methods subsection grounding per-modality `[CLS]` attention attribution in the
+  attention-as-explanation literature; we state explicitly that attention is **correlational,
+  not causal** (Rudin 2019; Jain & Wallace 2019) and is reported as a participant-level
+  summary appropriate to an asynchronous cross-paradigm model.
 
-- **(a) Concern:** The interpretability modules were introduced without theoretical
-  grounding.
-- **(b) Response:** We agree. The original draft presented per-modality attention scores as
-  an interpretability feature without situating them in the attention-attribution
-  literature or stating their limits.
-- **(c) Action:** We added a Methods subsection (§III-C, "Interpretability: scope and
-  justification"). It grounds the design in the attention-as-explanation literature, states
-  explicitly that attention is **correlational, not causal** (Rudin 2019, ref [26]; Jain &
-  Wallace 2019), and justifies aggregated `[CLS]`→modality attribution as a *faithful
-  participant-level summary* appropriate to an asynchronous cross-paradigm model that has
-  no shared time origin to support a temporally-resolved claim. We confine its
-  interpretation to qualitative clinician inspection, not mechanistic evidence.
+**R1.2 — Human-centered evaluation of interpretability (user/expert study).**
+- (a) Interpretability is asserted but not evaluated with humans.
+- (b) Agreed.
+- (c) We add a focused expert-validation study: per-modality importance outputs for **[[m]]**
+  held-out cases rated by **[[k]]** clinicians (Likert usefulness + inter-rater agreement),
+  §IV-G. *[Author decision: confirm k/m, or use a structured face-validity review if a full
+  study is infeasible in the window.]*
 
-### R1.2 — "Include human-centered evaluation of interpretability (e.g., user studies or expert validation)."
-
-- **(a) Concern:** Interpretability is asserted but not evaluated with humans.
-- **(b) Response:** Agreed and valuable. We added a focused expert-validation study.
-- **(c) Action:** We presented per-modality importance outputs for **[[m]]** held-out cases
-  to **[[k]]** clinicians/psychologists and collected usefulness and agreement ratings
-  (Likert + inter-rater agreement), reported in a new Results subsection (§IV-G). [*Author
-  decision: confirm k and m; if a full user study is infeasible in the resubmission window,
-  substitute a structured expert face-validity review and describe it as such.*]
-
-### R1.3 — "Expand experiments to include out-of-distribution and real-world datasets."
-
-- **(a) Concern:** No external / OOD validation; generalization unproven.
-- **(b) Response:** We agree this is the most important addition, and we now provide a real
-  external validation rather than deferring it to future work.
-- **(c) Action:** We evaluated the trained NeuroFormer on an **independent external cohort**
-  (**[[dataset]]**, N = **[[N]]**, acquired under a different protocol/site) without
-  retraining, reporting accuracy/ROC-AUC and per-modality behaviour under the same metrics
-  (§IV-E, new Table). Because the dominant predictive signal in MIPDB is the oculomotor
-  (eye-tracking) stream, the external evaluation centres on replicating that pathway on an
-  independent psychiatric eye-tracking cohort, with the multimodal model applied where
-  modality coverage allows. We report the external result transparently and discuss the
-  within-cohort ↔ external gap and its drivers (population, acquisition, label
-  construction). [*Status: external-validation run to be completed on the cluster; result
-  values to be filled. If transfer is partial, we frame the section as a quantification of
-  the generalization gap, consistent with the proof-of-concept positioning.*]
+**R1.3 — Out-of-distribution / real-world datasets.**
+- (a) No external validation.
+- (b) We address this candidly. The **full three-modality model cannot be externally
+  validated**, because no public cohort provides EEG + eye-tracking + behaviour under
+  matching protocols (this is the dataset constraint we noted originally).
+- (c) We (i) keep this as an explicit limitation, and (ii) add an external **EEG-only**
+  transfer analysis on the large **Healthy Brain Network** cohort (N≈1,980), where even a
+  strong pretrained EEG representation does **not** transfer (general-psychopathology ROC-AUC
+  ≈ 0.50) — reported honestly as a bound on out-of-distribution generalization and attributed
+  to the EEG analysis, not to NeuroFormer. (§V Limitations + Discussion.)
 
 ---
 
 ## Reviewer 2
 
-### R2.1 / R2.4 — "Lacks systematic neurocognitive theory; explain (neurophysiologically) why eye-movement signals dominate and EEG contribution is limited."
+**R2.1 / R2.4 — Neurocognitive theory; why modalities contribute as they do.**
+- (a) The mechanism by which each modality carries psychiatric signal is unexplained.
+- (b) Agreed — and under the corrected leak-free analysis the picture is clearer and more
+  honest than the original eye-dominant claim: **no single modality is informative in
+  isolation** (EEG, eye, behaviour each ≈ chance, ROC-AUC 0.53–0.55 alone); the
+  transdiagnostic signal emerges only from **cross-modal fusion** (0.722).
+- (c) New "Neurocognitive basis" subsection: oculomotor, cortical-oscillatory, and
+  behavioural measures each index attentional/inhibitory and arousal systems disrupted
+  transdiagnostically, but are individually weak in this small mixed cohort; the hierarchical
+  cross-modal model integrates their complementary, individually-subthreshold information. We
+  no longer claim eye-tracking "dominates."
 
-- **(a) Concern:** The mechanism by which each modality represents psychiatric signal is
-  not explained; the eye-dominant / EEG-limited result is unmotivated theoretically.
-- **(b) Response:** Agreed; we now ground the modality hierarchy in neurophysiology and
-  signal-representation arguments.
-- **(c) Action:** We added a "Neurocognitive basis" subsection (§II-D/§III) explaining
-  **why oculomotor signals carry strong transdiagnostic information**: fixation stability,
-  saccadic dynamics, and pupillary responses index attentional, inhibitory, and
-  arousal/effort systems that are disrupted across ADHD, anxiety, mood disorders, and ASD —
-  a convergence documented in the oculomotor-psychiatry literature (Benson et al. 2012,
-  ref [52]; Armstrong & Olatunji 2012, ref [53]). We then explain **why the EEG
-  contribution is limited *in this configuration***: the deliberately sparse,
-  comfort-prioritized five-electrode montage and participant-level aggregation
-  under-sample the spatial-spectral structure that EEG can otherwise provide, and mixed-age
-  inter-individual variability further attenuates the signal (refs [54], [55]). We frame
-  this as a property of the *representation/montage*, not of EEG per se, motivating the
-  future direction in R3.8.
+**R2.2 — Stronger/SOTA baselines, unified protocol, significance.**
+- (a) Only a few simple baselines; inconsistent conditions.
+- (b) Agreed.
+- (c) Corrected **Table 2** now compares, under one identical leak-free protocol and inputs:
+  classical (LogReg, SVM-RBF, RandomForest), MLP early-fusion, late-fusion ensemble, **Gated
+  Multimodal Unit**, and a **single-stage cross-modal Transformer** — against NeuroFormer,
+  with **paired significance tests (Wilcoxon) and Holm correction**. NeuroFormer (0.722) is
+  the top model. [[Add 1–2 further recent multimodal/temporal-fusion baselines if desired.]]
 
-### R2.2 — "Only a few simple models; lacking strong SOTA baselines (multimodal transformers, temporal-fusion, self-supervised). Unify inputs/training; add 3–5 SOTA; report significance."
+**R2.3 — Suggested references (indoor object detection; gesture recognition).**
+- (a) Two specific papers recommended for the Introduction.
+- (b) We reviewed both; they concern indoor object detection and 3D gesture recognition for
+  rehabilitation — outside the scope of multimodal psychiatric screening. Per the Editor's
+  guidance (authors need not cite recommended references that are not genuinely relevant), we
+  respectfully do not add them.
+- (c) No citation added; we strengthened the genuinely-relevant attention/fusion related work.
 
-- **(a) Concern:** Baselines are insufficiently strong and inconsistently configured.
-- **(b) Response:** Agreed.
-- **(c) Action:** Under identical subject-level splits, features, and training protocol, we
-  added recent stronger baselines beyond the existing nine: a **single-stage multimodal
-  Transformer** (no-hierarchy control, also answering R2.5), a **temporal-fusion network**,
-  and a **self-supervised / masked-pretraining** representation. All comparisons use paired
-  two-tailed tests with Bonferroni/Holm correction (revised Table 2). We report the exact
-  margin and significance of NeuroFormer's improvement over each. [*Status: baseline table
-  being finalized on the cluster; `[[ ]]` rows to be filled before resubmission.*]
-
-### R2.3 — "Add the suggested references on indoor object detection and non-contact gesture recognition for home rehabilitation."
-
-- **(a) Concern:** Two specific papers were recommended for the Introduction.
-- **(b) Response:** We reviewed both. They concern indoor object detection and 3D gesture
-  recognition for rehabilitation — outside the scope of multimodal psychiatric screening.
-  Per the Editor's letter ("you should only add those that are relevant... Authors are not
-  obligated to cite articles that are recommended by the reviewers"), we respectfully do not
-  add them, as they would not genuinely strengthen the article.
-- **(c) Action:** No citation added; we instead expanded the genuinely-relevant related-work
-  coverage of attention/fusion and self-supervised methods (§II).
-
-### R2.5 — "Advantages of hierarchical vs single-stage fusion not justified from representation-learning theory (information fidelity, noise filtering, temporal dependency)."
-
-- **(a) Concern:** The hierarchical design is asserted, not justified against single-stage
-  fusion.
-- **(b) Response:** Agreed.
-- **(c) Action:** We added a paragraph (§III-C) grounding hierarchical fusion in
-  representation-learning theory: modality-specific encoding preserves within-modality
-  structure before mixing (**information fidelity**) and reduces premature cross-modal noise
-  coupling across heterogeneous modalities (**noise filtering**), while staged attention
-  better isolates within- vs across-modality temporal dependencies. The empirical control is
-  the single-stage Vanilla Transformer, which NeuroFormer exceeds by 6.7 pp (Table 4),
-  consistent with the theory.
+**R2.5 — Hierarchical vs single-stage fusion: representation-learning theory.**
+- (a) The hierarchical design is asserted, not theoretically justified.
+- (b) Agreed.
+- (c) New paragraph (§III-C): modality-specific encoding preserves within-modality structure
+  before mixing (information fidelity) and reduces premature cross-modal noise coupling (noise
+  filtering). The **single-stage cross-modal Transformer (0.685) is the empirical control**,
+  which NeuroFormer's hierarchical design exceeds — consistent with the theory.
 
 ---
 
-## Reviewer 3 *(most substantive — addressed in depth)*
+## Reviewer 3
 
-### R3.1 — "Binary diagnosed-vs-control may be too broad; may detect cohort differences rather than psychiatric signatures."
+**R3.1 — Binary diagnosed-vs-control too broad.**
+- (a) Pooling disorders may capture cohort differences, not psychiatric signatures.
+- (b) Valid. We retain the transdiagnostic (RDoC-consistent) framing but soften claims and
+  add confound controls. We note honestly that a **per-disorder breakdown is impossible** with
+  the public MIPDB release (only a binary `DX_Status`; no DSM categories) — we do not
+  fabricate subgroup results.
+- (c) Soften "signature" language; add age/sex/site confound analysis (§IV-F); state the
+  per-disorder limitation explicitly.
 
-- **(a) Concern:** Pooling ADHD/ASD/anxiety/depression may hide disorder-specific patterns
-  and capture general cohort differences.
-- **(b) Response:** A valid point. We retain the binary transdiagnostic screening framing (a
-  legitimate triage goal, consistent with the RDoC motivation, ref [27]) but soften claims
-  and add a confound control. We note honestly that a **per-disorder breakdown is not
-  possible** with the public MIPDB release, which provides only a binary `DX_Status` and no
-  specific DSM category labels; we do not fabricate subgroup results.
-- **(c) Action:** We (i) soften "psychiatric signature" language to transdiagnostic
-  screening, (ii) add a confound analysis testing whether predictions track age/sex/site
-  rather than diagnosis (§IV-F), and (iii) state the per-disorder limitation explicitly.
+**R3.2 — Clinical-screening claim overstated.**
+- (a) Research cohort ≠ primary care.
+- (b) Agreed.
+- (c) Soften throughout to "proof-of-concept screening support under controlled conditions";
+  hypothetical framing for deployment/PPV; the population-shift limitation made prominent and
+  reinforced by the HBN ≈ chance external evidence.
 
-### R3.2 — "Clinical-screening claim overstated (small controlled research dataset, not primary care)."
+**R3.3 — N=126, ~25 test/fold; fold sensitivity.**
+- (a) Highly sensitive to fold composition.
+- (b) Agreed — and central to the revision.
+- (c) The entire evaluation is now **repeated (5×5) subject-level stratified CV with bootstrap
+  CIs** (corrected headline 0.722 ± 0.037), reporting the distribution across repeats rather
+  than a single 5-fold pass. We also corrected the cohort (N≈102, 21 positive).
 
-- **(a) Concern:** Real screening populations differ in severity, comorbidity, medication,
-  demographics.
-- **(b) Response:** Agreed.
-- **(c) Action:** We softened all screening language to "proof-of-concept screening support
-  under controlled conditions," moved the PPV/deployment discussion into clearly
-  hypothetical framing, and made the population-shift limitation prominent — now reinforced
-  by the external-validation result (R1.3).
+**R3.4 — 18.9M parameters overparameterized.**
+- (a) Far too large for ~91 training subjects.
+- (b) Agreed — and we acted on it directly.
+- (c) The corrected model is a **compact configuration** (d_model 128, 2 encoder + 2 fusion
+  layers; ~2–4M parameters, not 18.9M), chosen to match the cohort size. This both reduces
+  overparameterization and is what is now reported in all tables. Model size is justified
+  empirically (larger depth did not help at this N).
 
-### R3.3 — "N=126, ~25 test/fold; highly sensitive to fold composition and outliers."
+**R3.5 — Auxiliary reconstruction loss may not generalize.**
+- (a) Aux-loss gain may be MIPDB-specific.
+- (b) Agreed; we test it directly.
+- (c) The corrected **Table 3** reports the modality ablation **with and without** the
+  auxiliary loss under the leak-free protocol. **We report the honest outcome: [[fill from
+  table3_ablation.csv]].** If the aux loss does not provide a reproducible gain, we **withdraw
+  it as a contribution** and present it as an ablation that did not help — rather than restate
+  the previous "+4.8 pp" claim.
 
-- **(a) Concern:** Single 5-fold estimates are unstable at this N.
-- **(b) Response:** Agreed; we strengthened the statistical treatment and audited the
-  protocol for leakage.
-- **(c) Action:** We added a **leakage-audited, repeated and nested subject-level
-  cross-validation** analysis (multiple seeds, **[[R]]×[[K]]** repeats, bootstrap 95% CIs),
-  confirming that all recordings from a participant remain within a single fold and that no
-  feature is computed across the train/test boundary. We report the **distribution across
-  repeats** rather than a single run (revised Table / §IV-A). [*Status: robustness run to be
-  completed; report the repeated-CV mean ± CI. If it differs from the single-run estimate,
-  we report the repeated-CV value as the more reliable figure and discuss the difference.*]
+**R3.6 — Cross-paradigm sourcing weakens the cross-modal claim.**
+- (a) Modalities come from different paradigms; not synchronized responses.
+- (b) Correct; we make this explicit.
+- (c) Reframe as **asynchronous, cross-paradigm participant-level fusion**; remove language
+  implying trial-synchronized interaction; state that attention captures participant-level
+  relationships, not trial-locked dependencies. Single-paradigm co-recording = future work.
 
-### R3.4 — "18.9M parameters overparameterized vs ~91 training subjects per fold."
+**R3.7 — Possible task/acquisition artifacts.**
+- (a) Compliance/fatigue/quality differ by paradigm.
+- (b) Important; we add controls.
+- (c) Confound analysis using signal-quality, epoch-rejection rate, and calibration error as
+  covariates; test whether classification survives controlling for them (§IV-F).
 
-- **(a) Concern:** The model is very large relative to the training set.
-- **(b) Response:** Agreed; we add a direct capacity analysis.
-- **(c) Action:** We added a **compact NeuroFormer variant** (reduced depth/width,
-  **[[P]]M** parameters) and report its performance against the full model. We show that the
-  compact configuration retains the bulk of performance, that the auxiliary reconstruction
-  loss and dropout/early-stopping regularization are doing measurable work (Table 3), and
-  that depth beyond 4 encoder layers yields no gain (existing §IV-B). This converts the
-  concern into an explicit capacity–performance characterization and justifies the chosen
-  size empirically.
+**R3.8 — EEG contribution weak; include it at all?**
+- (a) EEG alone is weak; adds little to eye-tracking.
+- (b) The corrected analysis reframes this honestly: **no single modality is informative
+  alone** (EEG, eye, behaviour all ≈ chance) — so the question is not "EEG vs eye" but whether
+  *fusion* beats the parts, which it does (0.722 vs ≤0.59 unimodal, ≤0.685 other fusion). EEG
+  is retained because it contributes to the cross-modal signal and to missing-modality
+  robustness; we do not claim it is individually sufficient.
+- (c) Report the corrected modality ablation (Table 3); justify EEG by its contribution to the
+  fused model, not in isolation.
 
-### R3.5 — "Auxiliary reconstruction loss may just regularize the MIPDB feature distribution; unproven on external data."
+**R3.9 — Soften the three-modality integration claim.**
+- (a) Eye+behaviour may retain most performance.
+- (b) Agreed.
+- (c) We replace "three-modality integration" with "a unified model over one-to-three
+  modalities," and report the corrected Table 3 subset results transparently, letting the
+  ablation — not a strong claim — characterize each modality's marginal value.
 
-- **(a) Concern:** The aux-loss benefit may not generalize beyond MIPDB.
-- **(b) Response:** Agreed; we test it on the external cohort.
-- **(c) Action:** On the external dataset (R1.3) we report performance **with vs without**
-  the auxiliary reconstruction loss, testing whether its regularization benefit persists
-  out-of-distribution rather than only on the MIPDB feature distribution (§IV-E). We report
-  the outcome transparently. [*Status: tied to the external-validation run.*]
-
-### R3.6 — "Cross-paradigm modality sourcing weakens the cross-modal fusion claim (no synchronized event)."
-
-- **(a) Concern:** The three modalities come from different paradigms, so the model is not
-  learning synchronized cross-modal responses.
-- **(b) Response:** Correct; we now make this central rather than implicit.
-- **(c) Action:** We reframed the method as **asynchronous, cross-paradigm participant-level
-  fusion**, removed language implying trial-synchronized cross-modal interaction, and state
-  clearly that cross-modal attention captures relationships between *participant-level*
-  patterns. Single-paradigm co-recording is identified as future work (already noted in
-  Limitations; now made explicit in §III and Abstract).
-
-### R3.7 — "Model may learn task/acquisition artifacts (compliance, fatigue, recording quality differ by paradigm)."
-
-- **(a) Concern:** Paradigm-specific artifacts may drive classification.
-- **(b) Response:** Important; we add controls.
-- **(c) Action:** We added confound analyses using signal-quality, epoch-rejection rate, and
-  eye-tracking calibration error as covariates, and test whether classification survives
-  controlling for them (§IV-F). The participant-selection QC criteria (epoch-rejection < 20%,
-  successful calibration) are documented in §III-A.
-
-### R3.8 — "EEG contribution is weak; should it be in the system at all?"
-
-- **(a) Concern:** EEG-alone is weak and adds little to eye-tracking, questioning its
-  inclusion.
-- **(b) Response:** A fair question. Within the present sparse-montage configuration, EEG's
-  marginal contribution is modest, and we now say so plainly. We retain EEG for three
-  principled reasons rather than discard it.
-- **(c) Action:** We justify EEG's inclusion explicitly (§IV-B): (i) it provides modest but
-  non-zero complementary information and supports the **missing-modality** operating mode
-  (R3.10) when eye-tracking is unavailable or unreliable; (ii) the limitation is attributable
-  to the five-electrode montage and participant-level aggregation, not to EEG as a modality
-  (R2.1); and (iii) we identify **self-supervised / foundation-model EEG representations**
-  (e.g., large-scale pretrained EEG encoders) as a concrete future direction that we are
-  actively pursuing to strengthen the EEG pathway. We soften any claim that EEG is essential
-  in the current configuration.
-
-### R3.9 — "Soften the three-modality integration claim."
-
-- **(a) Concern:** Eye+behaviour retains most of the performance; the full system may add
-  complexity without practical gain.
-- **(b) Response:** Agreed.
-- **(c) Action:** We softened the framing to "a unified model supporting one-to-three
-  modalities," and present the two-modality (eye + behaviour) configuration that retains
-  >98% of performance as the headline practical/deployment recommendation, with the third
-  modality (EEG) framed as complementary and as a robustness/missing-data provision rather
-  than a necessary accuracy contributor (Abstract, Contributions, §IV-B).
-
-### R3.10 — "Selection bias: only complete, high-quality recordings retained; real screening has missing/noisy data."
-
-- **(a) Concern:** Retaining only complete, well-calibrated recordings inflates apparent
-  performance relative to real conditions.
-- **(b) Response:** We address this with a missing-modality evaluation.
-- **(c) Action:** We added a **modality-dropout** training/evaluation protocol and report
-  performance under **simulated missing or degraded modalities** (graceful-degradation curve,
-  §IV). We retain residual selection bias (still a research cohort) as an explicit limitation
-  and connect it to the external-validation evidence (R1.3).
+**R3.10 — Selection bias (complete, high-quality recordings only).**
+- (a) Real screening has missing/noisy data.
+- (b) Addressed via a missing-modality design.
+- (c) Modality-dropout training + a learned availability token; evaluation under simulated
+  missing/degraded modalities (graceful-degradation curve). Residual selection bias (still a
+  research cohort) retained as a limitation.
 
 ---
 
-## Reviewer 4 *(minor)*
+## Reviewer 4
 
-### R4.1 — "'...affect approximately 970 million people worldwide' — references should be provided."
+**R4.1 — Citation for "≈970 million people worldwide."**
+- (c) Added (GBD 2021 / WHO mental-health source).
 
-- **(a) Concern:** Missing citation for the prevalence figure.
-- **(b) Response:** Agreed.
-- **(c) Action:** Added the GBD 2021 source (ref [1], already in the bibliography) at the
-  prevalence statement in the Introduction.
+**R4.2 — Why no ICA?**
+- (b) ICA **was** used (ocular/muscular/cardiac removal, Winkler 2011); it was simply not
+  prominent.
+- (c) Made the ICA step explicit in §III-B-1 and the Fig. 1 caption. No methodological change.
 
-### R4.2 — "Why wasn't ICA used for data preprocessing?"
+**R4.3 — Interpretability analysis in Results.**
+- (c) New Results subsection (§IV-G) with per-modality attention/attribution analysis +
+  the R1.2 expert validation.
 
-- **(a) Concern:** ICA appears to be absent from preprocessing.
-- **(b) Response:** ICA **was** used — the EEG pipeline removes ocular, muscular, and cardiac
-  artifacts via independent component analysis (Winkler et al. 2011, cited as [29]); the step
-  was simply not prominent enough.
-- **(c) Action:** We made the ICA step explicit in the EEG-pipeline text (§III-B-1) and the
-  Fig. 1 caption. No methodological change was required.
-
-### R4.3 — "Include an interpretability analysis in the results and analysis section."
-
-- **(a) Concern:** Interpretability is described but not analyzed in Results.
-- **(b) Response:** Agreed.
-- **(c) Action:** Added a Results subsection (§IV-G) reporting the per-modality
-  attention/attribution analysis (including cross-fold stability, ICC) together with the R1.2
-  expert-validation results.
-
-### R4.4 — "Condense the conclusion section."
-
-- **(a) Concern:** The conclusion is too long.
-- **(b) Response:** Agreed.
-- **(c) Action:** We tightened the Conclusion and moved the detailed six-point limitations
-  into a dedicated short paragraph.
+**R4.4 — Condense the conclusion.**
+- (c) Conclusion tightened; detailed limitations moved to a dedicated short paragraph.
 
 ---
 
-## Summary of changes to the manuscript
+## Summary of major changes
+1. **Leakage-controlled, repeated (5×5) subject-level evaluation**; corrected headline
+   **ROC-AUC 0.722 ± 0.037** (NeuroFormer still beats all baselines). (R3.3)
+2. **Compact model** (~2–4M params, not 18.9M). (R3.4)
+3. **Stronger baselines + significance** under one protocol (Table 2). (R2.2)
+4. **Modality ablation ± auxiliary loss** (Table 3); aux-loss claim reported honestly. (R3.5/R3.9)
+5. **Corrected cohort** (N≈102, ~20% positive, unbalanced; balanced metrics). 
+6. **Neurocognitive + fusion theory**; the honest "no single modality is informative alone,
+   fusion extracts the signal" framing. (R2.1/R2.4/R2.5/R3.8)
+7. **Asynchronous cross-paradigm reframe**, **missing-modality** model, **confound controls**,
+   softened clinical claims. (R3.6/R3.7/R3.10/R3.1/R3.2)
+8. **External boundary** (HBN EEG ≈ chance) as an honest limitation. (R1.3)
+9. **Interpretability justified + evaluated** (R1.1/R1.2/R4.3); cosmetic fixes (R4.1/R4.2/R4.4).
 
-1. **External / OOD validation** on an independent cohort added (R1.3), with aux-loss
-   generalization tested there (R3.5).
-2. **Leakage-audited, repeated + nested CV** robustness analysis with bootstrap CIs (R3.3).
-3. **Compact-model variant** and capacity analysis answering overparameterization (R3.4).
-4. **Stronger, protocol-unified SOTA baselines** with significance testing (R2.2).
-5. **Neurocognitive theory** (why oculomotor signals dominate; why sparse-montage EEG is
-   limited) and **hierarchical-fusion representation theory** (R2.1/R2.4/R2.5).
-6. **Asynchronous cross-paradigm reframing** (R3.6); **missing-modality** model with modality
-   dropout and graceful-degradation evaluation (R3.10); **softened one-to-three-modality**
-   claim (R3.9); **confound controls** (R3.7); **softened clinical claims** (R3.2).
-7. **Interpretability justified and evaluated** (attention theory + expert validation;
-   R1.1/R1.2/R4.3).
-8. **Future direction** — self-supervised/foundation-model EEG representations to strengthen
-   the EEG pathway (R3.8).
-9. **Cosmetic fixes** — prevalence citation (R4.1); ICA made prominent (R4.2); conclusion
-   condensed (R4.4).
+We are grateful to the reviewers; their rigor concerns drove a more honest and reproducible
+study, and we believe the corrected manuscript resolves each point.
 
-We are grateful to the reviewers; their concerns materially improved the rigor and honesty
-of the study, and we believe the revised manuscript resolves each point.
-
----
-
-### Open items to finalize before resubmission (author checklist)
-
-- [ ] **R1.3 external validation** — choose dataset, run, fill `[[dataset]]/[[N]]` + result.
-- [ ] **R3.3 robustness** — run leakage-audited repeated/nested CV; fill `[[R]]×[[K]]` + mean ± CI.
-      *(If it does not reproduce 0.912, decide how to present the repeated-CV figure.)*
-- [ ] **R3.4 compact variant** — train, fill `[[P]]M` params + performance.
-- [ ] **R2.2 SOTA baselines** — finalize table rows + significance.
-- [ ] **R1.2 expert study** — set k (raters), m (cases); or face-validity fallback.
+### Open items to finalize before submission
+- [ ] **Table 3 run** (`baselines_sbatch.sh`) → fill the modality ablation + the **aux-loss
+      verdict** (keep the contribution only if real).
+- [ ] **R1.2** — confirm expert-study size (k, m) or face-validity fallback.
+- [ ] **R2.2** — optionally add 1–2 further recent multimodal baselines.
+- [ ] Apply the corrected numbers/cohort/claims to the LaTeX (see `Corrected-Manuscript-Content.md`).
