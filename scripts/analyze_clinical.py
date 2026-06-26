@@ -13,12 +13,18 @@ experiments/neuroformer_baselines.py and produces, into results/:
     4. Calibration (Brier score, ECE)                       -> calibration.csv
     5. Pairwise NeuroFormer-vs-baseline (DeLong + Holm)     -> pairwise_delong.csv
 
+NeuroFormer is seed-fragile, so oof_nf.csv stores the per-participant OOF prob FOR
+EACH of the 8 seeds (cols seed0..seedK). Every NeuroFormer metric is computed
+per-seed and reported as mean +/- std over seeds. This keeps the AUC consistent
+with the paper's per-seed pooled-OOF headline (~0.62) instead of the seed-ensemble
+mean prob (which inflates AUC to ~0.70). age+sex is a single deterministic CV.
+
 Inputs (all produced by a single neuroformer_baselines.py run):
-    results/oof_nf.csv        ID,y,nf_prob          (NeuroFormer, seed-averaged)
-    results/oof_confound.csv  ID,y,agesex_prob      (age+sex baseline)
-    results/oof_table2.pkl    {y, subs, oof}        (12 fusion/temporal baselines)
-    results/nf_seed_stability.csv  seed,...,incremental_pp   (for TOST)
-    data/labels.csv           ID,Age,Sex,DX_Status  (subgroup metadata)
+    results/oof_nf.csv        ID,y,nf_prob,seed0..seedK   (NeuroFormer, per seed)
+    results/oof_confound.csv  ID,y,agesex_prob            (age+sex baseline)
+    results/oof_table2.pkl    {y, subs, oof}              (12 fusion/temporal baselines)
+    results/nf_seed_stability.csv  seed,...,incremental_pp (for TOST)
+    data/labels.csv           ID,Age,Sex,DX_Status        (subgroup metadata)
 
 Run: python scripts/analyze_clinical.py   (from repo root)
 Missing inputs are skipped with a clear message rather than crashing.
@@ -35,6 +41,7 @@ from sklearn.metrics import roc_auc_score, roc_curve, brier_score_loss
 ROOT = Path(__file__).resolve().parents[1]
 RES = ROOT / "results"
 TOST_MARGIN_PP = 2.0   # equivalence margin for the demographic increment, in AUC percentage points
+MIN_CLASS = 5          # a subgroup with < MIN_CLASS in either class is flagged underpowered
 
 
 # ----------------------------------------------------------------------------- helpers
@@ -48,8 +55,7 @@ def operating_point(y, p):
     """Youden-optimal threshold + clinical metrics at that threshold."""
     y = np.asarray(y, int)
     fpr, tpr, thr = roc_curve(y, p)
-    j = tpr - fpr
-    k = int(np.argmax(j))
+    k = int(np.argmax(tpr - fpr))
     t = float(thr[k])
     pred = (p >= t).astype(int)
     tp = int(((pred == 1) & (y == 1)).sum()); fp = int(((pred == 1) & (y == 0)).sum())
@@ -60,8 +66,7 @@ def operating_point(y, p):
     npv = tn / (tn + fn) if (tn + fn) else float("nan")
     f1 = (2 * ppv * sens / (ppv + sens)) if (ppv + sens) else float("nan")
     return dict(threshold=t, auc=roc_auc_score(y, p), sensitivity=sens, specificity=spec,
-                ppv=ppv, npv=npv, f1=f1, youden_j=float(j[k]),
-                tp=tp, fp=fp, tn=tn, fn=fn, prevalence=float(y.mean()), n=int(len(y)))
+                ppv=ppv, npv=npv, f1=f1, prevalence=float(y.mean()), n=int(len(y)))
 
 
 def ece(y, p, n_bins=10):
@@ -77,104 +82,118 @@ def ece(y, p, n_bins=10):
     return float(e)
 
 
+def agg(dicts, keys):
+    """mean + ddof=1 std over a list of metric dicts, for each key."""
+    out = {}
+    for k in keys:
+        v = np.array([d[k] for d in dicts], float)
+        out[k] = float(np.nanmean(v))
+        out[k + "_std"] = float(np.nanstd(v, ddof=1)) if len(v) > 1 else float("nan")
+    return out
+
+
 # ---- DeLong test for two correlated ROC AUCs (Sun & Xu 2014 fast algorithm) ----
 def _compute_midrank(x):
-    J = np.argsort(x)
-    z = x[J]
-    N = len(x)
-    t = np.zeros(N, float)
-    i = 0
+    J = np.argsort(x); z = x[J]; N = len(x); t = np.zeros(N, float); i = 0
     while i < N:
         j = i
         while j < N and z[j] == z[i]:
             j += 1
         t[i:j] = 0.5 * (i + j - 1) + 1
         i = j
-    out = np.empty(N, float)
-    out[J] = t
+    out = np.empty(N, float); out[J] = t
     return out
 
 
 def _fast_delong(preds_sorted, m):
-    """preds_sorted: (k, n) with the m positives first, then n-m negatives."""
-    n = preds_sorted.shape[1] - m
-    k = preds_sorted.shape[0]
-    pos = preds_sorted[:, :m]
-    neg = preds_sorted[:, m:]
-    tx = np.empty((k, m), float)
-    ty = np.empty((k, n), float)
-    tz = np.empty((k, m + n), float)
+    n = preds_sorted.shape[1] - m; k = preds_sorted.shape[0]
+    pos, neg = preds_sorted[:, :m], preds_sorted[:, m:]
+    tx = np.empty((k, m), float); ty = np.empty((k, n), float); tz = np.empty((k, m + n), float)
     for r in range(k):
-        tx[r] = _compute_midrank(pos[r])
-        ty[r] = _compute_midrank(neg[r])
-        tz[r] = _compute_midrank(preds_sorted[r])
+        tx[r] = _compute_midrank(pos[r]); ty[r] = _compute_midrank(neg[r]); tz[r] = _compute_midrank(preds_sorted[r])
     aucs = tz[:, :m].sum(axis=1) / m / n - (m + 1.0) / 2.0 / n
-    v01 = (tz[:, :m] - tx) / n
-    v10 = 1.0 - (tz[:, m:] - ty) / m
-    sx = np.cov(v01)
-    sy = np.cov(v10)
-    s = sx / m + sy / n
+    v01 = (tz[:, :m] - tx) / n; v10 = 1.0 - (tz[:, m:] - ty) / m
+    s = np.cov(v01) / m + np.cov(v10) / n
     return aucs, np.atleast_2d(s)
 
 
 def delong_test(y, p1, p2):
     """Two-sided p-value that AUC(p1) != AUC(p2) on the same labels y."""
     y = np.asarray(y, int)
-    order = np.argsort(-y)          # positives (label 1) first
-    m = int(y.sum())
+    order = np.argsort(-y); m = int(y.sum())
     preds = np.vstack([np.asarray(p1, float)[order], np.asarray(p2, float)[order]])
     aucs, s = _fast_delong(preds, m)
     var = s[0, 0] + s[1, 1] - 2 * s[0, 1]
     if var <= 0:
         return float(aucs[0]), float(aucs[1]), float("nan")
     z = (aucs[0] - aucs[1]) / np.sqrt(var)
-    pval = 2.0 * stats.norm.sf(abs(z))
-    return float(aucs[0]), float(aucs[1]), float(pval)
+    return float(aucs[0]), float(aucs[1]), float(2.0 * stats.norm.sf(abs(z)))
 
 
 def holm(pvals):
     """Holm-Bonferroni adjusted p-values."""
-    p = np.asarray(pvals, float)
-    order = np.argsort(p)
-    n = len(p)
-    adj = np.empty(n, float)
-    run = 0.0
+    p = np.asarray(pvals, float); order = np.argsort(p); n = len(p); adj = np.empty(n, float); run = 0.0
     for rank, idx in enumerate(order):
-        run = max(run, (n - rank) * p[idx])
-        adj[idx] = min(run, 1.0)
+        run = max(run, (n - rank) * p[idx]); adj[idx] = min(run, 1.0)
     return adj
 
 
-def load_oof(name, prob_col):
-    f = RES / name
+def load_nf():
+    """NeuroFormer OOF -> (ids, y, P) where P is (N, n_seeds); falls back to single col."""
+    f = RES / "oof_nf.csv"
     if not f.exists():
-        print(f"  [skip] {f.name} not found -- run neuroformer_baselines.py to generate it")
+        print("  [skip] oof_nf.csv not found -- run neuroformer_baselines.py")
         return None
     d = pd.read_csv(f)
-    return d["ID"].tolist(), d["y"].to_numpy(int), d[prob_col].to_numpy(float)
+    seed_cols = [c for c in d.columns if c.startswith("seed")]
+    if not seed_cols:
+        seed_cols = ["nf_prob"]   # backward-compat: only the seed-mean was saved
+        print("  [warn] oof_nf.csv has no per-seed columns -> using seed-mean (AUC will read ~0.70, not 0.62)")
+    P = d[seed_cols].to_numpy(float)
+    return d["ID"].tolist(), d["y"].to_numpy(int), P
+
+
+def load_confound():
+    f = RES / "oof_confound.csv"
+    if not f.exists():
+        print("  [skip] oof_confound.csv not found -- run neuroformer_baselines.py")
+        return None
+    d = pd.read_csv(f)
+    return d["ID"].tolist(), d["y"].to_numpy(int), d["agesex_prob"].to_numpy(float)
 
 
 # ----------------------------------------------------------------------------- main
 def main():
     print(f"[analyze] results dir: {RES}")
-    nf = load_oof("oof_nf.csv", "nf_prob")
-    cf = load_oof("oof_confound.csv", "agesex_prob")
+    nf = load_nf()                       # (ids, y, P[N,S])
+    cf = load_confound()                 # (ids, y, p[N])
+    S = nf[2].shape[1] if nf else 0
+    OP_KEYS = ["auc", "threshold", "sensitivity", "specificity", "ppv", "npv", "f1"]
 
-    # ---------- 1. Operating-point metrics @ Youden ----------
-    print("\n=== 1. Operating-point metrics (Youden-optimal threshold) ===")
+    # ---------- 1. Operating-point metrics @ Youden (NF: mean+/-std over seeds) ----------
+    print(f"\n=== 1. Operating-point metrics (Youden) -- NeuroFormer over {S} seeds ===")
     rows = []
-    for label, d in [("NeuroFormer (3-modality)", nf), ("age+sex", cf)]:
-        if d is None:
-            continue
-        _, y, p = d
-        op = operating_point(y, p); op["model"] = label
-        rows.append(op)
-        print(f"  {label:<26} AUC={op['auc']:.3f}  sens={op['sensitivity']:.2f} "
-              f"spec={op['specificity']:.2f} PPV={op['ppv']:.2f} NPV={op['npv']:.2f} "
-              f"F1={op['f1']:.2f} @thr={op['threshold']:.3f}")
+    if nf:
+        _, y, P = nf
+        ops = [operating_point(y, P[:, s]) for s in range(S)]
+        r = dict(model="NeuroFormer (3-modality)", n_seeds=S, prevalence=ops[0]["prevalence"], n=ops[0]["n"])
+        r.update(agg(ops, OP_KEYS))
+        rows.append(r)
+        print(f"  NeuroFormer  AUC={r['auc']:.3f}+/-{r['auc_std']:.3f}  sens={r['sensitivity']:.2f} "
+              f"spec={r['specificity']:.2f} PPV={r['ppv']:.2f} NPV={r['npv']:.2f} F1={r['f1']:.2f}")
+    if cf:
+        _, y, p = cf
+        op = operating_point(y, p)
+        r = dict(model="age+sex", n_seeds=1, prevalence=op["prevalence"], n=op["n"])
+        for k in OP_KEYS:
+            r[k] = op[k]; r[k + "_std"] = float("nan")
+        rows.append(r)
+        print(f"  age+sex      AUC={r['auc']:.3f}        sens={r['sensitivity']:.2f} "
+              f"spec={r['specificity']:.2f} PPV={r['ppv']:.2f} NPV={r['npv']:.2f} F1={r['f1']:.2f}")
     if rows:
-        cols = ["model", "auc", "threshold", "sensitivity", "specificity", "ppv", "npv",
-                "f1", "youden_j", "tp", "fp", "tn", "fn", "prevalence", "n"]
+        cols = ["model", "n_seeds", "auc", "auc_std", "threshold", "threshold_std",
+                "sensitivity", "sensitivity_std", "specificity", "specificity_std",
+                "ppv", "ppv_std", "npv", "npv_std", "f1", "f1_std", "prevalence", "n"]
         pd.DataFrame(rows)[cols].to_csv(RES / "operating_points.csv", index=False)
         print(f"  -> {RES / 'operating_points.csv'}")
 
@@ -184,117 +203,119 @@ def main():
     if sf.exists():
         inc = pd.read_csv(sf)["incremental_pp"].to_numpy(float)
         n = len(inc); mean = inc.mean(); sd = inc.std(ddof=1); se = sd / np.sqrt(n)
-        # two one-sided t-tests against -margin and +margin
-        t_lower = (mean - (-TOST_MARGIN_PP)) / se   # H0: mean <= -margin
-        t_upper = (mean - (TOST_MARGIN_PP)) / se     # H0: mean >= +margin
-        p_lower = stats.t.sf(t_lower, df=n - 1)      # want mean > -margin
-        p_upper = stats.t.cdf(t_upper, df=n - 1)     # want mean < +margin
+        p_lower = stats.t.sf((mean + TOST_MARGIN_PP) / se, df=n - 1)   # want mean > -margin
+        p_upper = stats.t.cdf((mean - TOST_MARGIN_PP) / se, df=n - 1)  # want mean < +margin
         p_tost = max(p_lower, p_upper)
-        ci = stats.t.interval(0.90, df=n - 1, loc=mean, scale=se)  # 90% CI <-> TOST at alpha=.05
+        ci = stats.t.interval(0.90, df=n - 1, loc=mean, scale=se)      # 90% CI <-> TOST at alpha=.05
         equiv = p_tost < 0.05
-        print(f"  increment = {mean:+.2f}pp (sd {sd:.2f}, n={n} seeds)  90% CI [{ci[0]:+.2f},{ci[1]:+.2f}]pp")
+        print(f"  increment = {mean:+.2f}pp (sd {sd:.2f}, n={n})  90% CI [{ci[0]:+.2f},{ci[1]:+.2f}]pp")
         print(f"  TOST p = {p_tost:.4f}  -> {'EQUIVALENT to 0 within margin' if equiv else 'NOT shown equivalent'}")
-        pd.DataFrame([dict(n_seeds=n, increment_mean_pp=mean, increment_sd_pp=sd,
-                           margin_pp=TOST_MARGIN_PP, ci90_lo=ci[0], ci90_hi=ci[1],
-                           p_lower=p_lower, p_upper=p_upper, p_tost=p_tost,
-                           equivalent=equiv)]).to_csv(RES / "equivalence_tost.csv", index=False)
+        pd.DataFrame([dict(n_seeds=n, increment_mean_pp=mean, increment_sd_pp=sd, margin_pp=TOST_MARGIN_PP,
+                           ci90_lo=ci[0], ci90_hi=ci[1], p_lower=p_lower, p_upper=p_upper,
+                           p_tost=p_tost, equivalent=equiv)]).to_csv(RES / "equivalence_tost.csv", index=False)
         print(f"  -> {RES / 'equivalence_tost.csv'}")
     else:
         print("  [skip] nf_seed_stability.csv not found")
 
-    # ---------- 3. Subgroup AUCs (age tertile, sex) ----------
+    # ---------- 3. Subgroup AUCs (age tertile, sex) -- NF mean+/-std over seeds ----------
     print("\n=== 3. Subgroup analysis (age tertile, sex) ===")
     meta_f = ROOT / "data" / "labels.csv"
     sub_rows = []
     if meta_f.exists():
         meta = pd.read_csv(meta_f).set_index("ID")
-        for label, d in [("NeuroFormer (3-modality)", nf), ("age+sex", cf)]:
+
+        def subgroup_auc(ids, y, P, mask):
+            yy = y[mask]
+            under = (yy.sum() < MIN_CLASS) or ((~yy.astype(bool)).sum() < MIN_CLASS)
+            if mask.sum() < MIN_CLASS or yy.min() == yy.max():
+                return float("nan"), float("nan"), True
+            aucs = [roc_auc_score(yy, P[mask, s]) for s in range(P.shape[1])]
+            return float(np.mean(aucs)), (float(np.std(aucs, ddof=1)) if len(aucs) > 1 else float("nan")), under
+
+        for label, d in [("NeuroFormer (3-modality)", nf), ("age+sex", None if cf is None else (cf[0], cf[1], cf[2][:, None]))]:
             if d is None:
                 continue
-            ids, y, p = d
-            age = meta.loc[ids, "Age"].to_numpy(float)
-            sex = meta.loc[ids, "Sex"].to_numpy(int)
+            ids, y, P = d
+            age = meta.loc[ids, "Age"].to_numpy(float); sex = meta.loc[ids, "Sex"].to_numpy(int)
             q1, q2 = np.quantile(age, [1 / 3, 2 / 3])
-            groups = {
-                f"age<={q1:.0f}": age <= q1,
-                f"age {q1:.0f}-{q2:.0f}": (age > q1) & (age <= q2),
-                f"age>{q2:.0f}": age > q2,
-                "sex=1": sex == 1,
-                "sex=2": sex == 2,
-                "overall": np.ones(len(y), bool),
-            }
+            groups = {f"age<={q1:.0f}": age <= q1, f"age {q1:.0f}-{q2:.0f}": (age > q1) & (age <= q2),
+                      f"age>{q2:.0f}": age > q2, "sex=1": sex == 1, "sex=2": sex == 2,
+                      "overall": np.ones(len(y), bool)}
             for gname, mask in groups.items():
-                yy = y[mask]
-                if mask.sum() < 5 or yy.min() == yy.max():
-                    auc = float("nan")  # undefined (one class or too few)
-                else:
-                    auc = roc_auc_score(yy, p[mask])
+                a, asd, under = subgroup_auc(ids, y, P, mask)
                 sub_rows.append(dict(model=label, subgroup=gname, n=int(mask.sum()),
-                                     n_pos=int(yy.sum()), auc=auc))
-                print(f"  {label:<26} {gname:<12} n={mask.sum():<3} pos={int(yy.sum()):<3} "
-                      f"AUC={'  n/a' if np.isnan(auc) else f'{auc:.3f}'}")
+                                     n_pos=int(y[mask].sum()), auc=a, auc_std=asd, underpowered=under))
+                flag = " [underpowered]" if under else ""
+                astr = "  n/a" if np.isnan(a) else f"{a:.3f}"
+                print(f"  {label:<26} {gname:<12} n={mask.sum():<3} pos={int(y[mask].sum()):<3} AUC={astr}{flag}")
         if sub_rows:
             pd.DataFrame(sub_rows).to_csv(RES / "subgroup_auc.csv", index=False)
             print(f"  -> {RES / 'subgroup_auc.csv'}")
     else:
         print("  [skip] data/labels.csv not found")
 
-    # ---------- 4. Calibration (Brier, ECE) ----------
+    # ---------- 4. Calibration (Brier, ECE) -- NF mean+/-std over seeds ----------
     print("\n=== 4. Calibration (Brier score, ECE) ===")
     cal_rows = []
-    for label, d in [("NeuroFormer (3-modality)", nf), ("age+sex", cf)]:
-        if d is None:
-            continue
-        _, y, p = d
-        pc = np.clip(p, 0, 1)
-        row = dict(model=label, brier=brier_score_loss(y, pc), ece=ece(y, pc),
-                   brier_baseline=float(y.mean() * (1 - y.mean())))  # Brier of always-predict-prevalence
-        cal_rows.append(row)
-        print(f"  {label:<26} Brier={row['brier']:.4f} (no-skill {row['brier_baseline']:.4f})  ECE={row['ece']:.4f}")
+    if nf:
+        _, y, P = nf
+        bs = [brier_score_loss(y, np.clip(P[:, s], 0, 1)) for s in range(S)]
+        es = [ece(y, np.clip(P[:, s], 0, 1)) for s in range(S)]
+        cal_rows.append(dict(model="NeuroFormer (3-modality)", n_seeds=S,
+                             brier=float(np.mean(bs)), brier_std=float(np.std(bs, ddof=1)),
+                             ece=float(np.mean(es)), ece_std=float(np.std(es, ddof=1)),
+                             brier_baseline=float(y.mean() * (1 - y.mean()))))
+        r = cal_rows[-1]
+        print(f"  NeuroFormer  Brier={r['brier']:.4f}+/-{r['brier_std']:.4f} (no-skill {r['brier_baseline']:.4f})"
+              f"  ECE={r['ece']:.4f}+/-{r['ece_std']:.4f}")
+    if cf:
+        _, y, p = cf; pc = np.clip(p, 0, 1)
+        cal_rows.append(dict(model="age+sex", n_seeds=1, brier=brier_score_loss(y, pc), brier_std=float("nan"),
+                             ece=ece(y, pc), ece_std=float("nan"), brier_baseline=float(y.mean() * (1 - y.mean()))))
+        r = cal_rows[-1]
+        print(f"  age+sex      Brier={r['brier']:.4f}        (no-skill {r['brier_baseline']:.4f})  ECE={r['ece']:.4f}")
     if cal_rows:
         pd.DataFrame(cal_rows).to_csv(RES / "calibration.csv", index=False)
         print(f"  -> {RES / 'calibration.csv'}")
 
-    # ---------- 5. Pairwise NeuroFormer vs each baseline (DeLong + Holm) ----------
-    print("\n=== 5. Pairwise NeuroFormer vs baselines (DeLong, Holm-corrected) ===")
+    # ---------- 5. Pairwise NeuroFormer vs each baseline (per-seed DeLong + Holm) ----------
+    print(f"\n=== 5. Pairwise NeuroFormer vs baselines (DeLong per seed x{S}, Holm) ===")
     pkl = RES / "oof_table2.pkl"
     if nf is None:
         print("  [skip] need oof_nf.csv for the NeuroFormer arm")
     elif not pkl.exists():
         print("  [skip] oof_table2.pkl not found (pull from Nibi or re-run)")
     else:
-        ids_nf, y_nf, p_nf = nf
+        ids_nf, y_nf, P = nf
         store = pickle.loads(pkl.read_bytes())
         y_b = np.asarray(store["y"], int)
-        # align NeuroFormer to the pickle's participant order
-        idx = {sid: i for i, sid in enumerate(ids_nf)}
-        if list(store["subs"]) != list(ids_nf):
+        if list(store["subs"]) != list(ids_nf):     # align NeuroFormer rows to the pickle order
+            idx = {sid: i for i, sid in enumerate(ids_nf)}
             order = [idx[s] for s in store["subs"]]
-            p_nf_a, y_a = p_nf[order], y_nf[np.array(order)]
-        else:
-            p_nf_a, y_a = p_nf, y_nf
-        assert np.array_equal(y_a, y_b), "label mismatch between oof_nf.csv and oof_table2.pkl"
+            P = P[order]; y_nf = y_nf[np.array(order)]
+        assert np.array_equal(y_nf, y_b), "label mismatch between oof_nf.csv and oof_table2.pkl"
+        extra = [("age+sex", cf[2])] if (cf is not None and list(cf[0]) == list(store["subs"])) else []
         comps = []
-        # include the age+sex baseline if available and aligned
-        if cf is not None and list(cf[0]) == list(store["subs"]):
-            extra = [("age+sex", cf[2])]
-        else:
-            extra = []
         for name, oof in list(store["oof"].items()) + extra:
             p_b = _per_participant(oof)
-            a_nf, a_b, pv = delong_test(y_b, p_nf_a, p_b)
+            per_seed = [delong_test(y_b, P[:, s], p_b) for s in range(S)]
+            a_nf = np.mean([t[0] for t in per_seed]); a_b = per_seed[0][1]
+            deltas = np.array([t[0] - t[1] for t in per_seed])
+            ps = np.array([t[2] for t in per_seed], float)
             comps.append(dict(baseline=name, auc_nf=a_nf, auc_baseline=a_b,
-                              delta=a_nf - a_b, p_delong=pv))
-        pv_all = [c["p_delong"] for c in comps]
-        adj = holm(pv_all)
+                              delta=float(deltas.mean()), delta_std=float(deltas.std(ddof=1)),
+                              p_delong_median=float(np.nanmedian(ps)),
+                              frac_seeds_sig=float(np.nanmean(ps < 0.05))))
+        adj = holm([c["p_delong_median"] for c in comps])
         for c, pa in zip(comps, adj):
             c["p_holm"] = float(pa)
         comps.sort(key=lambda c: c["p_holm"])
         for c in comps:
-            print(f"  NF vs {c['baseline']:<26} dAUC={c['delta']:+.3f}  "
-                  f"p={c['p_delong']:.3f} (Holm {c['p_holm']:.3f})")
-        pd.DataFrame(comps)[["baseline", "auc_nf", "auc_baseline", "delta",
-                             "p_delong", "p_holm"]].to_csv(RES / "pairwise_delong.csv", index=False)
+            print(f"  NF vs {c['baseline']:<26} dAUC={c['delta']:+.3f}+/-{c['delta_std']:.3f}  "
+                  f"p(med)={c['p_delong_median']:.3f} (Holm {c['p_holm']:.3f})")
+        pd.DataFrame(comps)[["baseline", "auc_nf", "auc_baseline", "delta", "delta_std",
+                             "p_delong_median", "frac_seeds_sig", "p_holm"]].to_csv(
+            RES / "pairwise_delong.csv", index=False)
         print(f"  -> {RES / 'pairwise_delong.csv'}")
 
     print("\n[analyze] done.")

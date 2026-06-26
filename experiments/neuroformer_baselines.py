@@ -491,10 +491,16 @@ def main():
         print(f"  >>> confound-adjusted increment = {nf_incr.mean():+.1f} +/- {nf_incr.std(ddof=1):.1f} pp"
               f"  ({'robust >0' if nf_incr.mean() - nf_incr.std(ddof=1) > 0 else 'NOT robustly >0'})", flush=True)
         pd.DataFrame(nf_seed_rows).to_csv(outdir / "nf_seed_stability.csv", index=False)
-        # seed-averaged per-participant OOF prob (most stable single set; for operating-point /
-        # calibration / subgroup analyses offline -- no GPU re-run needed)
-        nf_prob_mean = np.mean(np.stack(nf_nfps), axis=0)
-        pd.DataFrame({"ID": subs, "y": y, "nf_prob": nf_prob_mean}).to_csv(outdir / "oof_nf.csv", index=False)
+        # per-participant OOF prob, PER SEED (cols seed0..seedK) + their mean (nf_prob).
+        # Per-seed columns let offline analyses report clinical metrics as mean+/-std over
+        # seeds -> AUC matches the per-seed pooled-OOF headline (~0.62), NOT the seed-ensemble
+        # (averaging probs over seeds is itself an ensemble that inflates AUC). NeuroFormer is
+        # seed-fragile, so every derived metric is reported with its seed spread.
+        nf_mat = np.stack(nf_nfps)                       # (n_seeds, N)
+        df_nf = pd.DataFrame({"ID": subs, "y": y, "nf_prob": nf_mat.mean(axis=0)})
+        for si in range(nf_mat.shape[0]):
+            df_nf[f"seed{si}"] = nf_mat[si]
+        df_nf.to_csv(outdir / "oof_nf.csv", index=False)
     pd.DataFrame(t2).to_csv(args.out_t2, index=False)
     pd.DataFrame(perfold).to_csv(outdir / "perfold_table2.csv", index=False)
     import pickle
