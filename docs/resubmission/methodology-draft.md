@@ -326,3 +326,39 @@ architecture — ours included — separates from a two-variable baseline, and (
 EEG-based signal does exist where the confound is controlled. The contribution is the unified
 missing-modality architecture together with this honest characterization — a cautionary,
 reproducible benchmark rather than a leaderboard result.
+
+### B.6 Transparency and limitations
+We state the following explicitly so that none of it can read as concealed; each follows
+directly from the study's design.
+- **Relation to prior high accuracies.** Earlier reports (including our own) of ~0.9 AUC in
+  this setting arise from **window-level evaluation**, in which windows of the same subject
+  appear in both train and test. Under identical models this inflates AUC to **0.95–1.00**
+  versus **≈0.51** under subject-level evaluation (Table/Fig, leakage). The honest numbers
+  supersede the earlier ones.
+- **NeuroFormer inputs and comparability.** All 14 models — NeuroFormer included — are
+  evaluated on **identical inputs** (128-dim handcrafted EEG + eye, two modalities) under one
+  protocol. This differs from the original NeuroFormer implementation (516-dim processed EEG +
+  behaviour, three modalities); the score here is therefore **not directly comparable** to that
+  earlier number, and even that earlier number (≈0.67) is below the demographic baseline (0.74).
+  Code is released for inspection.
+- **Cohort selection.** The MIPDB analysis cohort (N = 92) is the subset of subjects with
+  **both** EEG and eye modalities present. This is a complete-case criterion and a source of
+  **selection bias** (a research cohort with high-quality dual recordings), which we do not
+  claim to eliminate.
+- **Two, not three, modalities.** Behaviour is absent for this cohort; despite the
+  architecture's one-to-three-modality design, only EEG and eye are used, and no behavioural
+  result is reported.
+- **Cross-cohort scope.** ds003478 is an **adult depression** cohort, not a replication of the
+  paediatric task; it demonstrates that EEG *can* carry demographics-independent signal where
+  the confound is weak, not that the same model transfers.
+- **Missing-modality claim.** The mechanism is demonstrated to be **operational** under dropped
+  modalities; because full-modality performance is itself low, we do not claim graceful
+  degradation *from strong performance*.
+- **Multiple comparisons.** DeLong and permutation p-values are reported with
+  Bonferroni/FDR correction; uncorrected values are additionally provided in the supplement.
+- **Estimators.** Point AUCs are pooled out-of-fold; permutation tests operate on the
+  repeated-CV AUC (a distinct, more stable estimator) — the two differ marginally by
+  construction and are labelled as such.
+- **Sample size.** N = 92 with 20 positives yields wide confidence intervals and limited power
+  to separate models; we therefore lead with interval overlap and non-significance rather than
+  rank order, and do not over-interpret point differences.
