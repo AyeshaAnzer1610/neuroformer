@@ -1,0 +1,15 @@
+model,status,auc_perfold,ci_lo,ci_hi,auc_oof
+LogReg (concat),run,0.7468,0.678,0.8479,0.7649
+SVM-RBF (concat),run,0.7508,0.6171,0.8125,0.7202
+RandomForest (concat),run,0.7059,0.562,0.7633,0.6668
+MLP early-fusion,run,0.7337,0.6623,0.8373,0.752
+Late-fusion ensemble,run,0.7468,0.678,0.8479,0.7649
+1D-CNN (temporal),run,0.728,0.6552,0.8365,0.748
+LSTM (temporal),run,0.722,0.5731,0.778,0.6804
+TCN (temporal),run,0.7352,0.6327,0.8155,0.7266
+Demographics (age+sex),run,0.6241,0.4966,0.7035,0.5997
+GMU (gated fusion),N/A -- requires eye/beh (absent in ds003478),,,,
+Cross-modal Transformer,N/A -- requires eye/beh (absent in ds003478),,,,
+Tensor Fusion Network,N/A -- requires eye/beh (absent in ds003478),,,,
+Low-rank Multimodal Fusion,N/A -- requires eye/beh (absent in ds003478),,,,
+NeuroFormer (3-modality),N/A -- requires eye/beh (absent in ds003478),,,,

@@ -1,0 +1,1461 @@
+model,scheme,seed,auc
+LogReg (concat),multiseed,0,0.45
+LogReg (concat),multiseed,0,0.6833
+LogReg (concat),multiseed,0,0.5893
+LogReg (concat),multiseed,0,0.5179
+LogReg (concat),multiseed,0,0.4286
+LogReg (concat),multiseed,1,0.95
+LogReg (concat),multiseed,1,0.5667
+LogReg (concat),multiseed,1,0.6964
+LogReg (concat),multiseed,1,0.5357
+LogReg (concat),multiseed,1,0.6429
+LogReg (concat),multiseed,2,0.7333
+LogReg (concat),multiseed,2,0.3667
+LogReg (concat),multiseed,2,0.4286
+LogReg (concat),multiseed,2,0.375
+LogReg (concat),multiseed,2,0.7857
+LogReg (concat),multiseed,3,0.7
+LogReg (concat),multiseed,3,0.5333
+LogReg (concat),multiseed,3,0.5357
+LogReg (concat),multiseed,3,0.5893
+LogReg (concat),multiseed,3,0.5536
+LogReg (concat),multiseed,4,0.4833
+LogReg (concat),multiseed,4,0.6333
+LogReg (concat),multiseed,4,0.5714
+LogReg (concat),multiseed,4,0.4821
+LogReg (concat),multiseed,4,0.7321
+LogReg (concat),multiseed,5,0.1833
+LogReg (concat),multiseed,5,0.8667
+LogReg (concat),multiseed,5,0.7679
+LogReg (concat),multiseed,5,0.3929
+LogReg (concat),multiseed,5,0.6786
+LogReg (concat),multiseed,6,0.6833
+LogReg (concat),multiseed,6,0.8833
+LogReg (concat),multiseed,6,0.625
+LogReg (concat),multiseed,6,0.4286
+LogReg (concat),multiseed,6,0.3214
+LogReg (concat),multiseed,7,0.5833
+LogReg (concat),multiseed,7,0.7
+LogReg (concat),multiseed,7,0.5714
+LogReg (concat),multiseed,7,0.1964
+LogReg (concat),multiseed,7,0.7679
+LogReg (concat),multiseed,8,0.6167
+LogReg (concat),multiseed,8,0.6667
+LogReg (concat),multiseed,8,0.2679
+LogReg (concat),multiseed,8,0.5536
+LogReg (concat),multiseed,8,0.8929
+LogReg (concat),multiseed,9,0.6667
+LogReg (concat),multiseed,9,0.65
+LogReg (concat),multiseed,9,0.4821
+LogReg (concat),multiseed,9,0.3393
+LogReg (concat),multiseed,9,0.5714
+LogReg (concat),multiseed,10,0.6167
+LogReg (concat),multiseed,10,0.8667
+LogReg (concat),multiseed,10,0.3571
+LogReg (concat),multiseed,10,0.5357
+LogReg (concat),multiseed,10,0.7321
+LogReg (concat),multiseed,11,0.65
+LogReg (concat),multiseed,11,0.6333
+LogReg (concat),multiseed,11,0.7679
+LogReg (concat),multiseed,11,0.5893
+LogReg (concat),multiseed,11,0.5714
+LogReg (concat),multiseed,12,0.2833
+LogReg (concat),multiseed,12,0.8667
+LogReg (concat),multiseed,12,0.625
+LogReg (concat),multiseed,12,0.4286
+LogReg (concat),multiseed,12,0.5714
+LogReg (concat),multiseed,13,0.6667
+LogReg (concat),multiseed,13,0.2667
+LogReg (concat),multiseed,13,0.5
+LogReg (concat),multiseed,13,0.5179
+LogReg (concat),multiseed,13,0.6786
+LogReg (concat),multiseed,14,0.7333
+LogReg (concat),multiseed,14,0.6333
+LogReg (concat),multiseed,14,0.5179
+LogReg (concat),multiseed,14,0.9107
+LogReg (concat),multiseed,14,0.7143
+LogReg (concat),multiseed,15,0.7167
+LogReg (concat),multiseed,15,0.6833
+LogReg (concat),multiseed,15,0.5893
+LogReg (concat),multiseed,15,0.5
+LogReg (concat),multiseed,15,0.5714
+LogReg (concat),multiseed,16,0.5333
+LogReg (concat),multiseed,16,0.5167
+LogReg (concat),multiseed,16,0.3571
+LogReg (concat),multiseed,16,0.6429
+LogReg (concat),multiseed,16,0.625
+LogReg (concat),multiseed,17,0.7
+LogReg (concat),multiseed,17,0.9
+LogReg (concat),multiseed,17,0.4821
+LogReg (concat),multiseed,17,0.625
+LogReg (concat),multiseed,17,0.4286
+LogReg (concat),multiseed,18,0.0667
+LogReg (concat),multiseed,18,0.55
+LogReg (concat),multiseed,18,0.6607
+LogReg (concat),multiseed,18,0.6964
+LogReg (concat),multiseed,18,0.5179
+LogReg (concat),multiseed,19,0.8667
+LogReg (concat),multiseed,19,0.6333
+LogReg (concat),multiseed,19,0.3929
+LogReg (concat),multiseed,19,0.4643
+LogReg (concat),multiseed,19,0.8214
+LogReg (concat),nested,0,0.45
+LogReg (concat),nested,1,0.7667
+LogReg (concat),nested,2,0.5179
+LogReg (concat),nested,3,0.7679
+LogReg (concat),nested,4,0.7143
+SVM-RBF (concat),multiseed,0,0.7917
+SVM-RBF (concat),multiseed,0,0.85
+SVM-RBF (concat),multiseed,0,0.5179
+SVM-RBF (concat),multiseed,0,0.75
+SVM-RBF (concat),multiseed,0,0.6607
+SVM-RBF (concat),multiseed,1,0.7833
+SVM-RBF (concat),multiseed,1,0.9333
+SVM-RBF (concat),multiseed,1,0.7321
+SVM-RBF (concat),multiseed,1,0.7679
+SVM-RBF (concat),multiseed,1,0.4643
+SVM-RBF (concat),multiseed,2,0.7833
+SVM-RBF (concat),multiseed,2,0.5333
+SVM-RBF (concat),multiseed,2,0.75
+SVM-RBF (concat),multiseed,2,0.5357
+SVM-RBF (concat),multiseed,2,0.0
+SVM-RBF (concat),multiseed,3,0.7833
+SVM-RBF (concat),multiseed,3,0.7333
+SVM-RBF (concat),multiseed,3,0.6696
+SVM-RBF (concat),multiseed,3,0.7857
+SVM-RBF (concat),multiseed,3,0.7143
+SVM-RBF (concat),multiseed,4,0.85
+SVM-RBF (concat),multiseed,4,0.8
+SVM-RBF (concat),multiseed,4,0.875
+SVM-RBF (concat),multiseed,4,0.5536
+SVM-RBF (concat),multiseed,4,0.8393
+SVM-RBF (concat),multiseed,5,0.2833
+SVM-RBF (concat),multiseed,5,0.6667
+SVM-RBF (concat),multiseed,5,0.5714
+SVM-RBF (concat),multiseed,5,0.7232
+SVM-RBF (concat),multiseed,5,0.7857
+SVM-RBF (concat),multiseed,6,0.9583
+SVM-RBF (concat),multiseed,6,0.7333
+SVM-RBF (concat),multiseed,6,0.75
+SVM-RBF (concat),multiseed,6,0.5536
+SVM-RBF (concat),multiseed,6,0.5
+SVM-RBF (concat),multiseed,7,0.8
+SVM-RBF (concat),multiseed,7,0.5833
+SVM-RBF (concat),multiseed,7,0.5893
+SVM-RBF (concat),multiseed,7,0.1429
+SVM-RBF (concat),multiseed,7,0.75
+SVM-RBF (concat),multiseed,8,0.8
+SVM-RBF (concat),multiseed,8,0.7667
+SVM-RBF (concat),multiseed,8,0.8036
+SVM-RBF (concat),multiseed,8,0.5536
+SVM-RBF (concat),multiseed,8,0.6071
+SVM-RBF (concat),multiseed,9,0.8167
+SVM-RBF (concat),multiseed,9,0.4833
+SVM-RBF (concat),multiseed,9,0.8929
+SVM-RBF (concat),multiseed,9,0.4821
+SVM-RBF (concat),multiseed,9,0.7857
+SVM-RBF (concat),multiseed,10,0.7667
+SVM-RBF (concat),multiseed,10,0.7333
+SVM-RBF (concat),multiseed,10,0.4643
+SVM-RBF (concat),multiseed,10,0.9375
+SVM-RBF (concat),multiseed,10,0.6071
+SVM-RBF (concat),multiseed,11,0.7333
+SVM-RBF (concat),multiseed,11,0.5167
+SVM-RBF (concat),multiseed,11,0.5357
+SVM-RBF (concat),multiseed,11,0.9821
+SVM-RBF (concat),multiseed,11,0.8036
+SVM-RBF (concat),multiseed,12,0.6833
+SVM-RBF (concat),multiseed,12,0.8167
+SVM-RBF (concat),multiseed,12,0.7321
+SVM-RBF (concat),multiseed,12,0.4643
+SVM-RBF (concat),multiseed,12,0.8214
+SVM-RBF (concat),multiseed,13,0.6667
+SVM-RBF (concat),multiseed,13,1.0
+SVM-RBF (concat),multiseed,13,0.5179
+SVM-RBF (concat),multiseed,13,0.5179
+SVM-RBF (concat),multiseed,13,0.9464
+SVM-RBF (concat),multiseed,14,0.6833
+SVM-RBF (concat),multiseed,14,0.75
+SVM-RBF (concat),multiseed,14,0.875
+SVM-RBF (concat),multiseed,14,0.75
+SVM-RBF (concat),multiseed,14,0.7321
+SVM-RBF (concat),multiseed,15,0.0333
+SVM-RBF (concat),multiseed,15,0.6333
+SVM-RBF (concat),multiseed,15,0.8929
+SVM-RBF (concat),multiseed,15,0.5536
+SVM-RBF (concat),multiseed,15,0.7143
+SVM-RBF (concat),multiseed,16,0.45
+SVM-RBF (concat),multiseed,16,0.7333
+SVM-RBF (concat),multiseed,16,0.9107
+SVM-RBF (concat),multiseed,16,0.75
+SVM-RBF (concat),multiseed,16,0.5
+SVM-RBF (concat),multiseed,17,0.6
+SVM-RBF (concat),multiseed,17,0.7
+SVM-RBF (concat),multiseed,17,0.6429
+SVM-RBF (concat),multiseed,17,0.8036
+SVM-RBF (concat),multiseed,17,0.6518
+SVM-RBF (concat),multiseed,18,0.5
+SVM-RBF (concat),multiseed,18,0.5667
+SVM-RBF (concat),multiseed,18,0.8393
+SVM-RBF (concat),multiseed,18,0.6071
+SVM-RBF (concat),multiseed,18,0.875
+SVM-RBF (concat),multiseed,19,0.85
+SVM-RBF (concat),multiseed,19,0.4833
+SVM-RBF (concat),multiseed,19,0.6607
+SVM-RBF (concat),multiseed,19,0.8929
+SVM-RBF (concat),multiseed,19,0.7857
+SVM-RBF (concat),nested,0,0.5583
+SVM-RBF (concat),nested,1,0.2167
+SVM-RBF (concat),nested,2,0.4643
+SVM-RBF (concat),nested,3,0.2321
+SVM-RBF (concat),nested,4,0.25
+RandomForest (concat),multiseed,0,0.7333
+RandomForest (concat),multiseed,0,0.675
+RandomForest (concat),multiseed,0,0.5714
+RandomForest (concat),multiseed,0,0.7143
+RandomForest (concat),multiseed,0,0.8571
+RandomForest (concat),multiseed,1,0.75
+RandomForest (concat),multiseed,1,0.95
+RandomForest (concat),multiseed,1,0.8393
+RandomForest (concat),multiseed,1,0.6964
+RandomForest (concat),multiseed,1,0.5893
+RandomForest (concat),multiseed,2,0.8333
+RandomForest (concat),multiseed,2,0.5167
+RandomForest (concat),multiseed,2,0.5714
+RandomForest (concat),multiseed,2,0.6429
+RandomForest (concat),multiseed,2,0.875
+RandomForest (concat),multiseed,3,0.8167
+RandomForest (concat),multiseed,3,0.6833
+RandomForest (concat),multiseed,3,0.6607
+RandomForest (concat),multiseed,3,0.8304
+RandomForest (concat),multiseed,3,0.7143
+RandomForest (concat),multiseed,4,0.7333
+RandomForest (concat),multiseed,4,0.8167
+RandomForest (concat),multiseed,4,0.8571
+RandomForest (concat),multiseed,4,0.4643
+RandomForest (concat),multiseed,4,0.75
+RandomForest (concat),multiseed,5,0.4333
+RandomForest (concat),multiseed,5,0.6833
+RandomForest (concat),multiseed,5,0.6071
+RandomForest (concat),multiseed,5,0.7143
+RandomForest (concat),multiseed,5,0.7321
+RandomForest (concat),multiseed,6,0.7083
+RandomForest (concat),multiseed,6,0.7667
+RandomForest (concat),multiseed,6,0.7143
+RandomForest (concat),multiseed,6,0.5714
+RandomForest (concat),multiseed,6,0.6071
+RandomForest (concat),multiseed,7,0.8167
+RandomForest (concat),multiseed,7,0.5917
+RandomForest (concat),multiseed,7,0.5179
+RandomForest (concat),multiseed,7,0.7857
+RandomForest (concat),multiseed,7,0.8393
+RandomForest (concat),multiseed,8,0.6417
+RandomForest (concat),multiseed,8,0.7833
+RandomForest (concat),multiseed,8,0.5625
+RandomForest (concat),multiseed,8,0.6786
+RandomForest (concat),multiseed,8,0.5625
+RandomForest (concat),multiseed,9,0.8
+RandomForest (concat),multiseed,9,0.5667
+RandomForest (concat),multiseed,9,0.875
+RandomForest (concat),multiseed,9,0.6786
+RandomForest (concat),multiseed,9,0.5893
+RandomForest (concat),multiseed,10,0.7667
+RandomForest (concat),multiseed,10,0.875
+RandomForest (concat),multiseed,10,0.5714
+RandomForest (concat),multiseed,10,0.9107
+RandomForest (concat),multiseed,10,0.625
+RandomForest (concat),multiseed,11,0.7333
+RandomForest (concat),multiseed,11,0.6667
+RandomForest (concat),multiseed,11,0.5179
+RandomForest (concat),multiseed,11,0.7857
+RandomForest (concat),multiseed,11,0.7857
+RandomForest (concat),multiseed,12,0.6333
+RandomForest (concat),multiseed,12,0.8667
+RandomForest (concat),multiseed,12,0.625
+RandomForest (concat),multiseed,12,0.4821
+RandomForest (concat),multiseed,12,0.7589
+RandomForest (concat),multiseed,13,0.7833
+RandomForest (concat),multiseed,13,0.8833
+RandomForest (concat),multiseed,13,0.3571
+RandomForest (concat),multiseed,13,0.5714
+RandomForest (concat),multiseed,13,0.9643
+RandomForest (concat),multiseed,14,0.65
+RandomForest (concat),multiseed,14,0.7417
+RandomForest (concat),multiseed,14,0.7946
+RandomForest (concat),multiseed,14,0.75
+RandomForest (concat),multiseed,14,0.6071
+RandomForest (concat),multiseed,15,0.9333
+RandomForest (concat),multiseed,15,0.4833
+RandomForest (concat),multiseed,15,0.8571
+RandomForest (concat),multiseed,15,0.6429
+RandomForest (concat),multiseed,15,0.6786
+RandomForest (concat),multiseed,16,0.5667
+RandomForest (concat),multiseed,16,0.7
+RandomForest (concat),multiseed,16,0.9107
+RandomForest (concat),multiseed,16,0.7768
+RandomForest (concat),multiseed,16,0.5357
+RandomForest (concat),multiseed,17,0.6
+RandomForest (concat),multiseed,17,0.7333
+RandomForest (concat),multiseed,17,0.9107
+RandomForest (concat),multiseed,17,0.8393
+RandomForest (concat),multiseed,17,0.6518
+RandomForest (concat),multiseed,18,0.7333
+RandomForest (concat),multiseed,18,0.75
+RandomForest (concat),multiseed,18,0.7857
+RandomForest (concat),multiseed,18,0.4643
+RandomForest (concat),multiseed,18,0.6071
+RandomForest (concat),multiseed,19,0.9167
+RandomForest (concat),multiseed,19,0.4333
+RandomForest (concat),multiseed,19,0.4643
+RandomForest (concat),multiseed,19,0.8929
+RandomForest (concat),multiseed,19,0.8214
+RandomForest (concat),nested,0,0.7667
+RandomForest (concat),nested,1,0.6667
+RandomForest (concat),nested,2,0.5893
+RandomForest (concat),nested,3,0.6964
+RandomForest (concat),nested,4,0.8571
+MLP early-fusion,multiseed,0,0.3667
+MLP early-fusion,multiseed,0,0.6667
+MLP early-fusion,multiseed,0,0.5536
+MLP early-fusion,multiseed,0,0.5
+MLP early-fusion,multiseed,0,0.5357
+MLP early-fusion,multiseed,1,0.8333
+MLP early-fusion,multiseed,1,0.4833
+MLP early-fusion,multiseed,1,0.7143
+MLP early-fusion,multiseed,1,0.4821
+MLP early-fusion,multiseed,1,0.5179
+MLP early-fusion,multiseed,2,0.85
+MLP early-fusion,multiseed,2,0.5167
+MLP early-fusion,multiseed,2,0.2857
+MLP early-fusion,multiseed,2,0.5357
+MLP early-fusion,multiseed,2,0.625
+MLP early-fusion,multiseed,3,0.7333
+MLP early-fusion,multiseed,3,0.5833
+MLP early-fusion,multiseed,3,0.3929
+MLP early-fusion,multiseed,3,0.5893
+MLP early-fusion,multiseed,3,0.6607
+MLP early-fusion,multiseed,4,0.6167
+MLP early-fusion,multiseed,4,0.65
+MLP early-fusion,multiseed,4,0.5714
+MLP early-fusion,multiseed,4,0.5
+MLP early-fusion,multiseed,4,0.6786
+MLP early-fusion,multiseed,5,0.15
+MLP early-fusion,multiseed,5,0.8667
+MLP early-fusion,multiseed,5,0.6607
+MLP early-fusion,multiseed,5,0.375
+MLP early-fusion,multiseed,5,0.4643
+MLP early-fusion,multiseed,6,0.5333
+MLP early-fusion,multiseed,6,0.7833
+MLP early-fusion,multiseed,6,0.375
+MLP early-fusion,multiseed,6,0.5536
+MLP early-fusion,multiseed,6,0.2321
+MLP early-fusion,multiseed,7,0.5833
+MLP early-fusion,multiseed,7,0.75
+MLP early-fusion,multiseed,7,0.5357
+MLP early-fusion,multiseed,7,0.1607
+MLP early-fusion,multiseed,7,0.625
+MLP early-fusion,multiseed,8,0.3167
+MLP early-fusion,multiseed,8,0.5167
+MLP early-fusion,multiseed,8,0.3036
+MLP early-fusion,multiseed,8,0.5893
+MLP early-fusion,multiseed,8,0.7857
+MLP early-fusion,multiseed,9,0.6333
+MLP early-fusion,multiseed,9,0.6333
+MLP early-fusion,multiseed,9,0.3571
+MLP early-fusion,multiseed,9,0.3214
+MLP early-fusion,multiseed,9,0.4107
+MLP early-fusion,multiseed,10,0.6333
+MLP early-fusion,multiseed,10,0.7167
+MLP early-fusion,multiseed,10,0.3393
+MLP early-fusion,multiseed,10,0.5268
+MLP early-fusion,multiseed,10,0.6607
+MLP early-fusion,multiseed,11,0.6167
+MLP early-fusion,multiseed,11,0.5
+MLP early-fusion,multiseed,11,0.7679
+MLP early-fusion,multiseed,11,0.5
+MLP early-fusion,multiseed,11,0.5536
+MLP early-fusion,multiseed,12,0.3667
+MLP early-fusion,multiseed,12,0.4667
+MLP early-fusion,multiseed,12,0.6429
+MLP early-fusion,multiseed,12,0.3214
+MLP early-fusion,multiseed,12,0.4107
+MLP early-fusion,multiseed,13,0.5833
+MLP early-fusion,multiseed,13,0.5167
+MLP early-fusion,multiseed,13,0.4821
+MLP early-fusion,multiseed,13,0.2857
+MLP early-fusion,multiseed,13,0.5893
+MLP early-fusion,multiseed,14,0.6833
+MLP early-fusion,multiseed,14,0.5833
+MLP early-fusion,multiseed,14,0.3393
+MLP early-fusion,multiseed,14,0.8929
+MLP early-fusion,multiseed,14,0.6071
+MLP early-fusion,multiseed,15,0.6333
+MLP early-fusion,multiseed,15,0.6667
+MLP early-fusion,multiseed,15,0.5714
+MLP early-fusion,multiseed,15,0.5893
+MLP early-fusion,multiseed,15,0.5357
+MLP early-fusion,multiseed,16,0.7333
+MLP early-fusion,multiseed,16,0.5
+MLP early-fusion,multiseed,16,0.1071
+MLP early-fusion,multiseed,16,0.7143
+MLP early-fusion,multiseed,16,0.5179
+MLP early-fusion,multiseed,17,0.5667
+MLP early-fusion,multiseed,17,0.9333
+MLP early-fusion,multiseed,17,0.375
+MLP early-fusion,multiseed,17,0.625
+MLP early-fusion,multiseed,17,0.3393
+MLP early-fusion,multiseed,18,0.0667
+MLP early-fusion,multiseed,18,0.5333
+MLP early-fusion,multiseed,18,0.5893
+MLP early-fusion,multiseed,18,0.5714
+MLP early-fusion,multiseed,18,0.5
+MLP early-fusion,multiseed,19,0.5833
+MLP early-fusion,multiseed,19,0.5167
+MLP early-fusion,multiseed,19,0.4286
+MLP early-fusion,multiseed,19,0.3214
+MLP early-fusion,multiseed,19,0.6786
+MLP early-fusion,nested,0,0.3833
+MLP early-fusion,nested,1,0.6667
+MLP early-fusion,nested,2,0.5536
+MLP early-fusion,nested,3,0.5714
+MLP early-fusion,nested,4,0.5179
+Late-fusion ensemble,multiseed,0,0.5167
+Late-fusion ensemble,multiseed,0,0.7333
+Late-fusion ensemble,multiseed,0,0.7143
+Late-fusion ensemble,multiseed,0,0.6786
+Late-fusion ensemble,multiseed,0,0.5714
+Late-fusion ensemble,multiseed,1,0.85
+Late-fusion ensemble,multiseed,1,0.7167
+Late-fusion ensemble,multiseed,1,0.8393
+Late-fusion ensemble,multiseed,1,0.7143
+Late-fusion ensemble,multiseed,1,0.6071
+Late-fusion ensemble,multiseed,2,0.6667
+Late-fusion ensemble,multiseed,2,0.45
+Late-fusion ensemble,multiseed,2,0.5893
+Late-fusion ensemble,multiseed,2,0.3036
+Late-fusion ensemble,multiseed,2,0.8036
+Late-fusion ensemble,multiseed,3,0.9
+Late-fusion ensemble,multiseed,3,0.6833
+Late-fusion ensemble,multiseed,3,0.5893
+Late-fusion ensemble,multiseed,3,0.5893
+Late-fusion ensemble,multiseed,3,0.4107
+Late-fusion ensemble,multiseed,4,0.7167
+Late-fusion ensemble,multiseed,4,0.7667
+Late-fusion ensemble,multiseed,4,0.5357
+Late-fusion ensemble,multiseed,4,0.5714
+Late-fusion ensemble,multiseed,4,0.6607
+Late-fusion ensemble,multiseed,5,0.3167
+Late-fusion ensemble,multiseed,5,0.8833
+Late-fusion ensemble,multiseed,5,0.5893
+Late-fusion ensemble,multiseed,5,0.4464
+Late-fusion ensemble,multiseed,5,0.6429
+Late-fusion ensemble,multiseed,6,0.6167
+Late-fusion ensemble,multiseed,6,0.8
+Late-fusion ensemble,multiseed,6,0.8036
+Late-fusion ensemble,multiseed,6,0.5714
+Late-fusion ensemble,multiseed,6,0.5
+Late-fusion ensemble,multiseed,7,0.6333
+Late-fusion ensemble,multiseed,7,0.7
+Late-fusion ensemble,multiseed,7,0.7321
+Late-fusion ensemble,multiseed,7,0.3571
+Late-fusion ensemble,multiseed,7,0.7143
+Late-fusion ensemble,multiseed,8,0.6167
+Late-fusion ensemble,multiseed,8,0.75
+Late-fusion ensemble,multiseed,8,0.5357
+Late-fusion ensemble,multiseed,8,0.5357
+Late-fusion ensemble,multiseed,8,0.9464
+Late-fusion ensemble,multiseed,9,0.7833
+Late-fusion ensemble,multiseed,9,0.7
+Late-fusion ensemble,multiseed,9,0.5179
+Late-fusion ensemble,multiseed,9,0.5357
+Late-fusion ensemble,multiseed,9,0.6071
+Late-fusion ensemble,multiseed,10,0.6667
+Late-fusion ensemble,multiseed,10,0.7833
+Late-fusion ensemble,multiseed,10,0.5357
+Late-fusion ensemble,multiseed,10,0.6786
+Late-fusion ensemble,multiseed,10,0.5536
+Late-fusion ensemble,multiseed,11,0.5333
+Late-fusion ensemble,multiseed,11,0.75
+Late-fusion ensemble,multiseed,11,0.6964
+Late-fusion ensemble,multiseed,11,0.5536
+Late-fusion ensemble,multiseed,11,0.8036
+Late-fusion ensemble,multiseed,12,0.3833
+Late-fusion ensemble,multiseed,12,0.85
+Late-fusion ensemble,multiseed,12,0.8036
+Late-fusion ensemble,multiseed,12,0.2321
+Late-fusion ensemble,multiseed,12,0.4464
+Late-fusion ensemble,multiseed,13,0.8167
+Late-fusion ensemble,multiseed,13,0.45
+Late-fusion ensemble,multiseed,13,0.5536
+Late-fusion ensemble,multiseed,13,0.5357
+Late-fusion ensemble,multiseed,13,0.75
+Late-fusion ensemble,multiseed,14,0.6833
+Late-fusion ensemble,multiseed,14,0.55
+Late-fusion ensemble,multiseed,14,0.5357
+Late-fusion ensemble,multiseed,14,0.9464
+Late-fusion ensemble,multiseed,14,0.6964
+Late-fusion ensemble,multiseed,15,0.7667
+Late-fusion ensemble,multiseed,15,0.7
+Late-fusion ensemble,multiseed,15,0.7679
+Late-fusion ensemble,multiseed,15,0.5714
+Late-fusion ensemble,multiseed,15,0.5536
+Late-fusion ensemble,multiseed,16,0.5
+Late-fusion ensemble,multiseed,16,0.55
+Late-fusion ensemble,multiseed,16,0.5893
+Late-fusion ensemble,multiseed,16,0.6786
+Late-fusion ensemble,multiseed,16,0.5714
+Late-fusion ensemble,multiseed,17,0.7
+Late-fusion ensemble,multiseed,17,0.8833
+Late-fusion ensemble,multiseed,17,0.5893
+Late-fusion ensemble,multiseed,17,0.7143
+Late-fusion ensemble,multiseed,17,0.3571
+Late-fusion ensemble,multiseed,18,0.2167
+Late-fusion ensemble,multiseed,18,0.6833
+Late-fusion ensemble,multiseed,18,0.7321
+Late-fusion ensemble,multiseed,18,0.8393
+Late-fusion ensemble,multiseed,18,0.5357
+Late-fusion ensemble,multiseed,19,0.85
+Late-fusion ensemble,multiseed,19,0.6
+Late-fusion ensemble,multiseed,19,0.3929
+Late-fusion ensemble,multiseed,19,0.625
+Late-fusion ensemble,multiseed,19,0.6607
+1D-CNN (temporal),multiseed,0,0.4833
+1D-CNN (temporal),multiseed,0,0.7833
+1D-CNN (temporal),multiseed,0,0.75
+1D-CNN (temporal),multiseed,0,0.4821
+1D-CNN (temporal),multiseed,0,0.5536
+1D-CNN (temporal),multiseed,1,0.95
+1D-CNN (temporal),multiseed,1,0.55
+1D-CNN (temporal),multiseed,1,0.9286
+1D-CNN (temporal),multiseed,1,0.4286
+1D-CNN (temporal),multiseed,1,0.625
+1D-CNN (temporal),multiseed,2,0.7
+1D-CNN (temporal),multiseed,2,0.7167
+1D-CNN (temporal),multiseed,2,0.5
+1D-CNN (temporal),multiseed,2,0.3929
+1D-CNN (temporal),multiseed,2,0.625
+1D-CNN (temporal),multiseed,3,1.0
+1D-CNN (temporal),multiseed,3,0.6667
+1D-CNN (temporal),multiseed,3,0.375
+1D-CNN (temporal),multiseed,3,0.8571
+1D-CNN (temporal),multiseed,3,0.7143
+1D-CNN (temporal),multiseed,4,0.6167
+1D-CNN (temporal),multiseed,4,0.8833
+1D-CNN (temporal),multiseed,4,0.4107
+1D-CNN (temporal),multiseed,4,0.625
+1D-CNN (temporal),multiseed,4,0.7143
+1D-CNN (temporal),multiseed,5,0.1833
+1D-CNN (temporal),multiseed,5,0.8667
+1D-CNN (temporal),multiseed,5,0.6786
+1D-CNN (temporal),multiseed,5,0.4821
+1D-CNN (temporal),multiseed,5,0.9464
+1D-CNN (temporal),multiseed,6,0.6167
+1D-CNN (temporal),multiseed,6,0.85
+1D-CNN (temporal),multiseed,6,0.7857
+1D-CNN (temporal),multiseed,6,0.5714
+1D-CNN (temporal),multiseed,6,0.5536
+1D-CNN (temporal),multiseed,7,0.5833
+1D-CNN (temporal),multiseed,7,0.8333
+1D-CNN (temporal),multiseed,7,0.7143
+1D-CNN (temporal),multiseed,7,0.4464
+1D-CNN (temporal),multiseed,7,0.8214
+1D-CNN (temporal),multiseed,8,0.4833
+1D-CNN (temporal),multiseed,8,0.75
+1D-CNN (temporal),multiseed,8,0.4286
+1D-CNN (temporal),multiseed,8,0.6071
+1D-CNN (temporal),multiseed,8,0.9107
+1D-CNN (temporal),multiseed,9,0.6167
+1D-CNN (temporal),multiseed,9,0.85
+1D-CNN (temporal),multiseed,9,0.8214
+1D-CNN (temporal),multiseed,9,0.7321
+1D-CNN (temporal),multiseed,9,0.6607
+1D-CNN (temporal),multiseed,10,0.8333
+1D-CNN (temporal),multiseed,10,0.85
+1D-CNN (temporal),multiseed,10,0.5536
+1D-CNN (temporal),multiseed,10,0.5357
+1D-CNN (temporal),multiseed,10,0.7321
+1D-CNN (temporal),multiseed,11,0.8833
+1D-CNN (temporal),multiseed,11,0.8833
+1D-CNN (temporal),multiseed,11,0.4643
+1D-CNN (temporal),multiseed,11,0.75
+1D-CNN (temporal),multiseed,11,0.6786
+1D-CNN (temporal),multiseed,12,0.2667
+1D-CNN (temporal),multiseed,12,0.8833
+1D-CNN (temporal),multiseed,12,0.5893
+1D-CNN (temporal),multiseed,12,0.7143
+1D-CNN (temporal),multiseed,12,0.4821
+1D-CNN (temporal),multiseed,13,0.8833
+1D-CNN (temporal),multiseed,13,0.65
+1D-CNN (temporal),multiseed,13,0.4821
+1D-CNN (temporal),multiseed,13,0.7321
+1D-CNN (temporal),multiseed,13,0.6786
+1D-CNN (temporal),multiseed,14,0.6
+1D-CNN (temporal),multiseed,14,0.75
+1D-CNN (temporal),multiseed,14,0.5536
+1D-CNN (temporal),multiseed,14,0.9107
+1D-CNN (temporal),multiseed,14,0.6964
+1D-CNN (temporal),multiseed,15,0.8667
+1D-CNN (temporal),multiseed,15,0.6833
+1D-CNN (temporal),multiseed,15,0.6071
+1D-CNN (temporal),multiseed,15,0.6071
+1D-CNN (temporal),multiseed,15,0.8036
+1D-CNN (temporal),multiseed,16,0.5667
+1D-CNN (temporal),multiseed,16,0.55
+1D-CNN (temporal),multiseed,16,0.75
+1D-CNN (temporal),multiseed,16,1.0
+1D-CNN (temporal),multiseed,16,0.6607
+1D-CNN (temporal),multiseed,17,0.8333
+1D-CNN (temporal),multiseed,17,0.8333
+1D-CNN (temporal),multiseed,17,1.0
+1D-CNN (temporal),multiseed,17,0.6607
+1D-CNN (temporal),multiseed,17,0.625
+1D-CNN (temporal),multiseed,18,0.75
+1D-CNN (temporal),multiseed,18,0.85
+1D-CNN (temporal),multiseed,18,0.6964
+1D-CNN (temporal),multiseed,18,0.625
+1D-CNN (temporal),multiseed,18,0.4821
+1D-CNN (temporal),multiseed,19,0.9833
+1D-CNN (temporal),multiseed,19,0.6
+1D-CNN (temporal),multiseed,19,0.5
+1D-CNN (temporal),multiseed,19,0.5357
+1D-CNN (temporal),multiseed,19,0.9643
+1D-CNN (temporal),nested,0,0.4833
+1D-CNN (temporal),nested,1,0.7167
+1D-CNN (temporal),nested,2,0.7857
+1D-CNN (temporal),nested,3,0.5536
+1D-CNN (temporal),nested,4,0.5
+LSTM (temporal),multiseed,0,0.5167
+LSTM (temporal),multiseed,0,0.7333
+LSTM (temporal),multiseed,0,0.5179
+LSTM (temporal),multiseed,0,0.6786
+LSTM (temporal),multiseed,0,0.375
+LSTM (temporal),multiseed,1,0.5833
+LSTM (temporal),multiseed,1,0.5333
+LSTM (temporal),multiseed,1,0.7857
+LSTM (temporal),multiseed,1,0.75
+LSTM (temporal),multiseed,1,0.6071
+LSTM (temporal),multiseed,2,0.6167
+LSTM (temporal),multiseed,2,0.5833
+LSTM (temporal),multiseed,2,0.5
+LSTM (temporal),multiseed,2,0.4464
+LSTM (temporal),multiseed,2,0.6964
+LSTM (temporal),multiseed,3,0.7833
+LSTM (temporal),multiseed,3,0.75
+LSTM (temporal),multiseed,3,0.3571
+LSTM (temporal),multiseed,3,0.8036
+LSTM (temporal),multiseed,3,0.7143
+LSTM (temporal),multiseed,4,0.8
+LSTM (temporal),multiseed,4,0.8167
+LSTM (temporal),multiseed,4,0.7857
+LSTM (temporal),multiseed,4,0.4821
+LSTM (temporal),multiseed,4,0.7143
+LSTM (temporal),multiseed,5,0.0
+LSTM (temporal),multiseed,5,0.75
+LSTM (temporal),multiseed,5,0.5714
+LSTM (temporal),multiseed,5,0.4107
+LSTM (temporal),multiseed,5,0.8214
+LSTM (temporal),multiseed,6,0.7333
+LSTM (temporal),multiseed,6,0.5667
+LSTM (temporal),multiseed,6,0.6786
+LSTM (temporal),multiseed,6,0.4643
+LSTM (temporal),multiseed,6,0.3393
+LSTM (temporal),multiseed,7,0.6667
+LSTM (temporal),multiseed,7,0.45
+LSTM (temporal),multiseed,7,0.625
+LSTM (temporal),multiseed,7,0.25
+LSTM (temporal),multiseed,7,0.9107
+LSTM (temporal),multiseed,8,0.5667
+LSTM (temporal),multiseed,8,0.5833
+LSTM (temporal),multiseed,8,0.875
+LSTM (temporal),multiseed,8,0.5893
+LSTM (temporal),multiseed,8,0.6071
+LSTM (temporal),multiseed,9,0.65
+LSTM (temporal),multiseed,9,0.3167
+LSTM (temporal),multiseed,9,0.6786
+LSTM (temporal),multiseed,9,0.375
+LSTM (temporal),multiseed,9,0.5714
+LSTM (temporal),multiseed,10,0.85
+LSTM (temporal),multiseed,10,0.6167
+LSTM (temporal),multiseed,10,0.5179
+LSTM (temporal),multiseed,10,0.3571
+LSTM (temporal),multiseed,10,0.6429
+LSTM (temporal),multiseed,11,0.7333
+LSTM (temporal),multiseed,11,0.45
+LSTM (temporal),multiseed,11,0.5357
+LSTM (temporal),multiseed,11,0.5
+LSTM (temporal),multiseed,11,0.6429
+LSTM (temporal),multiseed,12,0.5833
+LSTM (temporal),multiseed,12,0.9167
+LSTM (temporal),multiseed,12,0.5893
+LSTM (temporal),multiseed,12,0.5179
+LSTM (temporal),multiseed,12,0.7679
+LSTM (temporal),multiseed,13,0.5167
+LSTM (temporal),multiseed,13,0.7833
+LSTM (temporal),multiseed,13,0.2679
+LSTM (temporal),multiseed,13,0.4643
+LSTM (temporal),multiseed,13,0.8036
+LSTM (temporal),multiseed,14,0.5833
+LSTM (temporal),multiseed,14,0.8333
+LSTM (temporal),multiseed,14,0.6786
+LSTM (temporal),multiseed,14,0.8393
+LSTM (temporal),multiseed,14,0.6607
+LSTM (temporal),multiseed,15,0.5333
+LSTM (temporal),multiseed,15,0.6
+LSTM (temporal),multiseed,15,0.6786
+LSTM (temporal),multiseed,15,0.6964
+LSTM (temporal),multiseed,15,0.4464
+LSTM (temporal),multiseed,16,0.45
+LSTM (temporal),multiseed,16,0.6167
+LSTM (temporal),multiseed,16,0.5893
+LSTM (temporal),multiseed,16,0.7321
+LSTM (temporal),multiseed,16,0.5
+LSTM (temporal),multiseed,17,0.7
+LSTM (temporal),multiseed,17,0.6667
+LSTM (temporal),multiseed,17,0.6071
+LSTM (temporal),multiseed,17,0.5714
+LSTM (temporal),multiseed,17,0.6607
+LSTM (temporal),multiseed,18,0.5667
+LSTM (temporal),multiseed,18,0.55
+LSTM (temporal),multiseed,18,0.7143
+LSTM (temporal),multiseed,18,0.4643
+LSTM (temporal),multiseed,18,0.4821
+LSTM (temporal),multiseed,19,0.8833
+LSTM (temporal),multiseed,19,0.4333
+LSTM (temporal),multiseed,19,0.6071
+LSTM (temporal),multiseed,19,0.4821
+LSTM (temporal),multiseed,19,0.9821
+LSTM (temporal),nested,0,0.5833
+LSTM (temporal),nested,1,0.6333
+LSTM (temporal),nested,2,0.5357
+LSTM (temporal),nested,3,0.625
+LSTM (temporal),nested,4,0.3571
+TCN (temporal),multiseed,0,0.4667
+TCN (temporal),multiseed,0,0.7833
+TCN (temporal),multiseed,0,0.5
+TCN (temporal),multiseed,0,0.6429
+TCN (temporal),multiseed,0,0.5536
+TCN (temporal),multiseed,1,1.0
+TCN (temporal),multiseed,1,0.5333
+TCN (temporal),multiseed,1,0.6429
+TCN (temporal),multiseed,1,0.4821
+TCN (temporal),multiseed,1,0.6429
+TCN (temporal),multiseed,2,0.7333
+TCN (temporal),multiseed,2,0.2833
+TCN (temporal),multiseed,2,0.5714
+TCN (temporal),multiseed,2,0.4643
+TCN (temporal),multiseed,2,0.375
+TCN (temporal),multiseed,3,0.6833
+TCN (temporal),multiseed,3,0.5667
+TCN (temporal),multiseed,3,0.1964
+TCN (temporal),multiseed,3,0.7143
+TCN (temporal),multiseed,3,0.625
+TCN (temporal),multiseed,4,0.7167
+TCN (temporal),multiseed,4,0.4667
+TCN (temporal),multiseed,4,0.5536
+TCN (temporal),multiseed,4,0.5357
+TCN (temporal),multiseed,4,0.8036
+TCN (temporal),multiseed,5,0.0667
+TCN (temporal),multiseed,5,0.7667
+TCN (temporal),multiseed,5,0.5893
+TCN (temporal),multiseed,5,0.3393
+TCN (temporal),multiseed,5,0.5
+TCN (temporal),multiseed,6,0.5167
+TCN (temporal),multiseed,6,0.5333
+TCN (temporal),multiseed,6,0.6429
+TCN (temporal),multiseed,6,0.4286
+TCN (temporal),multiseed,6,0.5893
+TCN (temporal),multiseed,7,0.6
+TCN (temporal),multiseed,7,0.5
+TCN (temporal),multiseed,7,0.6429
+TCN (temporal),multiseed,7,0.0893
+TCN (temporal),multiseed,7,0.8571
+TCN (temporal),multiseed,8,0.3833
+TCN (temporal),multiseed,8,0.4
+TCN (temporal),multiseed,8,0.5
+TCN (temporal),multiseed,8,0.5357
+TCN (temporal),multiseed,8,0.7857
+TCN (temporal),multiseed,9,0.75
+TCN (temporal),multiseed,9,0.4333
+TCN (temporal),multiseed,9,0.5179
+TCN (temporal),multiseed,9,0.6071
+TCN (temporal),multiseed,9,0.4107
+TCN (temporal),multiseed,10,0.45
+TCN (temporal),multiseed,10,0.6667
+TCN (temporal),multiseed,10,0.4286
+TCN (temporal),multiseed,10,0.5179
+TCN (temporal),multiseed,10,0.4286
+TCN (temporal),multiseed,11,0.4
+TCN (temporal),multiseed,11,0.55
+TCN (temporal),multiseed,11,0.6964
+TCN (temporal),multiseed,11,0.5
+TCN (temporal),multiseed,11,0.5
+TCN (temporal),multiseed,12,0.2333
+TCN (temporal),multiseed,12,0.6833
+TCN (temporal),multiseed,12,0.5893
+TCN (temporal),multiseed,12,0.75
+TCN (temporal),multiseed,12,0.4286
+TCN (temporal),multiseed,13,0.5333
+TCN (temporal),multiseed,13,0.3
+TCN (temporal),multiseed,13,0.5357
+TCN (temporal),multiseed,13,0.5357
+TCN (temporal),multiseed,13,0.4821
+TCN (temporal),multiseed,14,0.6
+TCN (temporal),multiseed,14,0.45
+TCN (temporal),multiseed,14,0.4821
+TCN (temporal),multiseed,14,0.8214
+TCN (temporal),multiseed,14,0.7143
+TCN (temporal),multiseed,15,0.2333
+TCN (temporal),multiseed,15,0.6333
+TCN (temporal),multiseed,15,0.5179
+TCN (temporal),multiseed,15,0.7143
+TCN (temporal),multiseed,15,0.5536
+TCN (temporal),multiseed,16,0.35
+TCN (temporal),multiseed,16,0.6667
+TCN (temporal),multiseed,16,0.375
+TCN (temporal),multiseed,16,0.5179
+TCN (temporal),multiseed,16,0.6607
+TCN (temporal),multiseed,17,0.7333
+TCN (temporal),multiseed,17,0.5833
+TCN (temporal),multiseed,17,0.6786
+TCN (temporal),multiseed,17,0.5357
+TCN (temporal),multiseed,17,0.3214
+TCN (temporal),multiseed,18,0.3
+TCN (temporal),multiseed,18,0.6667
+TCN (temporal),multiseed,18,0.5536
+TCN (temporal),multiseed,18,0.7143
+TCN (temporal),multiseed,18,0.4821
+TCN (temporal),multiseed,19,0.65
+TCN (temporal),multiseed,19,0.5167
+TCN (temporal),multiseed,19,0.375
+TCN (temporal),multiseed,19,0.2679
+TCN (temporal),multiseed,19,0.9107
+TCN (temporal),nested,0,0.45
+TCN (temporal),nested,1,0.7833
+TCN (temporal),nested,2,0.5179
+TCN (temporal),nested,3,0.5714
+TCN (temporal),nested,4,0.625
+Demographics (age+sex),multiseed,0,0.6833
+Demographics (age+sex),multiseed,0,0.775
+Demographics (age+sex),multiseed,0,0.8214
+Demographics (age+sex),multiseed,0,0.6518
+Demographics (age+sex),multiseed,0,0.7946
+Demographics (age+sex),multiseed,1,0.7833
+Demographics (age+sex),multiseed,1,0.7667
+Demographics (age+sex),multiseed,1,0.4821
+Demographics (age+sex),multiseed,1,0.6161
+Demographics (age+sex),multiseed,1,0.8214
+Demographics (age+sex),multiseed,2,0.9
+Demographics (age+sex),multiseed,2,0.5917
+Demographics (age+sex),multiseed,2,0.7946
+Demographics (age+sex),multiseed,2,0.5982
+Demographics (age+sex),multiseed,2,0.8036
+Demographics (age+sex),multiseed,3,0.675
+Demographics (age+sex),multiseed,3,0.8917
+Demographics (age+sex),multiseed,3,0.2411
+Demographics (age+sex),multiseed,3,0.875
+Demographics (age+sex),multiseed,3,0.8304
+Demographics (age+sex),multiseed,4,0.7583
+Demographics (age+sex),multiseed,4,0.7417
+Demographics (age+sex),multiseed,4,0.7857
+Demographics (age+sex),multiseed,4,0.6339
+Demographics (age+sex),multiseed,4,0.6696
+Demographics (age+sex),multiseed,5,0.7917
+Demographics (age+sex),multiseed,5,0.6417
+Demographics (age+sex),multiseed,5,0.9018
+Demographics (age+sex),multiseed,5,0.5536
+Demographics (age+sex),multiseed,5,0.8839
+Demographics (age+sex),multiseed,6,0.7167
+Demographics (age+sex),multiseed,6,0.8333
+Demographics (age+sex),multiseed,6,0.7232
+Demographics (age+sex),multiseed,6,0.7411
+Demographics (age+sex),multiseed,6,0.6518
+Demographics (age+sex),multiseed,7,0.7417
+Demographics (age+sex),multiseed,7,0.5667
+Demographics (age+sex),multiseed,7,0.7946
+Demographics (age+sex),multiseed,7,0.7143
+Demographics (age+sex),multiseed,7,0.8125
+Demographics (age+sex),multiseed,8,0.8833
+Demographics (age+sex),multiseed,8,0.7167
+Demographics (age+sex),multiseed,8,0.6339
+Demographics (age+sex),multiseed,8,0.7857
+Demographics (age+sex),multiseed,8,0.625
+Demographics (age+sex),multiseed,9,0.725
+Demographics (age+sex),multiseed,9,0.6167
+Demographics (age+sex),multiseed,9,0.7589
+Demographics (age+sex),multiseed,9,0.9643
+Demographics (age+sex),multiseed,9,0.6607
+Demographics (age+sex),multiseed,10,0.7333
+Demographics (age+sex),multiseed,10,0.7917
+Demographics (age+sex),multiseed,10,0.6607
+Demographics (age+sex),multiseed,10,0.7589
+Demographics (age+sex),multiseed,10,0.8214
+Demographics (age+sex),multiseed,11,0.7333
+Demographics (age+sex),multiseed,11,0.75
+Demographics (age+sex),multiseed,11,0.7321
+Demographics (age+sex),multiseed,11,0.6161
+Demographics (age+sex),multiseed,11,0.8036
+Demographics (age+sex),multiseed,12,0.7333
+Demographics (age+sex),multiseed,12,0.7583
+Demographics (age+sex),multiseed,12,0.7857
+Demographics (age+sex),multiseed,12,0.7768
+Demographics (age+sex),multiseed,12,0.5893
+Demographics (age+sex),multiseed,13,0.825
+Demographics (age+sex),multiseed,13,0.9
+Demographics (age+sex),multiseed,13,0.7321
+Demographics (age+sex),multiseed,13,0.6964
+Demographics (age+sex),multiseed,13,0.4643
+Demographics (age+sex),multiseed,14,0.825
+Demographics (age+sex),multiseed,14,0.5
+Demographics (age+sex),multiseed,14,0.7411
+Demographics (age+sex),multiseed,14,0.6429
+Demographics (age+sex),multiseed,14,0.7857
+Demographics (age+sex),multiseed,15,0.8833
+Demographics (age+sex),multiseed,15,0.625
+Demographics (age+sex),multiseed,15,0.6696
+Demographics (age+sex),multiseed,15,0.7857
+Demographics (age+sex),multiseed,15,0.6786
+Demographics (age+sex),multiseed,16,0.4583
+Demographics (age+sex),multiseed,16,0.75
+Demographics (age+sex),multiseed,16,0.7857
+Demographics (age+sex),multiseed,16,0.8125
+Demographics (age+sex),multiseed,16,0.6429
+Demographics (age+sex),multiseed,17,0.8083
+Demographics (age+sex),multiseed,17,0.5917
+Demographics (age+sex),multiseed,17,0.8482
+Demographics (age+sex),multiseed,17,0.7411
+Demographics (age+sex),multiseed,17,0.6607
+Demographics (age+sex),multiseed,18,0.875
+Demographics (age+sex),multiseed,18,0.7833
+Demographics (age+sex),multiseed,18,0.5804
+Demographics (age+sex),multiseed,18,0.6429
+Demographics (age+sex),multiseed,18,0.7411
+Demographics (age+sex),multiseed,19,0.8833
+Demographics (age+sex),multiseed,19,0.65
+Demographics (age+sex),multiseed,19,0.5625
+Demographics (age+sex),multiseed,19,0.7946
+Demographics (age+sex),multiseed,19,0.7768
+GMU (gated fusion),multiseed,0,0.55
+GMU (gated fusion),multiseed,0,0.7667
+GMU (gated fusion),multiseed,0,0.5179
+GMU (gated fusion),multiseed,0,0.7321
+GMU (gated fusion),multiseed,0,0.6429
+GMU (gated fusion),multiseed,1,0.85
+GMU (gated fusion),multiseed,1,0.8
+GMU (gated fusion),multiseed,1,0.6786
+GMU (gated fusion),multiseed,1,0.5357
+GMU (gated fusion),multiseed,1,0.4821
+GMU (gated fusion),multiseed,2,0.75
+GMU (gated fusion),multiseed,2,0.5667
+GMU (gated fusion),multiseed,2,0.4286
+GMU (gated fusion),multiseed,2,0.5357
+GMU (gated fusion),multiseed,2,0.9286
+GMU (gated fusion),multiseed,3,0.7667
+GMU (gated fusion),multiseed,3,0.8333
+GMU (gated fusion),multiseed,3,0.4107
+GMU (gated fusion),multiseed,3,0.7143
+GMU (gated fusion),multiseed,3,0.625
+GMU (gated fusion),multiseed,4,0.6
+GMU (gated fusion),multiseed,4,0.7
+GMU (gated fusion),multiseed,4,0.8036
+GMU (gated fusion),multiseed,4,0.4464
+GMU (gated fusion),multiseed,4,0.7321
+GMU (gated fusion),multiseed,5,0.2333
+GMU (gated fusion),multiseed,5,0.7333
+GMU (gated fusion),multiseed,5,0.6786
+GMU (gated fusion),multiseed,5,0.4821
+GMU (gated fusion),multiseed,5,0.75
+GMU (gated fusion),multiseed,6,0.5833
+GMU (gated fusion),multiseed,6,0.7833
+GMU (gated fusion),multiseed,6,0.5357
+GMU (gated fusion),multiseed,6,0.625
+GMU (gated fusion),multiseed,6,0.4286
+GMU (gated fusion),multiseed,7,0.55
+GMU (gated fusion),multiseed,7,0.5333
+GMU (gated fusion),multiseed,7,0.4821
+GMU (gated fusion),multiseed,7,0.5357
+GMU (gated fusion),multiseed,7,0.7321
+GMU (gated fusion),multiseed,8,0.7333
+GMU (gated fusion),multiseed,8,0.7667
+GMU (gated fusion),multiseed,8,0.5893
+GMU (gated fusion),multiseed,8,0.625
+GMU (gated fusion),multiseed,8,0.6429
+GMU (gated fusion),multiseed,9,0.7333
+GMU (gated fusion),multiseed,9,0.45
+GMU (gated fusion),multiseed,9,0.7679
+GMU (gated fusion),multiseed,9,0.3393
+GMU (gated fusion),multiseed,9,0.5
+GMU (gated fusion),multiseed,10,0.7167
+GMU (gated fusion),multiseed,10,0.6167
+GMU (gated fusion),multiseed,10,0.4286
+GMU (gated fusion),multiseed,10,0.6071
+GMU (gated fusion),multiseed,10,0.6071
+GMU (gated fusion),multiseed,11,0.7
+GMU (gated fusion),multiseed,11,0.4667
+GMU (gated fusion),multiseed,11,0.6786
+GMU (gated fusion),multiseed,11,0.6607
+GMU (gated fusion),multiseed,11,0.5536
+GMU (gated fusion),multiseed,12,0.5167
+GMU (gated fusion),multiseed,12,0.65
+GMU (gated fusion),multiseed,12,0.7321
+GMU (gated fusion),multiseed,12,0.5
+GMU (gated fusion),multiseed,12,0.4821
+GMU (gated fusion),multiseed,13,0.6333
+GMU (gated fusion),multiseed,13,0.5667
+GMU (gated fusion),multiseed,13,0.3393
+GMU (gated fusion),multiseed,13,0.4821
+GMU (gated fusion),multiseed,13,0.5536
+GMU (gated fusion),multiseed,14,0.6333
+GMU (gated fusion),multiseed,14,0.55
+GMU (gated fusion),multiseed,14,0.6964
+GMU (gated fusion),multiseed,14,0.7857
+GMU (gated fusion),multiseed,14,0.7143
+GMU (gated fusion),multiseed,15,0.6333
+GMU (gated fusion),multiseed,15,0.5333
+GMU (gated fusion),multiseed,15,0.75
+GMU (gated fusion),multiseed,15,0.5
+GMU (gated fusion),multiseed,15,0.75
+GMU (gated fusion),multiseed,16,0.6167
+GMU (gated fusion),multiseed,16,0.55
+GMU (gated fusion),multiseed,16,0.5893
+GMU (gated fusion),multiseed,16,0.7857
+GMU (gated fusion),multiseed,16,0.4643
+GMU (gated fusion),multiseed,17,0.5667
+GMU (gated fusion),multiseed,17,0.8
+GMU (gated fusion),multiseed,17,0.5536
+GMU (gated fusion),multiseed,17,0.7321
+GMU (gated fusion),multiseed,17,0.5357
+GMU (gated fusion),multiseed,18,0.4167
+GMU (gated fusion),multiseed,18,0.55
+GMU (gated fusion),multiseed,18,0.8214
+GMU (gated fusion),multiseed,18,0.625
+GMU (gated fusion),multiseed,18,0.5357
+GMU (gated fusion),multiseed,19,0.8167
+GMU (gated fusion),multiseed,19,0.4667
+GMU (gated fusion),multiseed,19,0.5179
+GMU (gated fusion),multiseed,19,0.6786
+GMU (gated fusion),multiseed,19,0.7321
+GMU (gated fusion),nested,0,0.5
+GMU (gated fusion),nested,1,0.7667
+GMU (gated fusion),nested,2,0.5
+GMU (gated fusion),nested,3,0.8036
+GMU (gated fusion),nested,4,0.7143
+Cross-modal Transformer,multiseed,0,0.4667
+Cross-modal Transformer,multiseed,0,0.7667
+Cross-modal Transformer,multiseed,0,0.4286
+Cross-modal Transformer,multiseed,0,0.6607
+Cross-modal Transformer,multiseed,0,0.8571
+Cross-modal Transformer,multiseed,1,0.8
+Cross-modal Transformer,multiseed,1,0.7667
+Cross-modal Transformer,multiseed,1,0.6429
+Cross-modal Transformer,multiseed,1,0.4821
+Cross-modal Transformer,multiseed,1,0.5179
+Cross-modal Transformer,multiseed,2,0.75
+Cross-modal Transformer,multiseed,2,0.5
+Cross-modal Transformer,multiseed,2,0.4643
+Cross-modal Transformer,multiseed,2,0.5536
+Cross-modal Transformer,multiseed,2,0.25
+Cross-modal Transformer,multiseed,3,0.7833
+Cross-modal Transformer,multiseed,3,0.65
+Cross-modal Transformer,multiseed,3,0.3214
+Cross-modal Transformer,multiseed,3,0.8929
+Cross-modal Transformer,multiseed,3,0.625
+Cross-modal Transformer,multiseed,4,0.6
+Cross-modal Transformer,multiseed,4,0.6833
+Cross-modal Transformer,multiseed,4,0.9286
+Cross-modal Transformer,multiseed,4,0.4643
+Cross-modal Transformer,multiseed,4,0.7321
+Cross-modal Transformer,multiseed,5,0.2
+Cross-modal Transformer,multiseed,5,0.6333
+Cross-modal Transformer,multiseed,5,0.625
+Cross-modal Transformer,multiseed,5,0.5893
+Cross-modal Transformer,multiseed,5,0.5
+Cross-modal Transformer,multiseed,6,0.5167
+Cross-modal Transformer,multiseed,6,0.5833
+Cross-modal Transformer,multiseed,6,0.6071
+Cross-modal Transformer,multiseed,6,0.5893
+Cross-modal Transformer,multiseed,6,0.7321
+Cross-modal Transformer,multiseed,7,0.6667
+Cross-modal Transformer,multiseed,7,0.45
+Cross-modal Transformer,multiseed,7,0.5357
+Cross-modal Transformer,multiseed,7,0.7321
+Cross-modal Transformer,multiseed,7,0.7679
+Cross-modal Transformer,multiseed,8,0.5833
+Cross-modal Transformer,multiseed,8,0.7667
+Cross-modal Transformer,multiseed,8,0.7143
+Cross-modal Transformer,multiseed,8,0.6071
+Cross-modal Transformer,multiseed,8,0.5714
+Cross-modal Transformer,multiseed,9,0.8
+Cross-modal Transformer,multiseed,9,0.3333
+Cross-modal Transformer,multiseed,9,0.9107
+Cross-modal Transformer,multiseed,9,0.8571
+Cross-modal Transformer,multiseed,9,0.2679
+Cross-modal Transformer,multiseed,10,0.7833
+Cross-modal Transformer,multiseed,10,0.65
+Cross-modal Transformer,multiseed,10,0.4464
+Cross-modal Transformer,multiseed,10,0.5714
+Cross-modal Transformer,multiseed,10,0.7679
+Cross-modal Transformer,multiseed,11,0.8
+Cross-modal Transformer,multiseed,11,0.5333
+Cross-modal Transformer,multiseed,11,0.5179
+Cross-modal Transformer,multiseed,11,0.5
+Cross-modal Transformer,multiseed,11,0.8393
+Cross-modal Transformer,multiseed,12,0.7333
+Cross-modal Transformer,multiseed,12,0.65
+Cross-modal Transformer,multiseed,12,0.5893
+Cross-modal Transformer,multiseed,12,0.7143
+Cross-modal Transformer,multiseed,12,0.4107
+Cross-modal Transformer,multiseed,13,0.5167
+Cross-modal Transformer,multiseed,13,0.7167
+Cross-modal Transformer,multiseed,13,0.4821
+Cross-modal Transformer,multiseed,13,0.5
+Cross-modal Transformer,multiseed,13,0.9286
+Cross-modal Transformer,multiseed,14,0.5333
+Cross-modal Transformer,multiseed,14,0.5167
+Cross-modal Transformer,multiseed,14,0.75
+Cross-modal Transformer,multiseed,14,0.75
+Cross-modal Transformer,multiseed,14,0.6786
+Cross-modal Transformer,multiseed,15,0.6
+Cross-modal Transformer,multiseed,15,0.4
+Cross-modal Transformer,multiseed,15,0.4643
+Cross-modal Transformer,multiseed,15,0.7143
+Cross-modal Transformer,multiseed,15,0.6964
+Cross-modal Transformer,multiseed,16,0.45
+Cross-modal Transformer,multiseed,16,0.6167
+Cross-modal Transformer,multiseed,16,0.9643
+Cross-modal Transformer,multiseed,16,0.6071
+Cross-modal Transformer,multiseed,16,0.5179
+Cross-modal Transformer,multiseed,17,0.6
+Cross-modal Transformer,multiseed,17,0.6833
+Cross-modal Transformer,multiseed,17,0.8929
+Cross-modal Transformer,multiseed,17,0.6071
+Cross-modal Transformer,multiseed,17,0.6786
+Cross-modal Transformer,multiseed,18,0.5667
+Cross-modal Transformer,multiseed,18,0.6
+Cross-modal Transformer,multiseed,18,0.75
+Cross-modal Transformer,multiseed,18,0.6071
+Cross-modal Transformer,multiseed,18,0.4821
+Cross-modal Transformer,multiseed,19,0.6833
+Cross-modal Transformer,multiseed,19,0.4833
+Cross-modal Transformer,multiseed,19,0.2679
+Cross-modal Transformer,multiseed,19,0.7143
+Cross-modal Transformer,multiseed,19,0.7857
+Cross-modal Transformer,nested,0,0.5333
+Cross-modal Transformer,nested,1,0.75
+Cross-modal Transformer,nested,2,0.4464
+Cross-modal Transformer,nested,3,0.6964
+Cross-modal Transformer,nested,4,0.8571
+Tensor Fusion Network,multiseed,0,0.6167
+Tensor Fusion Network,multiseed,0,0.5167
+Tensor Fusion Network,multiseed,0,0.4464
+Tensor Fusion Network,multiseed,0,0.8214
+Tensor Fusion Network,multiseed,0,0.7679
+Tensor Fusion Network,multiseed,1,0.7667
+Tensor Fusion Network,multiseed,1,0.95
+Tensor Fusion Network,multiseed,1,0.7143
+Tensor Fusion Network,multiseed,1,0.7143
+Tensor Fusion Network,multiseed,1,0.5357
+Tensor Fusion Network,multiseed,2,0.6833
+Tensor Fusion Network,multiseed,2,0.5667
+Tensor Fusion Network,multiseed,2,0.8214
+Tensor Fusion Network,multiseed,2,0.625
+Tensor Fusion Network,multiseed,2,1.0
+Tensor Fusion Network,multiseed,3,0.8333
+Tensor Fusion Network,multiseed,3,0.8
+Tensor Fusion Network,multiseed,3,0.5714
+Tensor Fusion Network,multiseed,3,0.8571
+Tensor Fusion Network,multiseed,3,0.5714
+Tensor Fusion Network,multiseed,4,0.45
+Tensor Fusion Network,multiseed,4,0.75
+Tensor Fusion Network,multiseed,4,0.9286
+Tensor Fusion Network,multiseed,4,0.5357
+Tensor Fusion Network,multiseed,4,0.8214
+Tensor Fusion Network,multiseed,5,0.7333
+Tensor Fusion Network,multiseed,5,0.6833
+Tensor Fusion Network,multiseed,5,0.6429
+Tensor Fusion Network,multiseed,5,0.4821
+Tensor Fusion Network,multiseed,5,0.8036
+Tensor Fusion Network,multiseed,6,0.6333
+Tensor Fusion Network,multiseed,6,0.7
+Tensor Fusion Network,multiseed,6,0.7143
+Tensor Fusion Network,multiseed,6,0.7321
+Tensor Fusion Network,multiseed,6,0.6607
+Tensor Fusion Network,multiseed,7,0.6
+Tensor Fusion Network,multiseed,7,0.55
+Tensor Fusion Network,multiseed,7,0.5179
+Tensor Fusion Network,multiseed,7,0.7321
+Tensor Fusion Network,multiseed,7,0.7143
+Tensor Fusion Network,multiseed,8,0.8167
+Tensor Fusion Network,multiseed,8,0.8
+Tensor Fusion Network,multiseed,8,0.6964
+Tensor Fusion Network,multiseed,8,0.5714
+Tensor Fusion Network,multiseed,8,0.4643
+Tensor Fusion Network,multiseed,9,0.85
+Tensor Fusion Network,multiseed,9,0.4167
+Tensor Fusion Network,multiseed,9,0.8393
+Tensor Fusion Network,multiseed,9,0.6607
+Tensor Fusion Network,multiseed,9,0.4821
+Tensor Fusion Network,multiseed,10,0.8
+Tensor Fusion Network,multiseed,10,0.55
+Tensor Fusion Network,multiseed,10,0.4821
+Tensor Fusion Network,multiseed,10,0.7143
+Tensor Fusion Network,multiseed,10,0.7143
+Tensor Fusion Network,multiseed,11,0.75
+Tensor Fusion Network,multiseed,11,0.4167
+Tensor Fusion Network,multiseed,11,0.7143
+Tensor Fusion Network,multiseed,11,0.375
+Tensor Fusion Network,multiseed,11,0.5893
+Tensor Fusion Network,multiseed,12,0.7
+Tensor Fusion Network,multiseed,12,0.65
+Tensor Fusion Network,multiseed,12,0.6071
+Tensor Fusion Network,multiseed,12,0.6071
+Tensor Fusion Network,multiseed,12,0.8571
+Tensor Fusion Network,multiseed,13,0.6167
+Tensor Fusion Network,multiseed,13,0.75
+Tensor Fusion Network,multiseed,13,0.5714
+Tensor Fusion Network,multiseed,13,0.4107
+Tensor Fusion Network,multiseed,13,0.6786
+Tensor Fusion Network,multiseed,14,0.65
+Tensor Fusion Network,multiseed,14,0.4
+Tensor Fusion Network,multiseed,14,0.9464
+Tensor Fusion Network,multiseed,14,0.7143
+Tensor Fusion Network,multiseed,14,0.5536
+Tensor Fusion Network,multiseed,15,0.6833
+Tensor Fusion Network,multiseed,15,0.4833
+Tensor Fusion Network,multiseed,15,0.8214
+Tensor Fusion Network,multiseed,15,0.5536
+Tensor Fusion Network,multiseed,15,0.7321
+Tensor Fusion Network,multiseed,16,0.5333
+Tensor Fusion Network,multiseed,16,0.6833
+Tensor Fusion Network,multiseed,16,0.9286
+Tensor Fusion Network,multiseed,16,0.7679
+Tensor Fusion Network,multiseed,16,0.4821
+Tensor Fusion Network,multiseed,17,0.6333
+Tensor Fusion Network,multiseed,17,0.7667
+Tensor Fusion Network,multiseed,17,0.7143
+Tensor Fusion Network,multiseed,17,0.6607
+Tensor Fusion Network,multiseed,17,0.5714
+Tensor Fusion Network,multiseed,18,0.5167
+Tensor Fusion Network,multiseed,18,0.4667
+Tensor Fusion Network,multiseed,18,0.8393
+Tensor Fusion Network,multiseed,18,0.6607
+Tensor Fusion Network,multiseed,18,0.9643
+Tensor Fusion Network,multiseed,19,0.5833
+Tensor Fusion Network,multiseed,19,0.5333
+Tensor Fusion Network,multiseed,19,0.6429
+Tensor Fusion Network,multiseed,19,0.9286
+Tensor Fusion Network,multiseed,19,0.6786
+Tensor Fusion Network,nested,0,0.6833
+Tensor Fusion Network,nested,1,0.5167
+Tensor Fusion Network,nested,2,0.4107
+Tensor Fusion Network,nested,3,0.375
+Tensor Fusion Network,nested,4,0.7679
+Low-rank Multimodal Fusion,multiseed,0,0.5333
+Low-rank Multimodal Fusion,multiseed,0,0.7833
+Low-rank Multimodal Fusion,multiseed,0,0.6071
+Low-rank Multimodal Fusion,multiseed,0,0.6607
+Low-rank Multimodal Fusion,multiseed,0,0.8571
+Low-rank Multimodal Fusion,multiseed,1,0.8
+Low-rank Multimodal Fusion,multiseed,1,0.9833
+Low-rank Multimodal Fusion,multiseed,1,0.7143
+Low-rank Multimodal Fusion,multiseed,1,0.7321
+Low-rank Multimodal Fusion,multiseed,1,0.5714
+Low-rank Multimodal Fusion,multiseed,2,0.75
+Low-rank Multimodal Fusion,multiseed,2,0.5
+Low-rank Multimodal Fusion,multiseed,2,0.2857
+Low-rank Multimodal Fusion,multiseed,2,0.625
+Low-rank Multimodal Fusion,multiseed,2,1.0
+Low-rank Multimodal Fusion,multiseed,3,0.5333
+Low-rank Multimodal Fusion,multiseed,3,0.7
+Low-rank Multimodal Fusion,multiseed,3,0.7321
+Low-rank Multimodal Fusion,multiseed,3,0.8571
+Low-rank Multimodal Fusion,multiseed,3,0.6071
+Low-rank Multimodal Fusion,multiseed,4,0.5333
+Low-rank Multimodal Fusion,multiseed,4,0.6833
+Low-rank Multimodal Fusion,multiseed,4,0.9464
+Low-rank Multimodal Fusion,multiseed,4,0.5536
+Low-rank Multimodal Fusion,multiseed,4,0.6786
+Low-rank Multimodal Fusion,multiseed,5,0.9
+Low-rank Multimodal Fusion,multiseed,5,0.65
+Low-rank Multimodal Fusion,multiseed,5,0.6786
+Low-rank Multimodal Fusion,multiseed,5,0.6786
+Low-rank Multimodal Fusion,multiseed,5,0.75
+Low-rank Multimodal Fusion,multiseed,6,0.9667
+Low-rank Multimodal Fusion,multiseed,6,0.6833
+Low-rank Multimodal Fusion,multiseed,6,0.7321
+Low-rank Multimodal Fusion,multiseed,6,0.5714
+Low-rank Multimodal Fusion,multiseed,6,0.75
+Low-rank Multimodal Fusion,multiseed,7,0.8667
+Low-rank Multimodal Fusion,multiseed,7,0.4833
+Low-rank Multimodal Fusion,multiseed,7,0.5357
+Low-rank Multimodal Fusion,multiseed,7,0.9286
+Low-rank Multimodal Fusion,multiseed,7,0.75
+Low-rank Multimodal Fusion,multiseed,8,0.8833
+Low-rank Multimodal Fusion,multiseed,8,0.7833
+Low-rank Multimodal Fusion,multiseed,8,0.875
+Low-rank Multimodal Fusion,multiseed,8,0.6071
+Low-rank Multimodal Fusion,multiseed,8,0.5179
+Low-rank Multimodal Fusion,multiseed,9,0.7833
+Low-rank Multimodal Fusion,multiseed,9,0.3833
+Low-rank Multimodal Fusion,multiseed,9,0.875
+Low-rank Multimodal Fusion,multiseed,9,0.6607
+Low-rank Multimodal Fusion,multiseed,9,0.6071
+Low-rank Multimodal Fusion,multiseed,10,0.7667
+Low-rank Multimodal Fusion,multiseed,10,0.6833
+Low-rank Multimodal Fusion,multiseed,10,0.5
+Low-rank Multimodal Fusion,multiseed,10,0.9643
+Low-rank Multimodal Fusion,multiseed,10,0.75
+Low-rank Multimodal Fusion,multiseed,11,0.9167
+Low-rank Multimodal Fusion,multiseed,11,0.55
+Low-rank Multimodal Fusion,multiseed,11,0.6607
+Low-rank Multimodal Fusion,multiseed,11,0.6071
+Low-rank Multimodal Fusion,multiseed,11,0.75
+Low-rank Multimodal Fusion,multiseed,12,0.7
+Low-rank Multimodal Fusion,multiseed,12,0.6333
+Low-rank Multimodal Fusion,multiseed,12,0.5536
+Low-rank Multimodal Fusion,multiseed,12,0.5179
+Low-rank Multimodal Fusion,multiseed,12,0.625
+Low-rank Multimodal Fusion,multiseed,13,0.5667
+Low-rank Multimodal Fusion,multiseed,13,0.95
+Low-rank Multimodal Fusion,multiseed,13,0.5714
+Low-rank Multimodal Fusion,multiseed,13,0.5
+Low-rank Multimodal Fusion,multiseed,13,0.875
+Low-rank Multimodal Fusion,multiseed,14,0.5667
+Low-rank Multimodal Fusion,multiseed,14,0.6167
+Low-rank Multimodal Fusion,multiseed,14,0.9286
+Low-rank Multimodal Fusion,multiseed,14,0.5536
+Low-rank Multimodal Fusion,multiseed,14,0.6964
+Low-rank Multimodal Fusion,multiseed,15,0.95
+Low-rank Multimodal Fusion,multiseed,15,0.5833
+Low-rank Multimodal Fusion,multiseed,15,0.6607
+Low-rank Multimodal Fusion,multiseed,15,0.5179
+Low-rank Multimodal Fusion,multiseed,15,0.6607
+Low-rank Multimodal Fusion,multiseed,16,0.5167
+Low-rank Multimodal Fusion,multiseed,16,0.5
+Low-rank Multimodal Fusion,multiseed,16,0.9286
+Low-rank Multimodal Fusion,multiseed,16,0.9286
+Low-rank Multimodal Fusion,multiseed,16,0.5357
+Low-rank Multimodal Fusion,multiseed,17,0.5667
+Low-rank Multimodal Fusion,multiseed,17,0.7667
+Low-rank Multimodal Fusion,multiseed,17,0.8929
+Low-rank Multimodal Fusion,multiseed,17,0.7143
+Low-rank Multimodal Fusion,multiseed,17,0.8393
+Low-rank Multimodal Fusion,multiseed,18,0.5167
+Low-rank Multimodal Fusion,multiseed,18,0.4333
+Low-rank Multimodal Fusion,multiseed,18,0.8571
+Low-rank Multimodal Fusion,multiseed,18,0.625
+Low-rank Multimodal Fusion,multiseed,18,1.0
+Low-rank Multimodal Fusion,multiseed,19,0.7167
+Low-rank Multimodal Fusion,multiseed,19,0.55
+Low-rank Multimodal Fusion,multiseed,19,0.6071
+Low-rank Multimodal Fusion,multiseed,19,0.9643
+Low-rank Multimodal Fusion,multiseed,19,0.6964
+Low-rank Multimodal Fusion,nested,0,0.9167
+Low-rank Multimodal Fusion,nested,1,0.8667
+Low-rank Multimodal Fusion,nested,2,0.4821
+Low-rank Multimodal Fusion,nested,3,0.6429
+Low-rank Multimodal Fusion,nested,4,0.7857
+NeuroFormer (3-modality),multiseed,0,0.7833
+NeuroFormer (3-modality),multiseed,0,0.8333
+NeuroFormer (3-modality),multiseed,0,0.4286
+NeuroFormer (3-modality),multiseed,0,0.6786
+NeuroFormer (3-modality),multiseed,0,0.4821
+NeuroFormer (3-modality),multiseed,1,0.6
+NeuroFormer (3-modality),multiseed,1,0.7833
+NeuroFormer (3-modality),multiseed,1,0.3929
+NeuroFormer (3-modality),multiseed,1,0.8036
+NeuroFormer (3-modality),multiseed,1,0.6429
+NeuroFormer (3-modality),multiseed,2,0.3
+NeuroFormer (3-modality),multiseed,2,0.6
+NeuroFormer (3-modality),multiseed,2,0.4286
+NeuroFormer (3-modality),multiseed,2,0.4286
+NeuroFormer (3-modality),multiseed,2,0.8393
+NeuroFormer (3-modality),multiseed,3,0.4167
+NeuroFormer (3-modality),multiseed,3,0.5667
+NeuroFormer (3-modality),multiseed,3,0.5714
+NeuroFormer (3-modality),multiseed,3,0.5714
+NeuroFormer (3-modality),multiseed,3,0.7946
+NeuroFormer (3-modality),multiseed,4,0.8167
+NeuroFormer (3-modality),multiseed,4,0.5
+NeuroFormer (3-modality),multiseed,4,0.625
+NeuroFormer (3-modality),multiseed,4,0.4464
+NeuroFormer (3-modality),multiseed,4,0.5536
+NeuroFormer (3-modality),multiseed,5,0.55
+NeuroFormer (3-modality),multiseed,5,0.7167
+NeuroFormer (3-modality),multiseed,5,0.7679
+NeuroFormer (3-modality),multiseed,5,0.875
+NeuroFormer (3-modality),multiseed,5,0.5536
+NeuroFormer (3-modality),multiseed,6,0.6
+NeuroFormer (3-modality),multiseed,6,0.5333
+NeuroFormer (3-modality),multiseed,6,0.5
+NeuroFormer (3-modality),multiseed,6,0.5357
+NeuroFormer (3-modality),multiseed,6,0.375
+NeuroFormer (3-modality),multiseed,7,0.5667
+NeuroFormer (3-modality),multiseed,7,0.5333
+NeuroFormer (3-modality),multiseed,7,0.4821
+NeuroFormer (3-modality),multiseed,7,0.2857
+NeuroFormer (3-modality),multiseed,7,0.7321
+NeuroFormer (3-modality),multiseed,8,0.85
+NeuroFormer (3-modality),multiseed,8,0.7167
+NeuroFormer (3-modality),multiseed,8,0.7857
+NeuroFormer (3-modality),multiseed,8,0.6964
+NeuroFormer (3-modality),multiseed,8,0.5536
+NeuroFormer (3-modality),multiseed,9,0.7667
+NeuroFormer (3-modality),multiseed,9,0.2167
+NeuroFormer (3-modality),multiseed,9,0.7143
+NeuroFormer (3-modality),multiseed,9,0.4643
+NeuroFormer (3-modality),multiseed,9,0.7679
+NeuroFormer (3-modality),multiseed,10,0.55
+NeuroFormer (3-modality),multiseed,10,0.425
+NeuroFormer (3-modality),multiseed,10,0.4821
+NeuroFormer (3-modality),multiseed,10,0.8571
+NeuroFormer (3-modality),multiseed,10,0.7411
+NeuroFormer (3-modality),multiseed,11,0.7333
+NeuroFormer (3-modality),multiseed,11,0.4167
+NeuroFormer (3-modality),multiseed,11,0.5
+NeuroFormer (3-modality),multiseed,11,0.8929
+NeuroFormer (3-modality),multiseed,11,0.6964
+NeuroFormer (3-modality),multiseed,12,0.6167
+NeuroFormer (3-modality),multiseed,12,0.5833
+NeuroFormer (3-modality),multiseed,12,0.7321
+NeuroFormer (3-modality),multiseed,12,0.3036
+NeuroFormer (3-modality),multiseed,12,0.5714
+NeuroFormer (3-modality),multiseed,13,0.5
+NeuroFormer (3-modality),multiseed,13,0.7667
+NeuroFormer (3-modality),multiseed,13,0.3036
+NeuroFormer (3-modality),multiseed,13,0.375
+NeuroFormer (3-modality),multiseed,13,0.6786
+NeuroFormer (3-modality),multiseed,14,0.5167
+NeuroFormer (3-modality),multiseed,14,0.8833
+NeuroFormer (3-modality),multiseed,14,0.875
+NeuroFormer (3-modality),multiseed,14,0.8929
+NeuroFormer (3-modality),multiseed,14,0.6964
+NeuroFormer (3-modality),multiseed,15,0.75
+NeuroFormer (3-modality),multiseed,15,0.85
+NeuroFormer (3-modality),multiseed,15,0.5714
+NeuroFormer (3-modality),multiseed,15,0.4464
+NeuroFormer (3-modality),multiseed,15,0.3036
+NeuroFormer (3-modality),multiseed,16,0.6167
+NeuroFormer (3-modality),multiseed,16,0.6167
+NeuroFormer (3-modality),multiseed,16,0.7679
+NeuroFormer (3-modality),multiseed,16,0.75
+NeuroFormer (3-modality),multiseed,16,0.6071
+NeuroFormer (3-modality),multiseed,17,0.55
+NeuroFormer (3-modality),multiseed,17,0.55
+NeuroFormer (3-modality),multiseed,17,0.5536
+NeuroFormer (3-modality),multiseed,17,0.7857
+NeuroFormer (3-modality),multiseed,17,0.5357
+NeuroFormer (3-modality),multiseed,18,0.5667
+NeuroFormer (3-modality),multiseed,18,0.3
+NeuroFormer (3-modality),multiseed,18,0.8036
+NeuroFormer (3-modality),multiseed,18,0.375
+NeuroFormer (3-modality),multiseed,18,0.75
+NeuroFormer (3-modality),multiseed,19,0.65
+NeuroFormer (3-modality),multiseed,19,0.5
+NeuroFormer (3-modality),multiseed,19,0.7143
+NeuroFormer (3-modality),multiseed,19,0.5179
+NeuroFormer (3-modality),multiseed,19,0.5893
+NeuroFormer (3-modality),nested,0,0.7833
+NeuroFormer (3-modality),nested,1,0.4167
+NeuroFormer (3-modality),nested,2,0.4643
+NeuroFormer (3-modality),nested,3,0.7321
+NeuroFormer (3-modality),nested,4,0.5179

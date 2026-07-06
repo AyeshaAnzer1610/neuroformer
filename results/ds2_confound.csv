@@ -1,0 +1,13 @@
+analysis,model,observed_auc,p_global,p_sex,p_sex_x_agetertile,feature_treatment,ci_lo,ci_hi
+permutation,LogReg (concat),0.7468,0.001,0.001,0.001,,,
+permutation,SVM-RBF (concat),0.7508,0.001,0.001,0.002,,,
+permutation,RandomForest (concat),0.7059,0.001,0.001,0.001,,,
+permutation,MLP early-fusion,0.7337,0.001,0.001,0.002,,,
+permutation,Late-fusion ensemble,0.7468,0.001,0.001,0.001,,,
+permutation,1D-CNN (temporal),0.728,0.001,0.001,0.003,,,
+permutation,LSTM (temporal),0.7211,0.001,0.002,0.001,,,
+permutation,TCN (temporal),0.7341,0.001,0.001,0.001,,,
+permutation,Demographics (age+sex),0.6241,0.028,0.1748,0.2657,,,
+confvariant,LogReg (EEG),0.7468,,,,raw,0.6,0.9103
+confvariant,LogReg (EEG),0.7528,,,,residualized,0.5959,0.9035
+confvariant,LogReg (EEG),0.7521,,,,confound-feat,0.6207,0.9121
