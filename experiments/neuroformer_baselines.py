@@ -37,6 +37,7 @@ from sklearn.svm import SVC
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from robustness_3mod import load_eeg, load_eye, load_beh, _ci          # noqa: E402
+from confidence_gated_fusion import ConfidenceGatedFusion, CrossModalRefinedFusion  # noqa: E402
 
 
 def _ci95(rep):
@@ -196,6 +197,66 @@ class LowRankFusion(nn.Module):
                            torch.ones(X[m].shape[0], 1, device=X[m].device)], -1)   # [B, d+1]
             out = out * torch.einsum("bd,rdh->brh", h, self.factors[m])             # [B, rank, h]
         return self.cls(out.sum(1))
+
+
+def cv_confidence_gated(model_fn, Xd, y, folds, repeats, seed, device):
+    """Cross-validation for confidence-gated models that return (logits, confidence_dict).
+
+    These models return auxiliary confidence scores which are discarded for AUC evaluation.
+    """
+    from sklearn.model_selection import RepeatedStratifiedKFold
+
+    skf = RepeatedStratifiedKFold(n_splits=folds, n_repeats=repeats, random_state=seed)
+    fold_aucs = []
+    oof = {}  # out-of-fold predictions
+
+    for fold_idx, (train_idx, test_idx) in enumerate(skf.split(np.zeros(len(y)), y)):
+        # Split train/test
+        Xtr = {k: Xd[k][train_idx] for k in Xd}
+        Xte = {k: Xd[k][test_idx] for k in Xd}
+        ytr, yte = y[train_idx], y[test_idx]
+
+        # Create model
+        model = model_fn().to(device)
+        pos = int(ytr.sum()); neg = len(ytr) - pos
+        lossf = nn.CrossEntropyLoss(weight=torch.tensor([1.0, neg / max(pos, 1)], device=device))
+        opt = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
+
+        # Train
+        for _ in range(60):  # epochs
+            indices = np.random.permutation(len(ytr))
+            for i in indices:
+                opt.zero_grad()
+                xb_dict = {k: torch.from_numpy(Xtr[k][i:i+1]).float().to(device) for k in Xtr}
+                yb = torch.tensor([ytr[i]], device=device)
+                logits, _ = model(xb_dict)  # discard confidence_dict
+                loss = lossf(logits, yb)
+                loss.backward()
+                opt.step()
+
+        # Evaluate
+        model.eval()
+        test_probs = []
+        with torch.no_grad():
+            for i in range(len(yte)):
+                xb_dict = {k: torch.from_numpy(Xte[k][i:i+1]).float().to(device) for k in Xte}
+                logits, _ = model(xb_dict)
+                prob = torch.softmax(logits, -1)[0, 1].item()
+                test_probs.append(prob)
+
+        test_probs = np.array(test_probs)
+        auc = roc_auc_score(yte, test_probs) if len(np.unique(yte)) > 1 else np.nan
+        fold_aucs.append(auc)
+        oof[fold_idx] = (test_idx, test_probs)
+
+    # Format for add() function: (fold_aucs, oof_matrix)
+    oof_matrix = {}
+    for fold_idx, (test_idx, probs) in oof.items():
+        for idx, prob in zip(test_idx, probs):
+            oof_matrix[idx] = prob
+    oof_array = np.array([oof_matrix.get(i, np.nan) for i in range(len(y))])
+
+    return np.array(fold_aucs), oof_array
 
 
 def _train_torch_vec(model, Xtr, ytr, device, epochs=60, lr=1e-3, dict_in=False):
@@ -459,6 +520,9 @@ def main():
     dims3 = {"eeg": Xe.shape[1], "eye": Xy.shape[1], "beh": Xb.shape[1]}
     add("Tensor Fusion Network", cv_torch_vec(lambda: TensorFusion(dims3), Xd, y, args.folds, args.repeats, args.seed, device, dict_in=True))
     add("Low-rank Multimodal Fusion", cv_torch_vec(lambda: LowRankFusion(dims3), Xd, y, args.folds, args.repeats, args.seed, device, dict_in=True))
+    # --- Novel SOTA architectures (confidence-gated fusion) ---
+    add("Confidence-Gated Fusion (Novel)", cv_confidence_gated(lambda: ConfidenceGatedFusion(dims3, h=128), Xd, y, args.folds, args.repeats, args.seed, device))
+    add("Cross-Modal Refined Fusion (Novel SOTA)", cv_confidence_gated(lambda: CrossModalRefinedFusion(dims3, h=128), Xd, y, args.folds, args.repeats, args.seed, device))
     # --- demographics helper (used by NeuroFormer multi-seed confound test below) ---
     meta = pd.read_csv("data/labels.csv").set_index("ID")
     Xconf = np.array([[meta.loc[s, "Age"], meta.loc[s, "Sex"]] for s in subs], float)
