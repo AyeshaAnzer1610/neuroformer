@@ -22,7 +22,7 @@ import argparse, itertools
 import numpy as np, pandas as pd
 from scipy import stats
 from sklearn.metrics import roc_auc_score, brier_score_loss
-from model_suite import load_mipdb, build_registry, cv_oof
+from model_suite import load_mipdb, build_registry, get_oof
 
 
 # ------------------------------------------------------------ DeLong (Sun & Xu 2014)
@@ -73,7 +73,7 @@ def ece(y, p, bins=10):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--which', nargs='*', default=['delong', 'calibration', 'peroof'])
+    ap.add_argument('--which', nargs='*', default=['delong', 'calibration'])
     ap.add_argument('--ece-bins', type=int, default=10)
     ap.add_argument('--epochs', type=int, default=60)
     ap.add_argument('--k-eeg', type=int, default=128)
@@ -90,14 +90,10 @@ def main():
         reg = [r for r in reg if r[0] in set(a.only)]
     cfg = {'epochs': a.epochs}
 
-    # shared OOF per model (same folds -> comparable for DeLong)
-    oof = {}
-    for name, needs, fp in reg:
-        try:
-            oof[name] = cv_oof(fp, b, b.y, cfg=cfg)
-            print(f"  OOF {name:<28} auc={roc_auc_score(b.y, oof[name]):.4f}")
-        except Exception as e:
-            print(f"  OOF {name:<28} ERROR: {type(e).__name__}: {e}")
+    # canonical OOF (src/24_canonical_oof.py) -> identical to the benchmark table
+    oof = get_oof(b, reg, cfg)
+    for name in oof:
+        print(f"  OOF {name:<28} auc={roc_auc_score(b.y, oof[name]):.4f}")
     y = b.y
 
     if 'delong' in a.which:
@@ -108,6 +104,19 @@ def main():
                              auc_diff=round(a1 - a2, 4), z=round(z, 3), p_value=round(p, 4)))
         pd.DataFrame(rows).to_csv(a.out_delong, index=False)
         print(f"[saved] {a.out_delong} ({len(rows)} pairs)")
+        # focused main-text table: every model vs the demographic baseline
+        DEMO = 'Demographics (age+sex)'
+        if DEMO in oof:
+            vd = []
+            for m in oof:
+                if m == DEMO:
+                    continue
+                am, ad, z, p = delong_test(y, oof[m], oof[DEMO])
+                vd.append(dict(model=m, auc=round(am, 4), auc_demo=round(ad, 4),
+                               d_auc_vs_demo=round(am - ad, 4), z=round(z, 3), p_value=round(p, 4)))
+            vd.sort(key=lambda r: r['auc'])
+            pd.DataFrame(vd).to_csv(a.out_delong.replace('.csv', '_vs_demographics.csv'), index=False)
+            print(f"[saved] {a.out_delong.replace('.csv','_vs_demographics.csv')} (13 rows, main-text)")
 
     if 'calibration' in a.which:
         rows = []

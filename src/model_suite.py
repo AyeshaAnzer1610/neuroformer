@@ -48,6 +48,11 @@ try:
     import torch.nn as nn
     import torch.nn.functional as F
     torch.set_num_threads(int(os.environ.get('SUITE_THREADS', '4')))
+    torch.manual_seed(0)
+    try:                                            # best-effort CPU determinism
+        torch.use_deterministic_algorithms(True, warn_only=True)
+    except Exception:
+        pass
     _HAS_TORCH = True
 except Exception:                                   # pragma: no cover
     _HAS_TORCH = False
@@ -378,7 +383,7 @@ def build_registry():
     """Ordered list of (name, needs, fit_predict). 14 models."""
     reg = [
         ('LogReg (concat)',        (),      _sk(lambda: LogisticRegression(max_iter=2000, class_weight='balanced'))),
-        ('SVM-RBF (concat)',       (),      _sk(lambda: SVC(kernel='rbf', probability=True, class_weight='balanced'))),
+        ('SVM-RBF (concat)',       (),      _sk(lambda: SVC(kernel='rbf', probability=True, class_weight='balanced', random_state=0))),
         ('RandomForest (concat)',  (),      _sk(lambda: RandomForestClassifier(n_estimators=300, class_weight='balanced', random_state=0))),
         ('MLP early-fusion',       (),      _sk(lambda: MLPClassifier(hidden_layer_sizes=(64,), max_iter=500, random_state=0))),
         ('Late-fusion ensemble',   (),      _late),
@@ -466,7 +471,7 @@ def sk_grids():
     return {
         'LogReg (concat)':       (LogisticRegression(max_iter=2000, class_weight='balanced'),
                                   {'C': [0.01, 0.1, 1, 10]}),
-        'SVM-RBF (concat)':      (SVC(kernel='rbf', probability=True, class_weight='balanced'),
+        'SVM-RBF (concat)':      (SVC(kernel='rbf', probability=True, class_weight='balanced', random_state=0),
                                   {'C': [0.1, 1, 10], 'gamma': ['scale', 'auto']}),
         'RandomForest (concat)': (RandomForestClassifier(class_weight='balanced', random_state=0),
                                   {'n_estimators': [200, 400], 'max_depth': [3, 5, None]}),
@@ -480,7 +485,7 @@ def sk_estimators():
     honest-vs-leaky demonstration in script 21)."""
     return {
         'LogReg (concat)':       lambda: LogisticRegression(max_iter=2000, class_weight='balanced'),
-        'SVM-RBF (concat)':      lambda: SVC(kernel='rbf', probability=True, class_weight='balanced'),
+        'SVM-RBF (concat)':      lambda: SVC(kernel='rbf', probability=True, class_weight='balanced', random_state=0),
         'RandomForest (concat)': lambda: RandomForestClassifier(n_estimators=300, class_weight='balanced', random_state=0),
         'MLP early-fusion':      lambda: MLPClassifier(hidden_layer_sizes=(64,), max_iter=500, random_state=0),
     }
@@ -497,3 +502,43 @@ def torch_grids():
         'Tensor Fusion Network': wd, 'Low-rank Multimodal Fusion': wd,
         'NeuroFormer (3-modality)': wd,
     }
+
+
+# ------------------- canonical OOF (single source of truth) -------------------
+# So the benchmark point AUC, DeLong, and calibration all use the SAME out-of-fold
+# predictions instead of recomputing them independently (which diverged because
+# SVC's Platt calibration and torch CPU ops are not bit-reproducible). Scripts
+# 18/22 load this file; script 24 produces it.
+CANON_OOF = 'results/per_subject_oof.csv'
+
+def compute_oof_all(b, reg, cfg=None, seed=0):
+    """dict model_name -> OOF probability vector, for every model in reg."""
+    cfg = cfg or {'epochs': 60}
+    return {name: cv_oof(fp, b, b.y, seed=seed, cfg=cfg) for name, _, fp in reg}
+
+def save_oof(b, oof, path=CANON_OOF):
+    df = pd.DataFrame({'subject': b.subjects, 'group': b.y})
+    for k, v in oof.items():
+        df[k] = np.round(v, 6)
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(path, index=False)
+    return path
+
+def load_oof(b, path=CANON_OOF):
+    """Load the canonical OOF; asserts subject alignment with the bundle."""
+    df = pd.read_csv(path)
+    if list(df['subject']) != list(b.subjects):
+        raise ValueError('per_subject_oof.csv subjects do not match bundle order; '
+                         'regenerate with src/24_canonical_oof.py')
+    return {c: df[c].values for c in df.columns if c not in ('subject', 'group')}
+
+def get_oof(b, reg, cfg=None, path=CANON_OOF):
+    """Load canonical OOF if it covers all models in reg; else compute (no save)."""
+    names = [n for n, _, _ in reg]
+    try:
+        cached = load_oof(b, path)
+        if all(n in cached for n in names):
+            return {n: cached[n] for n in names}
+    except (FileNotFoundError, ValueError):
+        pass
+    return compute_oof_all(b, reg, cfg)

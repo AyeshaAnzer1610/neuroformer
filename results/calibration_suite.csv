@@ -1,15 +1,15 @@
 model,auc,brier,ece
 LogReg (concat),0.5444,0.1981,0.1566
-SVM-RBF (concat),0.6899,0.1569,0.0394
+SVM-RBF (concat),0.6774,0.1583,0.0256
 RandomForest (concat),0.7035,0.1593,0.0581
 MLP early-fusion,0.5368,0.215,0.2057
 Late-fusion ensemble,0.6167,0.1881,0.1842
-1D-CNN (temporal),0.6403,0.1614,0.1248
+1D-CNN (temporal),0.6229,0.167,0.1364
 LSTM (temporal),0.5528,0.2053,0.2033
-TCN (temporal),0.591,0.1965,0.2395
+TCN (temporal),0.5913,0.1965,0.2395
 Demographics (age+sex),0.7365,0.2103,0.2293
 GMU (gated fusion),0.6236,0.2044,0.1922
 Cross-modal Transformer,0.616,0.22,0.268
 Tensor Fusion Network,0.5819,0.2323,0.2658
 Low-rank Multimodal Fusion,0.7194,0.2439,0.2944
-NeuroFormer (3-modality),0.609,0.3457,0.3628
+NeuroFormer (3-modality),0.6059,0.3457,0.3628

@@ -20,7 +20,7 @@ Quick smoke test:
 import argparse
 import numpy as np, pandas as pd
 from sklearn.metrics import roc_auc_score
-from model_suite import load_mipdb, build_registry, cv_perfold_auc, cv_oof
+from model_suite import load_mipdb, build_registry, cv_perfold_auc, get_oof
 
 
 def bootstrap_ci(y, oof, n_boot, seed=0):
@@ -54,12 +54,15 @@ def main():
     if a.only:
         reg = [r for r in reg if r[0] in set(a.only)]
     cfg = {'epochs': a.epochs}
+    # OOF columns come from the canonical file (src/24_canonical_oof.py) so they
+    # match DeLong/calibration exactly; per-fold columns are a separate estimator.
+    oof_all = get_oof(b, reg, cfg)
 
     rows = []
     for name, needs, fp in reg:
         try:
             pf = cv_perfold_auc(fp, b, b.y, n_repeats=a.repeats, cfg=cfg)
-            oof = cv_oof(fp, b, b.y, cfg=cfg)
+            oof = oof_all[name]
             auc_boot, (blo, bhi) = bootstrap_ci(b.y, oof, a.n_boot)
             rows.append(dict(
                 model=name, status='ok',
