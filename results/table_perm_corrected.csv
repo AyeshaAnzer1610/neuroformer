@@ -1,0 +1,15 @@
+model,status,observed_auc,null_mean,null_std,p_value,n_perm,q_fdr,p_bonf
+LogReg (concat),ok,0.5795,0.4949,0.0877,0.1768,1000,0.2033,1.0
+SVM-RBF (concat),ok,0.6709,0.4983,0.0908,0.046,1000,0.0909,0.644
+RandomForest (concat),ok,0.71,0.4981,0.0943,0.012,1000,0.042,0.168
+MLP early-fusion,ok,0.5424,0.4954,0.0839,0.3037,1000,0.3037,1.0
+Late-fusion ensemble,ok,0.6503,0.4978,0.0892,0.041,1000,0.0909,0.574
+1D-CNN (temporal),ok,0.6872,0.5032,0.0816,0.01,1000,0.042,0.14
+LSTM (temporal),ok,0.6262,0.5059,0.0803,0.0639,1000,0.0909,0.8946
+TCN (temporal),ok,0.573,0.4998,0.0845,0.1888,1000,0.2033,1.0
+Demographics (age+sex),ok,0.7198,0.4933,0.0971,0.006,1000,0.042,0.084
+GMU (gated fusion),ok,0.6194,0.5007,0.0896,0.0919,1000,0.117,1.0
+Cross-modal Transformer,ok,0.6258,0.4999,0.0863,0.0649,1000,0.0909,0.9086
+Tensor Fusion Network,ok,0.6629,0.4852,0.0797,0.015,1000,0.042,0.21
+Low-rank Multimodal Fusion,ok,0.688,0.4941,0.0772,0.008,1000,0.042,0.112
+NeuroFormer (3-modality),ok,0.6161,0.4933,0.0739,0.0539,1000,0.0909,0.7546
