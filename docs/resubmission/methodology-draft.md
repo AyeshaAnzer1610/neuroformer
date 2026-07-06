@@ -254,9 +254,13 @@ Negative ΔAUC = below demographics; *no model is above it.*
 | Random Forest | 0.704 | −0.033 | 0.673 |
 | Low-rank Multimodal Fusion | 0.719 | −0.017 | 0.830 |
 
-**0 of 13 models beat demographics**; demographics is significantly *better* than the three
-weakest (MLP, LogReg, LSTM). This — not any ranking of the models against each other — is the
-result.
+Raw p's flag demographics as nominally better than the three weakest models (MLP, LogReg, LSTM;
+p ≈ 0.03), but **after Benjamini–Hochberg FDR correction across the 13 comparisons none survives
+(0/13), and no pairwise difference among all 14 models survives either (0/91)** — under
+Bonferroni likewise 0/91. In other words, once multiplicity is accounted for the entire
+benchmark is a **single statistically indistinguishable band**: no model separates from
+demographics, and no model separates from any other. This — not any ranking of the models — is
+the result.
 
 ### B.2 Why it is not "better": the signal is largely a demographic confound
 Three independent lines converge:
@@ -274,9 +278,10 @@ Three independent lines converge:
 
 - **Residualization.** Regressing age+sex out of the EEG features removes the EEG advantage on
   MIPDB (adding age+sex as features, not removing them, is what helps).
-- **Permutation.** Several models exceed chance globally (e.g. Demographics p = 0.006, RF
-  0.012, LMF 0.008, NeuroFormer 0.054), but exceeding chance ≠ exceeding demographics — and the
-  confound-conditioned permutation shows the effect is not independent of age/sex.
+- **Permutation.** After FDR correction, five models exceed chance (Demographics, Random
+  Forest, 1D-CNN, Tensor Fusion, Low-rank Fusion; q < 0.05); but exceeding chance ≠ exceeding
+  demographics (none does, above), and the confound-conditioned permutation shows the effect is
+  not independent of age/sex.
 
 Two further reasons it cannot be "better" here: **small N** (20 positives → wide CIs, low
 power to separate models), and the fact that **prior 90%+ numbers were leakage** — on our data
@@ -354,11 +359,67 @@ directly from the study's design.
 - **Missing-modality claim.** The mechanism is demonstrated to be **operational** under dropped
   modalities; because full-modality performance is itself low, we do not claim graceful
   degradation *from strong performance*.
-- **Multiple comparisons.** DeLong and permutation p-values are reported with
-  Bonferroni/FDR correction; uncorrected values are additionally provided in the supplement.
+- **Multiple comparisons.** DeLong and permutation p-values are corrected with Benjamini–Hochberg
+  FDR (and Bonferroni); corrected tables are in `results/*_corrected.csv`. After correction no
+  pairwise model difference is significant (0/91) and no model differs from demographics (0/13);
+  raw values are additionally provided. Correction *strengthens* the central claim.
 - **Estimators.** Point AUCs are pooled out-of-fold; permutation tests operate on the
   repeated-CV AUC (a distinct, more stable estimator) — the two differ marginally by
   construction and are labelled as such.
 - **Sample size.** N = 92 with 20 positives yields wide confidence intervals and limited power
   to separate models; we therefore lead with interval overlap and non-significance rather than
   rank order, and do not over-interpret point differences.
+
+---
+
+## Part C — Discussion
+
+**Principal finding.** Under a uniform, leakage-free, confound-controlled protocol, no
+architecture — from logistic regression to a purpose-built multimodal transformer — separates
+from a two-variable age+sex baseline on this cohort; after multiplicity correction the fourteen
+models form a single statistically indistinguishable band. The high accuracies previously
+reported in this setting are reproduced *only* under window-level evaluation, where windows of a
+subject leak across the train/test split (AUC ≈ 1.0 vs ≈ 0.5 honest). We therefore interpret
+prior multimodal "state-of-the-art" in this domain as, in substantial part, an artifact of
+evaluation design and demographic confounding rather than evidence of a learned neuro-behavioural
+biomarker.
+
+**Why the negative result is informative, not merely null.** Three convergent analyses locate
+the residual signal in demographics: matched subsampling collapses it, age+sex residualization
+removes it, and confound-conditioned permutation shows it is not independent of age/sex. This is
+a positive, mechanistic explanation of *why* sophisticated models do not help here — the
+discriminative structure available at this sample size is largely demographic, and additional
+modality-fusion capacity has nothing further to exploit. Consistent with this, no fusion variant
+exceeds EEG-alone and, in the missing-modality experiment, eye-tracking contributes nothing
+(EEG-only ≥ EEG+eye).
+
+**The signal is real where the confound is not.** On the independent ds003478 cohort, where the
+age/sex confound is weak, EEG predicts depression well above demographics and survives
+residualization and within-stratum permutation. This rules out the trivial reading that EEG is
+simply uninformative; rather, whether EEG-based screening *appears* to work depends critically on
+whether the evaluation controls for demographic structure — precisely the methodological point
+of the paper.
+
+**Contribution and positioning.** We do not claim accuracy superiority for NeuroFormer; we claim
+(i) a unified architecture supporting one-to-three asynchronous modalities with a demonstrated
+mask-based missing-modality mechanism, and (ii) a rigorous evaluation protocol that, applied
+uniformly, yields an honest account of achievable performance. Evaluating a proposed model under
+the same leakage-free scrutiny as its baselines — and reporting that it does not beat a demographic
+null at N ≈ 90 — is, we argue, more useful to the field than another leaderboard number that would
+not survive the same scrutiny.
+
+**Clinical implications.** These results counsel caution against deploying multimodal EEG screening
+on the basis of within-cohort accuracy alone. Reported performance should be benchmarked against a
+demographic baseline and validated out-of-distribution before any screening claim; on the present
+cohort a model that "achieves 0.7 AUC" is not clinically meaningful once age and sex are accounted
+for.
+
+**Limitations and future work.** The primary limitation is statistical power: N = 92 (20 positive)
+yields wide intervals, and a genuine but small multimodal effect could be undetectable here — our
+claim is the *absence of evidence for separation from demographics at this scale*, not proof of no
+effect. The MIPDB cohort is also a complete-case, research-grade sample (selection bias), and
+behaviour was unavailable. Future work should (a) repeat this protocol at substantially larger N
+with prospective, demographically balanced sampling; (b) test the missing-modality architecture in
+settings where modalities are genuinely and informatively missing; and (c) extend the
+confound-controlled benchmark to additional cohorts to map where EEG-based screening does and does
+not carry demographics-independent signal.

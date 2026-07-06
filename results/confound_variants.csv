@@ -1,0 +1,4 @@
+feature_treatment,model,auc,ci_lo,ci_hi
+raw,LogReg (concat),0.5795,0.1768,0.8946
+residualized,LogReg (concat),0.5166,0.1346,0.7955
+confound-feat,LogReg (concat),0.6213,0.2322,0.8393
