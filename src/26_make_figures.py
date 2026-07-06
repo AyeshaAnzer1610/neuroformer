@@ -103,7 +103,41 @@ def fig5_cross_cohort():
     fig.tight_layout(); save(fig, 'fig5_cross_cohort')
 
 
+def fig2_architecture():
+    from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+    INK, TEAL, GOLD, BLUE, GREY, SOFT = '#1A2530', '#14646E', '#9C7211', '#2980b9', '#9aa7b1', '#E3EEEF'
+    fig, ax = plt.subplots(figsize=(9.6, 5.2)); ax.set_xlim(0, 100); ax.set_ylim(0, 58); ax.axis('off')
+
+    def box(x, y, w, h, label, fc='white', ec=INK, tc=INK, fs=9, weight='normal', align='center'):
+        ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=1.2,rounding_size=2.5",
+                                    fc=fc, ec=ec, lw=1.4, zorder=2))
+        ax.text(x + (w/2 if align == 'center' else 2), y+h/2, label, ha=align, va='center',
+                fontsize=fs, color=tc, weight=weight, zorder=3, linespacing=1.35)
+
+    def arrow(x1, y1, x2, y2, color=INK, ls='-'):
+        ax.add_patch(FancyArrowPatch((x1, y1), (x2, y2), arrowstyle='-|>', mutation_scale=13,
+                                     color=color, lw=1.6, ls=ls, zorder=1, shrinkA=2, shrinkB=2))
+
+    box(1, 40, 20, 10, 'EEG\n1665 feat → top-128', fc=SOFT, ec=TEAL, tc=TEAL, weight='bold')
+    box(1, 24, 20, 9, 'Eye-tracking\n10 oculomotor feats', fc='#eef4fb', ec=BLUE, tc=BLUE, weight='bold')
+    box(1, 10, 20, 8, 'Behaviour\n(absent in cohort)', fc='#f2f3f4', ec=GREY, tc=GREY, fs=8.5)
+    box(30, 33, 28, 22, 'Hierarchical EEG encoder\n───────\nEuclidean align\nEEGNet tokenizer\ncriss-cross attention\nfrequency-aware attention\nresidual MLP',
+        ec=TEAL, fs=8, align='left')
+    box(30, 24, 20, 7, 'Linear projection', ec=BLUE, fs=8.5)
+    box(30, 10, 20, 7, '(projection)', fc='#f2f3f4', ec=GREY, tc=GREY, fs=8)
+    box(64, 22, 22, 20, 'Confidence-gated\nfusion\n──────\nper-modality\nconfidence → softmax\ngate → weighted sum', fc=SOFT, ec=TEAL, fs=8)
+    box(64, 46, 26, 8, 'availability mask · modality dropout', fc='#fbf3dd', ec=GOLD, tc=GOLD, fs=8, weight='bold')
+    arrow(77, 46, 75, 42, GOLD, ls=(0, (4, 2)))
+    box(90, 28, 9, 9, 'Classifier\n→ DX', fc=INK, ec=INK, tc='white', fs=8.5, weight='bold')
+    arrow(21, 45, 30, 44, TEAL); arrow(21, 28, 30, 27.5, BLUE); arrow(21, 14, 30, 13.5, GREY, ls=(0, (3, 2)))
+    arrow(58, 44, 64, 36, TEAL); arrow(50, 27.5, 64, 32, BLUE); arrow(50, 13.5, 64, 26, GREY, ls=(0, (3, 2)))
+    arrow(86, 32, 90, 32.5, INK)
+    ax.text(50, 56, 'Figure 2. NeuroFormer: modality-specific encoders + confidence-gated fusion with a masked missing-modality path',
+            ha='center', va='center', fontsize=9.5, color=INK, weight='bold')
+    fig.tight_layout(); save(fig, 'fig2_architecture')
+
+
 if __name__ == '__main__':
     print('Generating figures ->')
-    fig1_forest(); fig3_leakage(); fig4_confound(); fig5_cross_cohort()
-    print('done. (Fig 2 = architecture schematic, drawn manually.)')
+    fig1_forest(); fig2_architecture(); fig3_leakage(); fig4_confound(); fig5_cross_cohort()
+    print('done.')
